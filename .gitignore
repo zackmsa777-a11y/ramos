@@ -1,0 +1,11 @@
+/build/
+/ramos
+/example
+/calculator
+/hello
+/--force
+/--furce
+/example.ramos
+/work/
+__pycache__/
+*.o

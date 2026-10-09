@@ -1,0 +1,17 @@
+fn main() {
+    let price = 20
+    var count = 3
+
+    print("Initial total:")
+    print(price * count)
+
+    count = count + 2
+    let total = price * count
+    print("Updated total:")
+    print(total)
+
+    print("Arithmetic:")
+    print((2 + 3) * 4)
+    print(-7 / 3)
+    print(17 % 5)
+}
