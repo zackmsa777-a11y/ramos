@@ -1,0 +1,29 @@
+fn main() {
+    var previous = 0
+    var current = 1
+    var count = 0
+    print("First ten Fibonacci numbers:")
+    while count < 10 {
+        print(previous)
+        let next = previous + current
+        previous = current
+        current = next
+        count = count + 1
+    }
+    var running = true
+    var ticks = 0
+    while running {
+        ticks = ticks + 1
+        if ticks < 3 {
+            continue
+        } else {
+            running = false
+        }
+    }
+    while true {
+        print("Loop finished:")
+        print(!running)
+        print(ticks)
+        break
+    }
+}

@@ -1,4 +1,4 @@
-# Ramos 0.2: x86-64 Linux compiler. GNU assembler, Intel syntax.
+# Ramos 0.3: x86-64 Linux compiler. GNU assembler, Intel syntax.
 # No libc, LLVM, C backend, or external code generation.
 # Internal routines use caller-saved rax, rcx, rdx, rsi, rdi, r8-r11.
 .intel_syntax noprefix
@@ -36,6 +36,23 @@
 .equ T_EQUAL, 18
 .equ T_LET, 19
 .equ T_VAR, 20
+.equ T_TRUE, 21
+.equ T_FALSE, 22
+.equ T_IF, 23
+.equ T_ELSE, 24
+.equ T_WHILE, 25
+.equ T_BREAK, 26
+.equ T_CONTINUE, 27
+.equ T_NOT, 28
+.equ T_EQ, 29
+.equ T_NE, 30
+.equ T_LT, 31
+.equ T_LE, 32
+.equ T_GT, 33
+.equ T_GE, 34
+.equ BLOCK_LIMIT, 128
+.equ TYPE_INT, 0
+.equ TYPE_BOOL, 1
 .equ IR_STRING, 1
 .equ IR_LITERAL, 2
 .equ IR_LOAD, 3
@@ -47,6 +64,18 @@
 .equ IR_MOD, 9
 .equ IR_NEG, 10
 .equ IR_PRINT_INT, 11
+
+.equ IR_NOT, 12
+.equ IR_EQ, 13
+.equ IR_NE, 14
+.equ IR_LT, 15
+.equ IR_LE, 16
+.equ IR_GT, 17
+.equ IR_GE, 18
+.equ IR_PRINT_BOOL, 19
+.equ IR_LABEL, 20
+.equ IR_JUMP, 21
+.equ IR_JZ, 22
 
 .section .text
 _start:
@@ -390,7 +419,7 @@ utf8_complete:
 .endm
 
 # The lexer streams tokens. Strings are decoded into a bounded arena;
-# the parser emits a bounded, typed integer-expression IR.
+# the parser emits bounded, typed expression and control-flow IR.
 next_token:
     push rbx
     push r12
@@ -440,6 +469,12 @@ lex_start:
     je lex_percent
     cmp al, '='
     je lex_equal
+    cmp al, '!'
+    je lex_not
+    cmp al, '<'
+    je lex_lt
+    cmp al, '>'
+    je lex_gt
     cmp al, '0'
     jb lex_not_digit
     cmp al, '9'
@@ -473,8 +508,30 @@ lex_slash:
 lex_percent:
     mov eax, T_PERCENT
     jmp lex_single
+# Two-character operators check the source bound before lookahead.
 lex_equal:
     mov eax, T_EQUAL
+    mov edx, T_EQ
+    jmp lex_optional_equal
+lex_not:
+    mov eax, T_NOT
+    mov edx, T_NE
+    jmp lex_optional_equal
+lex_lt:
+    mov eax, T_LT
+    mov edx, T_LE
+    jmp lex_optional_equal
+lex_gt:
+    mov eax, T_GT
+    mov edx, T_GE
+lex_optional_equal:
+    lea rcx, [rbx + 1]
+    cmp rcx, QWORD PTR [rip + source_length]
+    jae lex_single
+    cmp BYTE PTR [r12 + rcx], '='
+    jne lex_single
+    STEP_BYTE
+    mov eax, edx
     jmp lex_single
 lex_lp:
     mov eax, T_LP
@@ -537,44 +594,165 @@ lex_keyword:
     mov QWORD PTR [rip + identifier_length], rdx
     mov eax, T_IDENT
     cmp rdx, 2
-    je lex_fn
-    cmp rdx, 3
-    je lex_binding_keyword
-    cmp rdx, 4
-    je lex_main
-    cmp rdx, 5
-    je lex_print
-    jmp lex_return
-lex_binding_keyword:
-    cmp WORD PTR [r12 + r13], 0x656c
-    jne lex_var_keyword
-    cmp BYTE PTR [r12 + r13 + 2], 't'
-    jne lex_return
-    mov eax, T_LET
-    jmp lex_return
-lex_var_keyword:
-    cmp WORD PTR [r12 + r13], 0x6176
-    jne lex_return
-    cmp BYTE PTR [r12 + r13 + 2], 'r'
-    jne lex_return
-    mov eax, T_VAR
-    jmp lex_return
-lex_fn:
-    cmp WORD PTR [r12 + r13], 0x6e66
-    jne lex_return
+    jne lex_keyword_next_0
+    cmp BYTE PTR [r12 + r13 + 0], 'f'
+    jne lex_keyword_next_0
+    cmp BYTE PTR [r12 + r13 + 1], 'n'
+    jne lex_keyword_next_0
     mov eax, T_FN
     jmp lex_return
-lex_main:
-    cmp DWORD PTR [r12 + r13], 0x6e69616d
-    jne lex_return
+lex_keyword_next_0:
+    cmp rdx, 4
+    jne lex_keyword_next_1
+    cmp BYTE PTR [r12 + r13 + 0], 'm'
+    jne lex_keyword_next_1
+    cmp BYTE PTR [r12 + r13 + 1], 'a'
+    jne lex_keyword_next_1
+    cmp BYTE PTR [r12 + r13 + 2], 'i'
+    jne lex_keyword_next_1
+    cmp BYTE PTR [r12 + r13 + 3], 'n'
+    jne lex_keyword_next_1
     mov eax, T_MAIN
     jmp lex_return
-lex_print:
-    cmp DWORD PTR [r12 + r13], 0x6e697270
-    jne lex_return
+lex_keyword_next_1:
+    cmp rdx, 5
+    jne lex_keyword_next_2
+    cmp BYTE PTR [r12 + r13 + 0], 'p'
+    jne lex_keyword_next_2
+    cmp BYTE PTR [r12 + r13 + 1], 'r'
+    jne lex_keyword_next_2
+    cmp BYTE PTR [r12 + r13 + 2], 'i'
+    jne lex_keyword_next_2
+    cmp BYTE PTR [r12 + r13 + 3], 'n'
+    jne lex_keyword_next_2
     cmp BYTE PTR [r12 + r13 + 4], 't'
-    jne lex_return
+    jne lex_keyword_next_2
     mov eax, T_PRINT
+    jmp lex_return
+lex_keyword_next_2:
+    cmp rdx, 3
+    jne lex_keyword_next_3
+    cmp BYTE PTR [r12 + r13 + 0], 'l'
+    jne lex_keyword_next_3
+    cmp BYTE PTR [r12 + r13 + 1], 'e'
+    jne lex_keyword_next_3
+    cmp BYTE PTR [r12 + r13 + 2], 't'
+    jne lex_keyword_next_3
+    mov eax, T_LET
+    jmp lex_return
+lex_keyword_next_3:
+    cmp rdx, 3
+    jne lex_keyword_next_4
+    cmp BYTE PTR [r12 + r13 + 0], 'v'
+    jne lex_keyword_next_4
+    cmp BYTE PTR [r12 + r13 + 1], 'a'
+    jne lex_keyword_next_4
+    cmp BYTE PTR [r12 + r13 + 2], 'r'
+    jne lex_keyword_next_4
+    mov eax, T_VAR
+    jmp lex_return
+lex_keyword_next_4:
+    cmp rdx, 4
+    jne lex_keyword_next_5
+    cmp BYTE PTR [r12 + r13 + 0], 't'
+    jne lex_keyword_next_5
+    cmp BYTE PTR [r12 + r13 + 1], 'r'
+    jne lex_keyword_next_5
+    cmp BYTE PTR [r12 + r13 + 2], 'u'
+    jne lex_keyword_next_5
+    cmp BYTE PTR [r12 + r13 + 3], 'e'
+    jne lex_keyword_next_5
+    mov eax, T_TRUE
+    jmp lex_return
+lex_keyword_next_5:
+    cmp rdx, 5
+    jne lex_keyword_next_6
+    cmp BYTE PTR [r12 + r13 + 0], 'f'
+    jne lex_keyword_next_6
+    cmp BYTE PTR [r12 + r13 + 1], 'a'
+    jne lex_keyword_next_6
+    cmp BYTE PTR [r12 + r13 + 2], 'l'
+    jne lex_keyword_next_6
+    cmp BYTE PTR [r12 + r13 + 3], 's'
+    jne lex_keyword_next_6
+    cmp BYTE PTR [r12 + r13 + 4], 'e'
+    jne lex_keyword_next_6
+    mov eax, T_FALSE
+    jmp lex_return
+lex_keyword_next_6:
+    cmp rdx, 2
+    jne lex_keyword_next_7
+    cmp BYTE PTR [r12 + r13 + 0], 'i'
+    jne lex_keyword_next_7
+    cmp BYTE PTR [r12 + r13 + 1], 'f'
+    jne lex_keyword_next_7
+    mov eax, T_IF
+    jmp lex_return
+lex_keyword_next_7:
+    cmp rdx, 4
+    jne lex_keyword_next_8
+    cmp BYTE PTR [r12 + r13 + 0], 'e'
+    jne lex_keyword_next_8
+    cmp BYTE PTR [r12 + r13 + 1], 'l'
+    jne lex_keyword_next_8
+    cmp BYTE PTR [r12 + r13 + 2], 's'
+    jne lex_keyword_next_8
+    cmp BYTE PTR [r12 + r13 + 3], 'e'
+    jne lex_keyword_next_8
+    mov eax, T_ELSE
+    jmp lex_return
+lex_keyword_next_8:
+    cmp rdx, 5
+    jne lex_keyword_next_9
+    cmp BYTE PTR [r12 + r13 + 0], 'w'
+    jne lex_keyword_next_9
+    cmp BYTE PTR [r12 + r13 + 1], 'h'
+    jne lex_keyword_next_9
+    cmp BYTE PTR [r12 + r13 + 2], 'i'
+    jne lex_keyword_next_9
+    cmp BYTE PTR [r12 + r13 + 3], 'l'
+    jne lex_keyword_next_9
+    cmp BYTE PTR [r12 + r13 + 4], 'e'
+    jne lex_keyword_next_9
+    mov eax, T_WHILE
+    jmp lex_return
+lex_keyword_next_9:
+    cmp rdx, 5
+    jne lex_keyword_next_10
+    cmp BYTE PTR [r12 + r13 + 0], 'b'
+    jne lex_keyword_next_10
+    cmp BYTE PTR [r12 + r13 + 1], 'r'
+    jne lex_keyword_next_10
+    cmp BYTE PTR [r12 + r13 + 2], 'e'
+    jne lex_keyword_next_10
+    cmp BYTE PTR [r12 + r13 + 3], 'a'
+    jne lex_keyword_next_10
+    cmp BYTE PTR [r12 + r13 + 4], 'k'
+    jne lex_keyword_next_10
+    mov eax, T_BREAK
+    jmp lex_return
+lex_keyword_next_10:
+    cmp rdx, 8
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 0], 'c'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 1], 'o'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 2], 'n'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 3], 't'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 4], 'i'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 5], 'n'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 6], 'u'
+    jne lex_keyword_next_11
+    cmp BYTE PTR [r12 + r13 + 7], 'e'
+    jne lex_keyword_next_11
+    mov eax, T_CONTINUE
+    jmp lex_return
+lex_keyword_next_11:
     jmp lex_return
 lex_number:
     xor r13d, r13d
@@ -858,20 +1036,22 @@ arg_version: .asciz "--version"
 colon: .asciz ":"
 newline_text: .asciz "\n"
 error_prefix: .asciz ": error: "
-version_message: .asciz "Ramos 0.2.0 — native assembly compiler\n"
-help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, and assignment.\nTarget: x86-64 Linux. Existing output requires --force.\n"
+version_message: .asciz "Ramos 0.3.0 — native assembly compiler\n"
+help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, and continue.\nTarget: x86-64 Linux. Existing output requires --force.\n"
 usage_message: .asciz "usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]"
 input_message: .asciz "cannot read input (a readable regular file is required)"
 output_message: .asciz "cannot write or publish output"
 limit_message: .asciz "compiler limit exceeded (source, statements, variables, expression depth, IR, or output)"
-syntax_message: .asciz "unexpected token in function, statement, or integer expression"
+syntax_message: .asciz "unexpected token in function, statement, or expression"
 utf8_message: .asciz "source must be valid UTF-8 without NUL bytes"
 string_message: .asciz "invalid string: check closing quote, escapes, and line breaks"
 separator_message: .asciz "expected a newline or closing brace after statement"
 number_message: .asciz "integer literal is outside the signed 64-bit range"
 undefined_message: .asciz "variable is not declared before use"
-duplicate_message: .asciz "variable is already declared in main"
+duplicate_message: .asciz "variable is already declared in this scope"
 immutable_message: .asciz "cannot assign to a let binding; use var for mutable variables"
+type_message: .asciz "type mismatch: expected compatible int64 or bool values"
+loop_message: .asciz "break and continue require an enclosing while loop"
 alias_message: .asciz "output must not replace the source file or an alias of it"
 exists_message: .asciz "output already exists; use --force to replace it"
 temporary_suffix: .ascii ".ramos-tmp-"
@@ -927,6 +1107,12 @@ pending_mutable: .skip 8
 pending_slot: .skip 8
 expression_depth: .skip 8
 symbol_count: .skip 8
+expression_type: .skip 8
+scope_depth: .skip 8
+loop_start: .skip 8
+loop_end: .skip 8
+label_count: .skip 8
+branch_count: .skip 8
 ir_count: .skip 8
 fixup_count: .skip 8
 code_cursor: .skip 8
@@ -949,7 +1135,9 @@ source_buffer: .skip SOURCE_LIMIT + 1
 .balign 16
 string_fixups: .skip STATEMENT_LIMIT * 16
 ir_buffer: .skip IR_LIMIT * 24
-symbols: .skip SYMBOL_LIMIT * 32
+symbols: .skip SYMBOL_LIMIT * 64
+label_offsets: .skip (IR_LIMIT + 1) * 8
+branch_fixups: .skip IR_LIMIT * 16
 symbol_buckets: .skip SYMBOL_BUCKETS * 8
 data_buffer: .skip DATA_LIMIT
 .balign 4096

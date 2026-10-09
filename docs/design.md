@@ -74,7 +74,8 @@ overflow produce runtime errors. Division truncates toward zero; zero divisors
 and `INT64_MIN` divided or reduced modulo `-1` produce runtime errors. The
 compiler rejects undeclared names, duplicate bindings, and assignment to `let`.
 It uses a bounded hashed symbol table, typed postfix IR, checked emission,
-relative-address fixups, and native stack slots. Boolean values are future work.
+relative-address fixups, and native stack slots. Version 0.3 adds typed booleans, comparisons, lexical scope, conditions and loops;
+see the control-flow spec and `self-hosting.md` for the current milestone.
 
 Expand in small, independently verified milestones:
 
@@ -136,7 +137,11 @@ New CPU architectures and operating systems require additional code generation a
 
 ## Next milestone
 
-Add comparison operators, boolean conditions, `if`/`else`, and `while` loops.
-Specify branching, block scope, and runtime behavior before extending the native
-instruction emitter. Keep CLI support first, performance evidence concrete,
-and phase 2 security work explicit.
+The 0.3 control-flow milestone implements comparison operators, boolean
+conditions, `if`/`else`, `while`, `break` and `continue`. Native label fixups and
+bounded block parsing preserve compiler limits and generated memory protections.
+Phase 2 security remains an ongoing track, not a completed guarantee.
+
+Next add typed functions with parameters and returns, then the collection and
+I/O capabilities needed for a compiler written in Ramos. See
+[self-hosting milestones](self-hosting.md).

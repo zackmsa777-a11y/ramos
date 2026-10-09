@@ -92,7 +92,79 @@ emit_ir:
     je emit_division
     cmp r15, IR_MOD
     je emit_division
+    cmp r15, IR_NOT
+    je emit_not
+    cmp r15, IR_EQ
+    jb emit_control_dispatch
+    cmp r15, IR_GE
+    jbe emit_comparison
+emit_control_dispatch:
+    cmp r15, IR_PRINT_BOOL
+    je emit_boolean_print
+    cmp r15, IR_LABEL
+    je emit_label
+    cmp r15, IR_JUMP
+    je emit_jump
+    cmp r15, IR_JZ
+    je emit_conditional_jump
     jmp syntax_error
+emit_label:
+    mov rax, QWORD PTR [rip + code_cursor]
+    sub rax, r14
+    mov rcx, QWORD PTR [r13 + 8]
+    lea rdx, [rip + label_offsets]
+    mov QWORD PTR [rdx + rcx * 8], rax
+    jmp emit_ir_next
+emit_jump:
+    mov eax, 0xe9
+    call emit_byte
+    jmp emit_branch_record
+emit_conditional_jump:
+    lea rsi, [rip + conditional_jump_bytes]
+    mov ecx, 6
+    call emit_bytes
+emit_branch_record:
+    mov rcx, QWORD PTR [rip + branch_count]
+    cmp rcx, IR_LIMIT
+    jae limit_error
+    shl rcx, 4
+    lea rdx, [rip + branch_fixups]
+    mov rax, QWORD PTR [rip + code_cursor]
+    sub rax, r14
+    mov QWORD PTR [rdx + rcx], rax
+    mov rax, QWORD PTR [r13 + 8]
+    mov QWORD PTR [rdx + rcx + 8], rax
+    inc QWORD PTR [rip + branch_count]
+    xor eax, eax
+    call emit_u32
+    jmp emit_ir_next
+emit_comparison:
+    lea rsi, [rip + compare_bytes]
+    mov ecx, 6
+    call emit_bytes
+    mov rax, r15
+    sub rax, IR_EQ
+    lea rsi, [rip + comparison_opcodes]
+    movzx eax, BYTE PTR [rsi + rax]
+    call emit_byte
+    jmp emit_boolean_normalize
+emit_not:
+    lea rsi, [rip + not_bytes]
+    mov ecx, 6
+    call emit_bytes
+emit_boolean_normalize:
+    lea rsi, [rip + normalize_boolean]
+    mov ecx, 5
+    call emit_bytes
+    jmp emit_push_result
+emit_boolean_print:
+    mov eax, 0x58
+    call emit_byte
+    mov eax, 0xe8
+    call emit_byte
+    mov eax, OFFSET FLAT:RUNTIME_BOOLEAN_FILE
+    call emit_relative
+    jmp emit_ir_next
 emit_integer_literal:
     lea rsi, [rip + literal_prefix]
     mov ecx, 2
@@ -210,6 +282,25 @@ emit_program_exit:
     lea rsi, [rip + runtime_exit]
     mov ecx, OFFSET FLAT:EXIT_SIZE
     call emit_bytes
+    # Every label and branch was allocated in the bounded parser IR.
+    lea r13, [rip + branch_fixups]
+    mov rbx, QWORD PTR [rip + branch_count]
+resolve_branch:
+    test rbx, rbx
+    jz branches_done
+    mov rcx, QWORD PTR [r13 + 8]
+    lea rdx, [rip + label_offsets]
+    mov rax, QWORD PTR [rdx + rcx * 8]
+    test rax, rax
+    jz syntax_error
+    mov rdx, QWORD PTR [r13]
+    sub rax, rdx
+    sub rax, 4
+    mov DWORD PTR [r14 + rdx], eax
+    add r13, 16
+    dec rbx
+    jmp resolve_branch
+branches_done:
     mov rax, QWORD PTR [rip + code_cursor]
     sub rax, r14
     mov QWORD PTR [rip + rx_length], rax

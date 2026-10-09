@@ -55,6 +55,18 @@ runtime_integer_write:
     call runtime_writer
     add rsp, 32
     ret
+runtime_boolean:
+    test rax, rax
+    jz runtime_boolean_false
+    lea rsi, [rip + runtime_true_text]
+    mov edx, 5
+    jmp runtime_writer
+runtime_boolean_false:
+    lea rsi, [rip + runtime_false_text]
+    mov edx, 6
+    jmp runtime_writer
+runtime_true_text: .ascii "true\n"
+runtime_false_text: .ascii "false\n"
 runtime_arithmetic_error:
     lea rsi, [rip + runtime_math_message]
     mov edx, OFFSET FLAT:RUNTIME_MATH_MESSAGE_SIZE
@@ -70,6 +82,7 @@ runtime_math_message:
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer
+.equ RUNTIME_BOOLEAN_FILE, CODE_OFFSET + runtime_boolean - runtime_writer
 .equ RUNTIME_ERROR_FILE, CODE_OFFSET + runtime_arithmetic_error - runtime_writer
 runtime_exit:
     mov eax, 60
@@ -96,3 +109,9 @@ division_minimum_prefix: .byte 0x48, 0xba
 division_guard: .byte 0x48, 0x39, 0xd0, 0x75, 0x0a, 0x48, 0x83, 0xf9, 0xff
 divide_bytes: .byte 0x48, 0x99, 0x48, 0xf7, 0xf9
 remainder_bytes: .byte 0x48, 0x89, 0xd0
+
+compare_bytes: .byte 0x59, 0x58, 0x48, 0x39, 0xc8, 0x0f
+normalize_boolean: .byte 0xc0, 0x48, 0x0f, 0xb6, 0xc0
+not_bytes: .byte 0x58, 0x48, 0x85, 0xc0, 0x0f, 0x94
+conditional_jump_bytes: .byte 0x58, 0x48, 0x85, 0xc0, 0x0f, 0x84
+comparison_opcodes: .byte 0x94, 0x95, 0x9c, 0x9e, 0x9f, 0x9d

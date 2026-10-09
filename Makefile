@@ -1,8 +1,11 @@
 AS = as
 LD = ld
 PYTHON ?= python3
+PREFIX ?= /usr/local
+DESTDIR ?=
+INSTALL ?= install
 
-.PHONY: all test demo calculator clean
+.PHONY: all test demo calculator control-flow install clean
 all: ramos
 
 build/ramos.o: src/ramos.s $(wildcard src/*.inc)
@@ -23,5 +26,13 @@ calculator: ramos
 	./ramos build examples/calculator.ramos -o calculator --force
 	./calculator
 
+control-flow: ramos
+	./ramos build examples/control_flow.ramos -o build/control-flow --force
+	./build/control-flow
+
+install: ramos
+	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/bin"
+	$(INSTALL) -m 755 ramos "$(DESTDIR)$(PREFIX)/bin/ramos"
+
 clean:
-	rm -f ramos example calculator build/ramos.o
+	rm -f ramos example calculator build/ramos.o build/control-flow

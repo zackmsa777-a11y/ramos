@@ -1,4 +1,4 @@
-# Statement parsing, typed integer expression IR, and local symbol table.
+# Block parsing, typed expression/control-flow IR, and scoped symbol table.
 # Expressions emit postfix IR; generated programs evaluate it as native code.
 
 append_ir:
@@ -14,6 +14,8 @@ append_ir:
     inc QWORD PTR [rip + ir_count]
     ret
 
+# Recursive blocks save their own symbol boundary. Slots are never reused;
+# leaving a scope restores hash buckets to the shadowed outer declarations.
 parse_program:
     call next_token
     mov edi, T_FN
@@ -24,6 +26,18 @@ parse_program:
     call expect_token
     mov edi, T_RP
     call expect_token
+    call parse_block
+    call skip_newlines
+    cmp QWORD PTR [rip + token], T_EOF
+    jne syntax_error
+    ret
+parse_block:
+    push rbx
+    push r12
+    inc QWORD PTR [rip + scope_depth]
+    cmp QWORD PTR [rip + scope_depth], BLOCK_LIMIT
+    ja limit_error
+    mov r12, QWORD PTR [rip + symbol_count]
     mov edi, T_LB
     call expect_token
 parse_statement:
@@ -33,6 +47,7 @@ parse_statement:
     je parse_end
     cmp QWORD PTR [rip + statement_count], STATEMENT_LIMIT
     jae limit_error
+    inc QWORD PTR [rip + statement_count]
     cmp rax, T_PRINT
     je parse_print
     cmp rax, T_LET
@@ -41,7 +56,36 @@ parse_statement:
     je parse_var
     cmp rax, T_IDENT
     je parse_assignment
+    cmp rax, T_IF
+    je parse_if_statement
+    cmp rax, T_WHILE
+    je parse_while_statement
+    cmp rax, T_BREAK
+    je parse_break_statement
+    cmp rax, T_CONTINUE
+    je parse_continue_statement
     jmp syntax_error
+parse_if_statement:
+    call parse_if
+    test eax, eax
+    jnz parse_statement
+    jmp finish_statement
+parse_while_statement:
+    call parse_while
+    jmp finish_statement
+parse_break_statement:
+    mov rsi, QWORD PTR [rip + loop_end]
+    jmp parse_loop_jump
+parse_continue_statement:
+    mov rsi, QWORD PTR [rip + loop_start]
+parse_loop_jump:
+    test rsi, rsi
+    jz loop_error
+    mov edi, IR_JUMP
+    xor edx, edx
+    call append_ir
+    call next_token
+    jmp finish_statement
 parse_print:
     call next_token
     mov edi, T_LP
@@ -61,6 +105,10 @@ parse_print:
 parse_print_integer:
     call parse_expression
     mov edi, IR_PRINT_INT
+    cmp QWORD PTR [rip + expression_type], TYPE_BOOL
+    jne parse_print_emit
+    mov edi, IR_PRINT_BOOL
+parse_print_emit:
     xor esi, esi
     xor edx, edx
     call append_ir
@@ -84,7 +132,13 @@ parse_declaration:
     mov QWORD PTR [rip + pending_name_length], rsi
     call find_symbol
     cmp rax, -1
-    jne duplicate_symbol_error
+    je parse_declaration_new
+    shl rax, 6
+    lea rcx, [rip + symbols]
+    mov rdx, QWORD PTR [rip + scope_depth]
+    cmp QWORD PTR [rcx + rax + 40], rdx
+    je duplicate_symbol_error
+parse_declaration_new:
     call next_token
     mov edi, T_EQUAL
     call expect_token
@@ -103,7 +157,7 @@ parse_assignment:
     je undefined_symbol_error
     mov QWORD PTR [rip + pending_slot], rax
     mov rcx, rax
-    shl rcx, 5
+    shl rcx, 6
     lea rdx, [rip + symbols]
     cmp QWORD PTR [rdx + rcx + 24], 0
     je immutable_symbol_error
@@ -111,12 +165,17 @@ parse_assignment:
     mov edi, T_EQUAL
     call expect_token
     call parse_expression
+    mov rax, QWORD PTR [rip + pending_slot]
+    shl rax, 6
+    lea rcx, [rip + symbols]
+    mov rdx, QWORD PTR [rip + expression_type]
+    cmp QWORD PTR [rcx + rax + 32], rdx
+    jne type_error
     mov edi, IR_STORE
     mov rsi, QWORD PTR [rip + pending_slot]
     xor edx, edx
     call append_ir
 finish_statement:
-    inc QWORD PTR [rip + statement_count]
     cmp QWORD PTR [rip + token], T_NL
     je parse_statement
     cmp QWORD PTR [rip + token], T_RB
@@ -124,15 +183,175 @@ finish_statement:
     lea rsi, [rip + separator_message]
     jmp die
 parse_end:
+    mov rbx, QWORD PTR [rip + symbol_count]
+parse_scope_restore:
+    cmp rbx, r12
+    jbe parse_scope_done
+    dec rbx
+    mov rax, rbx
+    shl rax, 6
+    lea rcx, [rip + symbols]
+    add rcx, rax
+    mov rdx, QWORD PTR [rip + scope_depth]
+    cmp QWORD PTR [rcx + 40], rdx
+    jne parse_scope_restore
+    mov rax, QWORD PTR [rcx + 56]
+    mov rdx, QWORD PTR [rcx + 48]
+    lea rcx, [rip + symbol_buckets]
+    mov QWORD PTR [rcx + rax * 8], rdx
+    jmp parse_scope_restore
+parse_scope_done:
+    dec QWORD PTR [rip + scope_depth]
     call next_token
-    call skip_newlines
-    cmp QWORD PTR [rip + token], T_EOF
-    jne syntax_error
+    pop r12
+    pop rbx
     ret
 
-# Normal precedence and left associativity. Newlines after an operator or
-# opening parenthesis are allowed; other newlines terminate the expression.
+new_label:
+    mov rax, QWORD PTR [rip + label_count]
+    cmp rax, IR_LIMIT
+    jae limit_error
+    inc rax
+    mov QWORD PTR [rip + label_count], rax
+    ret
+append_label:
+    mov edi, IR_LABEL
+    mov rsi, rax
+    xor edx, edx
+    jmp append_ir
+
+parse_if:
+    push rbx
+    push r12
+    push r13
+    call next_token
+    call parse_expression
+    call require_bool
+    call new_label
+    mov rbx, rax
+    mov rsi, rax
+    mov edi, IR_JZ
+    xor edx, edx
+    call append_ir
+    call parse_block
+    xor r13d, r13d
+    cmp QWORD PTR [rip + token], T_NL
+    jne parse_if_lookahead
+    mov r13d, 1
+parse_if_lookahead:
+    call skip_newlines
+    cmp QWORD PTR [rip + token], T_ELSE
+    jne parse_if_no_else
+    call new_label
+    mov r12, rax
+    mov rsi, rax
+    mov edi, IR_JUMP
+    xor edx, edx
+    call append_ir
+    mov rax, rbx
+    call append_label
+    call next_token
+    call parse_block
+    mov rax, r12
+    call append_label
+    xor r13d, r13d
+    jmp parse_if_done
+parse_if_no_else:
+    mov rax, rbx
+    call append_label
+parse_if_done:
+    mov eax, r13d
+    pop r13
+    pop r12
+    pop rbx
+    ret
+
+parse_while:
+    push rbx
+    push r12
+    push QWORD PTR [rip + loop_start]
+    push QWORD PTR [rip + loop_end]
+    call new_label
+    mov rbx, rax
+    call append_label
+    call new_label
+    mov r12, rax
+    call next_token
+    call parse_expression
+    call require_bool
+    mov rsi, r12
+    mov edi, IR_JZ
+    xor edx, edx
+    call append_ir
+    mov QWORD PTR [rip + loop_start], rbx
+    mov QWORD PTR [rip + loop_end], r12
+    call parse_block
+    mov rsi, rbx
+    mov edi, IR_JUMP
+    xor edx, edx
+    call append_ir
+    mov rax, r12
+    call append_label
+    pop QWORD PTR [rip + loop_end]
+    pop QWORD PTR [rip + loop_start]
+    pop r12
+    pop rbx
+    ret
+
+# Recursive precedence levels maintain an explicit inferred expression type.
 parse_expression:
+    push rbx
+    push r12
+    call parse_ordering
+parse_equality_more:
+    mov ebx, IR_EQ
+    cmp QWORD PTR [rip + token], T_EQ
+    je parse_equality_operator
+    mov ebx, IR_NE
+    cmp QWORD PTR [rip + token], T_NE
+    jne parse_equality_done
+parse_equality_operator:
+    mov r12, QWORD PTR [rip + expression_type]
+    call next_token
+    call parse_ordering
+    cmp r12, QWORD PTR [rip + expression_type]
+    jne type_error
+    mov edi, ebx
+    xor esi, esi
+    xor edx, edx
+    call append_ir
+    mov QWORD PTR [rip + expression_type], TYPE_BOOL
+    jmp parse_equality_more
+parse_equality_done:
+    pop r12
+    pop rbx
+    ret
+parse_ordering:
+    push rbx
+    call parse_sum
+parse_ordering_more:
+    mov rax, QWORD PTR [rip + token]
+    cmp rax, T_LT
+    jb parse_ordering_done
+    cmp rax, T_GE
+    ja parse_ordering_done
+    sub eax, T_LT
+    add eax, IR_LT
+    mov ebx, eax
+    call require_integer
+    call next_token
+    call parse_sum
+    call require_integer
+    mov edi, ebx
+    xor esi, esi
+    xor edx, edx
+    call append_ir
+    mov QWORD PTR [rip + expression_type], TYPE_BOOL
+    jmp parse_ordering_more
+parse_ordering_done:
+    pop rbx
+    ret
+parse_sum:
     push rbx
     call parse_product
 parse_sum_more:
@@ -144,8 +363,10 @@ parse_sum_more:
     cmp rax, T_MINUS
     jne parse_sum_done
 parse_sum_operator:
+    call require_integer
     call next_token
     call parse_product
+    call require_integer
     mov edi, ebx
     xor esi, esi
     xor edx, edx
@@ -169,8 +390,10 @@ parse_product_more:
     cmp rax, T_PERCENT
     jne parse_product_done
 parse_product_operator:
+    call require_integer
     call next_token
     call parse_unary
+    call require_integer
     mov edi, ebx
     xor esi, esi
     xor edx, edx
@@ -188,11 +411,14 @@ parse_unary:
     je parse_unary_plus
     cmp QWORD PTR [rip + token], T_MINUS
     je parse_unary_minus
+    cmp QWORD PTR [rip + token], T_NOT
+    je parse_unary_not
     call parse_primary
     jmp parse_unary_done
 parse_unary_plus:
     call next_token
     call parse_unary
+    call require_integer
     jmp parse_unary_done
 parse_unary_minus:
     call next_token
@@ -202,6 +428,7 @@ parse_unary_minus:
     mov rsi, QWORD PTR [rip + number_value]
     test rsi, rsi
     jns parse_unary_general_negative
+    mov QWORD PTR [rip + expression_type], TYPE_INT
     # Only the directly negated magnitude 2^63 is accepted as INT64_MIN.
     mov edi, IR_LITERAL
     xor edx, edx
@@ -210,7 +437,17 @@ parse_unary_minus:
     jmp parse_unary_done
 parse_unary_general_negative:
     call parse_unary
+    call require_integer
     mov edi, IR_NEG
+    xor esi, esi
+    xor edx, edx
+    call append_ir
+    jmp parse_unary_done
+parse_unary_not:
+    call next_token
+    call parse_unary
+    call require_bool
+    mov edi, IR_NOT
     xor esi, esi
     xor edx, edx
     call append_ir
@@ -223,13 +460,27 @@ parse_primary:
     je parse_integer_literal
     cmp rax, T_IDENT
     je parse_integer_name
+    cmp rax, T_TRUE
+    je parse_boolean_literal
+    cmp rax, T_FALSE
+    je parse_boolean_literal
     cmp rax, T_LP
     jne syntax_error
     call next_token
     call parse_expression
     mov edi, T_RP
     jmp expect_token
+parse_boolean_literal:
+    cmp rax, T_TRUE
+    sete sil
+    movzx esi, sil
+    mov QWORD PTR [rip + expression_type], TYPE_BOOL
+    mov edi, IR_LITERAL
+    xor edx, edx
+    call append_ir
+    jmp next_token
 parse_integer_literal:
+    mov QWORD PTR [rip + expression_type], TYPE_INT
     mov rsi, QWORD PTR [rip + number_value]
     test rsi, rsi
     js number_range_error
@@ -244,6 +495,10 @@ parse_integer_name:
     cmp rax, -1
     je undefined_symbol_error
     mov rsi, rax
+    shl rax, 6
+    lea rcx, [rip + symbols]
+    mov rdx, QWORD PTR [rcx + rax + 32]
+    mov QWORD PTR [rip + expression_type], rdx
     mov edi, IR_LOAD
     xor edx, edx
     call append_ir
@@ -284,7 +539,7 @@ symbol_probe:
     jz symbol_not_found
     dec rax
     mov rbx, rax
-    shl rax, 5
+    shl rax, 6
     lea r8, [rip + symbols]
     add r8, rax
     cmp QWORD PTR [r8 + 8], r13
@@ -325,14 +580,13 @@ declare_symbol:
     mov rdi, QWORD PTR [rip + pending_name_offset]
     mov rsi, QWORD PTR [rip + pending_name_length]
     call find_symbol
-    cmp rax, -1
-    jne duplicate_symbol_error
+    # Matching outer symbol may be shadowed; parser checked current scope.
     mov rcx, rdx
     mov rax, QWORD PTR [rip + symbol_count]
     cmp rax, SYMBOL_LIMIT
     jae limit_error
     mov rdx, rax
-    shl rdx, 5
+    shl rdx, 6
     lea r8, [rip + symbols]
     add r8, rdx
     mov rdx, QWORD PTR [rip + pending_name_offset]
@@ -342,7 +596,15 @@ declare_symbol:
     mov QWORD PTR [r8 + 16], rax
     mov rdx, QWORD PTR [rip + pending_mutable]
     mov QWORD PTR [r8 + 24], rdx
-    lea r8, [rip + symbol_buckets]
+    mov rdx, QWORD PTR [rip + expression_type]
+    mov QWORD PTR [r8 + 32], rdx
+    mov rdx, QWORD PTR [rip + scope_depth]
+    mov QWORD PTR [r8 + 40], rdx
+    mov QWORD PTR [r8 + 56], rcx
+    lea r9, [rip + symbol_buckets]
+    mov rdx, QWORD PTR [r9 + rcx * 8]
+    mov QWORD PTR [r8 + 48], rdx
+    mov r8, r9
     lea rdx, [rax + 1]
     mov QWORD PTR [r8 + rcx * 8], rdx
     inc QWORD PTR [rip + symbol_count]
@@ -355,4 +617,19 @@ duplicate_symbol_error:
     jmp die
 immutable_symbol_error:
     lea rsi, [rip + immutable_message]
+    jmp die
+
+require_integer:
+    cmp QWORD PTR [rip + expression_type], TYPE_INT
+    jne type_error
+    ret
+require_bool:
+    cmp QWORD PTR [rip + expression_type], TYPE_BOOL
+    jne type_error
+    ret
+type_error:
+    lea rsi, [rip + type_message]
+    jmp die
+loop_error:
+    lea rsi, [rip + loop_message]
     jmp die

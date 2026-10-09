@@ -72,7 +72,7 @@ class RamosTests(unittest.TestCase):
             '', 'fn main() {', 'fn other() {}', 'fn main(x) {}',
             'fn main() { print("x")', 'fn main() { print("x) }',
             'fn main() { print("\\q") }', 'fn main() { print("x\ny") }',
-            'fn main() { print(true) }', 'fn main() { let x = "string" }',
+            'fn main() { let x = "string" }',
             'fn main() {} fn main() {}', 'fn main() {} garbage',
             'fn main() { print("a") print("b") }',
             b'fn main() { print("\xc0\x80") }',
@@ -173,7 +173,7 @@ class RamosTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
     def test_help_and_version(self):
-        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.2')):
+        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.3')):
             result = subprocess.run([str(COMPILER), argument], capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0)
             self.assertIn(expected, result.stdout)
@@ -257,6 +257,137 @@ class RamosTests(unittest.TestCase):
                          'print(largest + 0)\nprint(largest * 0)\nprint(smallest % 1)\n'
                          'print(smallest + largest)\n}',
                          b'-9223372036854775808\n9223372036854775807\n0\n0\n-1\n')
+
+    def test_boolean_literals_bindings_and_not(self):
+        self.assert_runs('fn main() {\nvar ready = true\nlet off = false\n'
+                         'print(ready)\nprint(off)\nready = !ready\n'
+                         'print(ready)\nprint(!!true)\nprint(!false)\n}',
+                         b'true\nfalse\nfalse\ntrue\ntrue\n')
+
+    def test_typed_comparisons_and_precedence(self):
+        expressions = [('1 < 2', True), ('2 <= 2', True), ('3 > 2', True),
+                       ('2 >= 3', False), ('2 == 2', True), ('2 != 2', False),
+                       ('true == !false', True), ('false != true', True),
+                       ('1 + 2 * 3 == 7', True), ('(2 < 3) == true', True),
+                       ('-9223372036854775808 < 9223372036854775807', True),
+                       ('9223372036854775807 > -9223372036854775808', True)]
+        self.assert_runs('fn main() {\n' + ''.join('print(' + e + ')\n' for e, _ in expressions) + '}',
+                         ''.join(str(v).lower() + '\n' for _, v in expressions).encode())
+
+    def test_if_else_and_skipped_runtime_failure(self):
+        self.assert_runs('fn main() {\nif false { print(1 / 0) } else { print("yes") }\n'
+                         'if true { print(1) }\nprint(2)\n'
+                         'if false {}\nelse { if true { print(3) } }\n}', b'yes\n1\n2\n3\n')
+
+    def test_while_break_continue_and_stack_balance(self):
+        self.assert_runs('fn main() {\nvar i = 0\nvar sum = 0\n'
+                         'while i < 100000 {\ni = i + 1\n'
+                         'if i % 2 == 0 { continue }\nsum = sum + 1\n}\n'
+                         'print(sum)\nwhile true { break }\n'
+                         'while false { print(1 / 0) }\nprint(i)\n}', b'50000\n100000\n')
+
+    def test_nested_loops_target_innermost_loop(self):
+        self.assert_runs('fn main() {\nvar outer = 0\nvar total = 0\n'
+                         'while outer < 3 {\nouter = outer + 1\nvar inner = 0\n'
+                         'while true {\ninner = inner + 1\nif inner == 2 { continue }\n'
+                         'if inner == 4 { break }\ntotal = total + inner\n}\n}\nprint(total)\n}', b'12\n')
+
+    def test_block_scope_shadowing_and_reinitialization(self):
+        self.assert_runs('fn main() {\nlet x = 10\nvar i = 0\n'
+                         'while i < 2 {\nlet x = i\nprint(x)\ni = i + 1\n}\n'
+                         'if false { let hidden = 1 } else { let hidden = 2\nprint(hidden) }\n'
+                         'print(x)\n}', b'0\n1\n2\n10\n')
+
+    def test_control_flow_and_type_errors(self):
+        statements = ['print(true + 1)', 'print(-false)', 'print(+true)',
+                      'print(!1)', 'print(true < false)', 'print(true == 1)',
+                      'var x = true\nx = 1', 'var x = 1\nx = false',
+                      'if 1 {}', 'while 0 {}', 'break', 'continue', 'else {}',
+                      'if true { let x = 1 }\nprint(x)',
+                      'while false { let x = 1 }\nprint(x)',
+                      'if true { let x = 1\nlet x = 2 }',
+                      'if true { print(1) } print(2)', 'while true { break } print(2)',
+                      'if true {', 'while true {', 'print(1 === 1)', 'print(1 < < 2)',
+                      'let true = 1', 'let while = 1']
+        for statement in statements:
+            with self.subTest(statement=statement):
+                result = self.build('fn main() {\n' + statement + '\n}')
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(b'error:', result.stderr)
+                self.assertFalse(self.output.exists())
+
+    def test_nested_blocks_limit_fails_cleanly(self):
+        result = self.build('fn main() {' + 'while false {' * 512 + '}' * 513)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b'limit', result.stderr)
+        self.assertFalse(self.output.exists())
+
+    def test_many_branch_fixups_and_boolean_names(self):
+        source = 'fn main() {\nlet true_value = true\nlet false_value = false\n' + \
+                 'if true_value { print(false_value) }\n' * 2000 + '}'
+        self.assert_runs(source, b'false\n' * 2000)
+
+    def test_all_comparisons_at_signed_boundaries(self):
+        values = [-(1 << 63), -1, 0, 1, (1 << 63) - 1]
+        operations = {'<': lambda a, b: a < b, '<=': lambda a, b: a <= b,
+                      '>': lambda a, b: a > b, '>=': lambda a, b: a >= b,
+                      '==': lambda a, b: a == b, '!=': lambda a, b: a != b}
+        cases = [(str(a) + ' ' + op + ' ' + str(b), fn(a, b))
+                 for a in values for b in values for op, fn in operations.items()]
+        self.assert_runs('fn main() {\n' + ''.join('print(' + e + ')\n' for e, _ in cases) + '}',
+                         ''.join(str(v).lower() + '\n' for _, v in cases).encode())
+
+    def test_shadow_initializer_and_type_restore(self):
+        self.assert_runs('fn main() {\nvar x = 5\n'
+                         'if true {\nlet x = x + 1\nprint(x)\n'
+                         'if true { var x = false\nx = !x\nprint(x) }\nprint(x)\n}\n'
+                         'x = x + 2\nprint(x)\n}', b'6\ntrue\n6\n7\n')
+
+    def test_exact_block_nesting_boundary(self):
+        self.assert_runs('fn main() {' + 'if true {' * 127 + 'print(1)' + '}' * 128, b'1\n')
+        self.output.unlink()
+        result = self.build('fn main() {' + 'if true {' * 128 + '}' * 129)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b'limit', result.stderr)
+        self.assertFalse(self.output.exists())
+
+    def test_while_runtime_failure_retains_prior_output(self):
+        result = self.build('fn main() {\nvar x = 1\nwhile true {\n'
+                            'print(x)\nx = x / 0\n}\n}')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result = subprocess.run([str(self.output)], capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, b'1\n')
+        self.assertIn(b'arithmetic', result.stderr)
+
+    def test_control_flow_crlf_and_newline_lookahead(self):
+        source = 'fn main() {\nif true { print(1) }\n\nprint(2)\n'
+        source += 'if false {}\n\nelse { print(3) }\nwhile false {}\nprint(4)\n}'
+        self.assert_runs(source.replace('\n', '\r\n'), b'1\n2\n3\n4\n')
+
+    def test_hash_collision_scope_restoration(self):
+        names = ['v684', 'v4930', 'v5418', 'v5577', 'v6226', 'v8585', 'v8699', 'v12720']
+        source = 'fn main() {\n'
+        source += ''.join('let ' + name + ' = ' + str(i) + '\n' for i, name in enumerate(names))
+        source += 'if true {\n'
+        source += ''.join('let ' + name + ' = ' + str(i + 10) + '\n' for i, name in enumerate(names))
+        source += 'if true { let v684 = false\nprint(v684) }\n'
+        source += 'print(' + ' + '.join(names) + ')\n}\n'
+        source += 'if true { let v684 = 100\nprint(v684) }\n'
+        source += 'print(' + ' + '.join(names) + ')\n}'
+        self.assert_runs(source, b'false\n108\n100\n28\n')
+
+    def test_exact_boolean_expression_depth_boundary(self):
+        for left, right in [('!' * 127, ''), ('(' * 127, ')' * 127)]:
+            with self.subTest(kind=left[0]):
+                self.assert_runs('fn main() { print(' + left + 'true' + right + ') }',
+                                 b'false\n' if left[0] == '!' else b'true\n')
+                self.output.unlink()
+        for left, right in [('!' * 128, ''), ('(' * 128, ')' * 128)]:
+            result = self.build('fn main() { print(' + left + 'true' + right + ') }')
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn(b'limit', result.stderr)
+            self.assertFalse(self.output.exists())
 
     def test_native_arithmetic_matches_seeded_integer_cases(self):
         rng = random.Random(971032)
