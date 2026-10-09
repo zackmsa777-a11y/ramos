@@ -5,7 +5,7 @@ PREFIX ?= /usr/local
 DESTDIR ?=
 INSTALL ?= install
 
-.PHONY: all test demo calculator control-flow install clean
+.PHONY: all test demo calculator control-flow functions install clean
 all: ramos
 
 build/ramos.o: src/ramos.s $(wildcard src/*.inc)
@@ -30,9 +30,13 @@ control-flow: ramos
 	./ramos build examples/control_flow.ramos -o build/control-flow --force
 	./build/control-flow
 
+functions: ramos
+	./ramos build examples/functions.ramos -o build/functions --force
+	./build/functions
+
 install: ramos
 	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/bin"
 	$(INSTALL) -m 755 ramos "$(DESTDIR)$(PREFIX)/bin/ramos"
 
 clean:
-	rm -f ramos example calculator build/ramos.o build/control-flow
+	rm -f ramos example calculator build/ramos.o build/control-flow build/functions

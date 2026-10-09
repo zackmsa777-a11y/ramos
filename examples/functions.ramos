@@ -1,0 +1,41 @@
+fn factorial(n: int64) -> int64 {
+    if n == 0 {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+fn is_digit(character: int64) -> bool {
+    if character < 48 {
+        return false
+    }
+    if character > 57 {
+        return false
+    }
+    return true
+}
+
+fn digit_count(number: int64) -> int64 {
+    var remaining = number
+    var count = 1
+    while remaining >= 10 {
+        remaining = remaining / 10
+        count = count + 1
+    }
+    return count
+}
+
+fn main() {
+    print("Factorial of ten:")
+    print(factorial(10))
+    print("ASCII 53 is a digit:")
+    print(is_digit(53))
+    print("Digits in 12345:")
+    print(digit_count(12345))
+    announce()
+}
+
+fn announce() {
+    print("Ramos functions work!")
+}

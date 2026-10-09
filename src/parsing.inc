@@ -17,27 +17,21 @@ append_ir:
 # Recursive blocks save their own symbol boundary. Slots are never reused;
 # leaving a scope restores hash buckets to the shadowed outer declarations.
 parse_program:
-    call next_token
-    mov edi, T_FN
-    call expect_token
-    mov edi, T_MAIN
-    call expect_token
-    mov edi, T_LP
-    call expect_token
-    mov edi, T_RP
-    call expect_token
-    call parse_block
-    call skip_newlines
-    cmp QWORD PTR [rip + token], T_EOF
-    jne syntax_error
-    ret
+    call discover_functions
+    jmp compile_functions
 parse_block:
     push rbx
     push r12
+    push r13
+    xor r13d, r13d
     inc QWORD PTR [rip + scope_depth]
     cmp QWORD PTR [rip + scope_depth], BLOCK_LIMIT
     ja limit_error
     mov r12, QWORD PTR [rip + symbol_count]
+    cmp QWORD PTR [rip + scope_depth], 1
+    jne parse_block_boundary
+    mov r12, QWORD PTR [rip + function_symbol_base]
+parse_block_boundary:
     mov edi, T_LB
     call expect_token
 parse_statement:
@@ -48,6 +42,7 @@ parse_statement:
     cmp QWORD PTR [rip + statement_count], STATEMENT_LIMIT
     jae limit_error
     inc QWORD PTR [rip + statement_count]
+    mov QWORD PTR [rip + statement_returns], 0
     cmp rax, T_PRINT
     je parse_print
     cmp rax, T_LET
@@ -55,7 +50,9 @@ parse_statement:
     cmp rax, T_VAR
     je parse_var
     cmp rax, T_IDENT
-    je parse_assignment
+    je parse_named_statement
+    cmp rax, T_RETURN
+    je parse_return_statement
     cmp rax, T_IF
     je parse_if_statement
     cmp rax, T_WHILE
@@ -65,11 +62,15 @@ parse_statement:
     cmp rax, T_CONTINUE
     je parse_continue_statement
     jmp syntax_error
+parse_return_statement:
+    call parse_return
+    jmp finish_statement
 parse_if_statement:
     call parse_if
     test eax, eax
-    jnz parse_statement
-    jmp finish_statement
+    jz finish_statement
+    or r13, QWORD PTR [rip + statement_returns]
+    jmp parse_statement
 parse_while_statement:
     call parse_while
     jmp finish_statement
@@ -144,38 +145,18 @@ parse_declaration_new:
     call expect_token
     call parse_expression
     call declare_symbol
-    mov rsi, rax
+    shl rax, 6
+    lea rcx, [rip + symbols]
+    mov rsi, QWORD PTR [rcx + rax + 16]
     mov edi, IR_STORE
     xor edx, edx
     call append_ir
     jmp finish_statement
-parse_assignment:
-    mov rdi, QWORD PTR [rip + identifier_offset]
-    mov rsi, QWORD PTR [rip + identifier_length]
-    call find_symbol
-    cmp rax, -1
-    je undefined_symbol_error
-    mov QWORD PTR [rip + pending_slot], rax
-    mov rcx, rax
-    shl rcx, 6
-    lea rdx, [rip + symbols]
-    cmp QWORD PTR [rdx + rcx + 24], 0
-    je immutable_symbol_error
-    call next_token
-    mov edi, T_EQUAL
-    call expect_token
-    call parse_expression
-    mov rax, QWORD PTR [rip + pending_slot]
-    shl rax, 6
-    lea rcx, [rip + symbols]
-    mov rdx, QWORD PTR [rip + expression_type]
-    cmp QWORD PTR [rcx + rax + 32], rdx
-    jne type_error
-    mov edi, IR_STORE
-    mov rsi, QWORD PTR [rip + pending_slot]
-    xor edx, edx
-    call append_ir
+parse_named_statement:
+    call parse_named_action
+    jmp finish_statement
 finish_statement:
+    or r13, QWORD PTR [rip + statement_returns]
     cmp QWORD PTR [rip + token], T_NL
     je parse_statement
     cmp QWORD PTR [rip + token], T_RB
@@ -203,6 +184,8 @@ parse_scope_restore:
 parse_scope_done:
     dec QWORD PTR [rip + scope_depth]
     call next_token
+    mov QWORD PTR [rip + block_returns], r13
+    pop r13
     pop r12
     pop rbx
     ret
@@ -224,6 +207,7 @@ parse_if:
     push rbx
     push r12
     push r13
+    push r14
     call next_token
     call parse_expression
     call require_bool
@@ -234,6 +218,7 @@ parse_if:
     xor edx, edx
     call append_ir
     call parse_block
+    mov r14, QWORD PTR [rip + block_returns]
     xor r13d, r13d
     cmp QWORD PTR [rip + token], T_NL
     jne parse_if_lookahead
@@ -252,15 +237,19 @@ parse_if_lookahead:
     call append_label
     call next_token
     call parse_block
+    and r14, QWORD PTR [rip + block_returns]
     mov rax, r12
     call append_label
     xor r13d, r13d
     jmp parse_if_done
 parse_if_no_else:
+    xor r14d, r14d
     mov rax, rbx
     call append_label
 parse_if_done:
+    mov QWORD PTR [rip + statement_returns], r14
     mov eax, r13d
+    pop r14
     pop r13
     pop r12
     pop rbx
@@ -292,6 +281,7 @@ parse_while:
     call append_ir
     mov rax, r12
     call append_label
+    mov QWORD PTR [rip + statement_returns], 0
     pop QWORD PTR [rip + loop_end]
     pop QWORD PTR [rip + loop_start]
     pop r12
@@ -459,7 +449,7 @@ parse_primary:
     cmp rax, T_NUMBER
     je parse_integer_literal
     cmp rax, T_IDENT
-    je parse_integer_name
+    je parse_name_expression
     cmp rax, T_TRUE
     je parse_boolean_literal
     cmp rax, T_FALSE
@@ -488,22 +478,6 @@ parse_integer_literal:
     xor edx, edx
     call append_ir
     jmp next_token
-parse_integer_name:
-    mov rdi, QWORD PTR [rip + identifier_offset]
-    mov rsi, QWORD PTR [rip + identifier_length]
-    call find_symbol
-    cmp rax, -1
-    je undefined_symbol_error
-    mov rsi, rax
-    shl rax, 6
-    lea rcx, [rip + symbols]
-    mov rdx, QWORD PTR [rcx + rax + 32]
-    mov QWORD PTR [rip + expression_type], rdx
-    mov edi, IR_LOAD
-    xor edx, edx
-    call append_ir
-    jmp next_token
-
 # FNV-1a hash plus bounded open addressing. Names are source slices, so the
 # compiler does not copy or truncate identifiers. Return symbol index in rax
 # (or -1) and the matching/empty bucket index in rdx.
@@ -580,7 +554,15 @@ declare_symbol:
     mov rdi, QWORD PTR [rip + pending_name_offset]
     mov rsi, QWORD PTR [rip + pending_name_length]
     call find_symbol
-    # Matching outer symbol may be shadowed; parser checked current scope.
+    # Parameters use this path directly; locals also check at their declaration.
+    cmp rax, -1
+    je declare_symbol_new
+    shl rax, 6
+    lea rcx, [rip + symbols]
+    mov r8, QWORD PTR [rip + scope_depth]
+    cmp QWORD PTR [rcx + rax + 40], r8
+    je duplicate_symbol_error
+declare_symbol_new:
     mov rcx, rdx
     mov rax, QWORD PTR [rip + symbol_count]
     cmp rax, SYMBOL_LIMIT
@@ -593,7 +575,9 @@ declare_symbol:
     mov QWORD PTR [r8], rdx
     mov rdx, QWORD PTR [rip + pending_name_length]
     mov QWORD PTR [r8 + 8], rdx
-    mov QWORD PTR [r8 + 16], rax
+    mov rdx, QWORD PTR [rip + frame_local_count]
+    mov QWORD PTR [r8 + 16], rdx
+    inc QWORD PTR [rip + frame_local_count]
     mov rdx, QWORD PTR [rip + pending_mutable]
     mov QWORD PTR [r8 + 24], rdx
     mov rdx, QWORD PTR [rip + expression_type]

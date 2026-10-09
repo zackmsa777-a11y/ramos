@@ -142,6 +142,7 @@ conditions, `if`/`else`, `while`, `break` and `continue`. Native label fixups an
 bounded block parsing preserve compiler limits and generated memory protections.
 Phase 2 security remains an ongoing track, not a completed guarantee.
 
-Next add typed functions with parameters and returns, then the collection and
-I/O capabilities needed for a compiler written in Ramos. See
+Version 0.4 adds typed functions, arguments, return values and recursion with
+a bounded call counter. Next add the collection and I/O capabilities needed
+for a compiler written in Ramos. See
 [self-hosting milestones](self-hosting.md).

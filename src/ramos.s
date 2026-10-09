@@ -1,4 +1,4 @@
-# Ramos 0.3: x86-64 Linux compiler. GNU assembler, Intel syntax.
+# Ramos 0.4: x86-64 Linux compiler. GNU assembler, Intel syntax.
 # No libc, LLVM, C backend, or external code generation.
 # Internal routines use caller-saved rax, rcx, rdx, rsi, rdi, r8-r11.
 .intel_syntax noprefix
@@ -50,9 +50,20 @@
 .equ T_LE, 32
 .equ T_GT, 33
 .equ T_GE, 34
+.equ T_COLON, 35
+.equ T_COMMA, 36
+.equ T_ARROW, 37
+.equ T_RETURN, 38
+.equ T_INT64, 39
+.equ T_BOOL, 40
+.equ T_VOID, 41
+.equ FUNCTION_LIMIT, 256
+.equ PARAMETER_LIMIT, 16
+.equ CALL_DEPTH_LIMIT, 64
 .equ BLOCK_LIMIT, 128
 .equ TYPE_INT, 0
 .equ TYPE_BOOL, 1
+.equ TYPE_VOID, 2
 .equ IR_STRING, 1
 .equ IR_LITERAL, 2
 .equ IR_LOAD, 3
@@ -76,6 +87,10 @@
 .equ IR_LABEL, 20
 .equ IR_JUMP, 21
 .equ IR_JZ, 22
+.equ IR_FUNCTION, 23
+.equ IR_CALL, 24
+.equ IR_RETURN, 25
+.equ IR_DROP, 26
 
 .section .text
 _start:
@@ -447,6 +462,10 @@ lex_start:
     je lex_newline
     cmp al, 13
     je lex_crlf
+    cmp al, ':'
+    je lex_colon
+    cmp al, ','
+    je lex_comma
     cmp al, '('
     je lex_lp
     cmp al, ')'
@@ -498,6 +517,19 @@ lex_plus:
     jmp lex_single
 lex_minus:
     mov eax, T_MINUS
+    lea rcx, [rbx + 1]
+    cmp rcx, QWORD PTR [rip + source_length]
+    jae lex_single
+    cmp BYTE PTR [r12 + rcx], '>'
+    jne lex_single
+    STEP_BYTE
+    mov eax, T_ARROW
+    jmp lex_single
+lex_colon:
+    mov eax, T_COLON
+    jmp lex_single
+lex_comma:
+    mov eax, T_COMMA
     jmp lex_single
 lex_star:
     mov eax, T_STAR
@@ -753,6 +785,64 @@ lex_keyword_next_10:
     mov eax, T_CONTINUE
     jmp lex_return
 lex_keyword_next_11:
+    cmp rdx, 6
+    jne lex_keyword_next_12
+    cmp BYTE PTR [r12 + r13 + 0], 'r'
+    jne lex_keyword_next_12
+    cmp BYTE PTR [r12 + r13 + 1], 'e'
+    jne lex_keyword_next_12
+    cmp BYTE PTR [r12 + r13 + 2], 't'
+    jne lex_keyword_next_12
+    cmp BYTE PTR [r12 + r13 + 3], 'u'
+    jne lex_keyword_next_12
+    cmp BYTE PTR [r12 + r13 + 4], 'r'
+    jne lex_keyword_next_12
+    cmp BYTE PTR [r12 + r13 + 5], 'n'
+    jne lex_keyword_next_12
+    mov eax, T_RETURN
+    jmp lex_return
+lex_keyword_next_12:
+    cmp rdx, 5
+    jne lex_keyword_next_13
+    cmp BYTE PTR [r12 + r13 + 0], 'i'
+    jne lex_keyword_next_13
+    cmp BYTE PTR [r12 + r13 + 1], 'n'
+    jne lex_keyword_next_13
+    cmp BYTE PTR [r12 + r13 + 2], 't'
+    jne lex_keyword_next_13
+    cmp BYTE PTR [r12 + r13 + 3], '6'
+    jne lex_keyword_next_13
+    cmp BYTE PTR [r12 + r13 + 4], '4'
+    jne lex_keyword_next_13
+    mov eax, T_INT64
+    jmp lex_return
+lex_keyword_next_13:
+    cmp rdx, 4
+    jne lex_keyword_next_14
+    cmp BYTE PTR [r12 + r13 + 0], 'b'
+    jne lex_keyword_next_14
+    cmp BYTE PTR [r12 + r13 + 1], 'o'
+    jne lex_keyword_next_14
+    cmp BYTE PTR [r12 + r13 + 2], 'o'
+    jne lex_keyword_next_14
+    cmp BYTE PTR [r12 + r13 + 3], 'l'
+    jne lex_keyword_next_14
+    mov eax, T_BOOL
+    jmp lex_return
+lex_keyword_next_14:
+    cmp rdx, 4
+    jne lex_keyword_next_15
+    cmp BYTE PTR [r12 + r13 + 0], 'v'
+    jne lex_keyword_next_15
+    cmp BYTE PTR [r12 + r13 + 1], 'o'
+    jne lex_keyword_next_15
+    cmp BYTE PTR [r12 + r13 + 2], 'i'
+    jne lex_keyword_next_15
+    cmp BYTE PTR [r12 + r13 + 3], 'd'
+    jne lex_keyword_next_15
+    mov eax, T_VOID
+    jmp lex_return
+lex_keyword_next_15:
     jmp lex_return
 lex_number:
     xor r13d, r13d
@@ -871,8 +961,10 @@ expect_token:
     jmp next_token
 
 .include "src/parsing.inc"
+.include "src/functions.inc"
 
 .include "src/codegen.inc"
+.include "src/function_codegen.inc"
 
 # Refuse aliases to the source, even with --force. Existing destinations
 # require --force; renameat2(RENAME_NOREPLACE) also protects against races.
@@ -1036,12 +1128,12 @@ arg_version: .asciz "--version"
 colon: .asciz ":"
 newline_text: .asciz "\n"
 error_prefix: .asciz ": error: "
-version_message: .asciz "Ramos 0.3.0 — native assembly compiler\n"
-help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, and continue.\nTarget: x86-64 Linux. Existing output requires --force.\n"
+version_message: .asciz "Ramos 0.4.0 — native assembly compiler\n"
+help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, continue, typed functions, and return.\nTarget: x86-64 Linux. Existing output requires --force.\n"
 usage_message: .asciz "usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]"
 input_message: .asciz "cannot read input (a readable regular file is required)"
 output_message: .asciz "cannot write or publish output"
-limit_message: .asciz "compiler limit exceeded (source, statements, variables, expression depth, IR, or output)"
+limit_message: .asciz "compiler limit exceeded (source, statements, variables, nesting, functions, parameters, IR, or output)"
 syntax_message: .asciz "unexpected token in function, statement, or expression"
 utf8_message: .asciz "source must be valid UTF-8 without NUL bytes"
 string_message: .asciz "invalid string: check closing quote, escapes, and line breaks"
@@ -1051,6 +1143,9 @@ undefined_message: .asciz "variable is not declared before use"
 duplicate_message: .asciz "variable is already declared in this scope"
 immutable_message: .asciz "cannot assign to a let binding; use var for mutable variables"
 type_message: .asciz "type mismatch: expected compatible int64 or bool values"
+function_message: .asciz "invalid or duplicate function; exactly one parameterless void main is required"
+call_message: .asciz "invalid function call: check name, shadowing, argument count and types"
+return_message: .asciz "invalid return or value function may reach its end without returning"
 loop_message: .asciz "break and continue require an enclosing while loop"
 alias_message: .asciz "output must not replace the source file or an alias of it"
 exists_message: .asciz "output already exists; use --force to replace it"
@@ -1113,6 +1208,14 @@ loop_start: .skip 8
 loop_end: .skip 8
 label_count: .skip 8
 branch_count: .skip 8
+function_count: .skip 8
+main_function: .skip 8
+current_function: .skip 8
+function_symbol_base: .skip 8
+frame_local_count: .skip 8
+current_return_type: .skip 8
+block_returns: .skip 8
+statement_returns: .skip 8
 ir_count: .skip 8
 fixup_count: .skip 8
 code_cursor: .skip 8
@@ -1136,6 +1239,8 @@ source_buffer: .skip SOURCE_LIMIT + 1
 string_fixups: .skip STATEMENT_LIMIT * 16
 ir_buffer: .skip IR_LIMIT * 24
 symbols: .skip SYMBOL_LIMIT * 64
+functions: .skip FUNCTION_LIMIT * 64
+parameters: .skip FUNCTION_LIMIT * PARAMETER_LIMIT * 32
 label_offsets: .skip (IR_LIMIT + 1) * 8
 branch_fixups: .skip IR_LIMIT * 16
 symbol_buckets: .skip SYMBOL_BUCKETS * 8

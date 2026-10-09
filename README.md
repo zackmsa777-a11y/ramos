@@ -1,13 +1,14 @@
-# Ramos 0.3
+# Ramos 0.4
 
 A native x86-64 Linux compiler written entirely in assembly. Ramos source uses
 braces and `.ramos` files. The compiler emits instruction bytes and ELF executable
 headers directly, with no delegated code-generation backend.
 
-Version 0.3 adds typed booleans, signed comparisons, `if`/`else`, `while`,
-`break`, `continue`, and lexical block scope. The compiler is still written in
-assembly. Functions, buffers, strings, and file I/O are subsequent milestones
-on the [self-hosting roadmap](docs/self-hosting.md).
+Version 0.4 adds typed functions, parameters, return values, forward calls,
+and direct/mutual recursion with a runtime call-depth check. Version 0.3's
+booleans, comparisons, lexical scope and structured control flow remain.
+The compiler is implemented in assembly; owned buffers, strings and file I/O
+are next on the [self-hosting roadmap](docs/self-hosting.md).
 
 ## Try it
 
@@ -69,7 +70,8 @@ fn main() {
 }
 ```
 
-- Exactly one parameterless `main` function.
+- Exactly one parameterless `main` returning void is required. Other top-level
+  functions may appear before or after it.
 - `print` accepts a string literal, integer expression, or boolean expression
   and adds a newline. Booleans print as `true` or `false`.
 - Integer expressions support `+`, `-`, `*`, `/`, `%`, unary `+`/`-`, and
@@ -130,10 +132,54 @@ fn main() {
   iteration limit. Code in skipped branches is type-checked but not executed.
 - Bindings initialize whenever execution reaches their declaration. A shadowing
   initializer can refer to the outer binding. Blocks do not expose their locals.
-- `&&`, `||`, `else if`, `for`, and user-defined functions are not implemented.
+- `&&`, `||`, `else if`, and `for` are not implemented.
   Separate statements with newlines, including after a compound statement.
 
 Run `make control-flow` for a native Fibonacci/loop example.
+
+## Functions
+
+```text
+fn factorial(n: int64) -> int64 {
+    if n == 0 {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+fn main() {
+    print(factorial(10))
+    announce()
+}
+
+fn announce() {
+    print("Functions work!")
+}
+```
+
+Parameters require `int64` or `bool` annotations and are immutable. A result
+annotation is `-> int64`, `-> bool`, or `-> void`; omitting it means void.
+Calls evaluate arguments left to right and require exactly matching types and
+argument counts. Functions may call later definitions, themselves or each other.
+A lexical binding can shadow a function name; that name then cannot be called.
+`main` is the process entry and cannot be called by user code.
+
+`return expression` must match the declared value type; bare `return` is for void
+functions, including `main`. A value function must return on every statically
+checked path. Both arms of an `if`/`else` may establish that guarantee. Loops are
+checked conservatively, so even a `while true` needs a return after it for a
+value function. Unreachable statements are still type-checked. Void calls may
+be statements; value calls used as statements discard their result.
+
+Every call has its own local frame. At most 64 Ramos calls may be active,
+including `main`; attempting the next call reports a runtime error and exits 1.
+Normal returns release the frame and restore the active-call counter. This
+check assumes an ordinary Linux process stack; it cannot compensate for an
+unusually small stack limit selected by the caller.
+
+Run `make functions` for factorial, a digit classifier and a void helper.
+See [the native calling convention](docs/functions.md) for compiler details.
 
 ## Arithmetic behavior
 
@@ -157,6 +203,7 @@ when the built compiler translates a `.ramos` file.
 make
 make calculator
 make control-flow
+make functions
 make test
 ```
 
@@ -172,6 +219,8 @@ Implementation files:
   scoped local symbol table, and semantic checks.
 - `src/codegen.inc`: bounded instruction encoding, relative-address fixups,
   and branch-label fixups.
+- `src/functions.inc`: signature discovery, typed arguments, calls and returns.
+- `src/function_codegen.inc`: private frames, argument copying and native calls.
 - `src/runtime.inc`: position-independent I/O, integer conversion, and errors.
 
 The executable runs native instructions. Locals occupy stack slots; expressions
@@ -185,7 +234,8 @@ The compiler accepts readable regular files up to 1 MiB. Limits are 65,536
 statements, 4,096 total declarations (including blocks that have ended),
 expression depth 128, block depth 128 (including `main`), 262,144 IR records,
 and 4 MiB
-generated output. Complex programs may reach an IR or output limit before the
+generated output. There are at most 256 functions, 16 parameters per function
+and 64 active calls. The declaration limit includes all function parameters. Complex programs may reach an IR or output limit before the
 source-size limit. Standard input and device files are not supported.
 
 ```sh
@@ -193,8 +243,7 @@ source-size limit. Standard input and device files are not supported.
 ./ramos --version
 ```
 
-Next: typed functions and return values, followed by buffers, owned strings,
-CLI arguments, and files. See the [bootstrap milestones](docs/self-hosting.md).
+Next: owned buffers, strings, collections, CLI arguments, and files. See the [bootstrap milestones](docs/self-hosting.md).
 Performance claims need repeatable workload benchmarks and later
 optimization. Native code and assembly implementation alone do not establish a
 speed advantage over mature languages.
@@ -206,6 +255,8 @@ Games, web servers, and a separate browser target are later platform projects.
 
 ## Benchmarks
 
-The historical 0.2 results have not been remeasured for 0.3. See
+The historical 0.2 results have not been remeasured for 0.4. The old benchmark
+script requires a 0.2 compiler because its binary adapter uses that version's
+entry layout; it rejects 0.4 before timing or modifying generated code. See
 [the measured 0.2 comparison](benchmarks/report.md) for Ramos, C, Rust,
 and Python, including raw timings and reproduction instructions.

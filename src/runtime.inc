@@ -76,6 +76,18 @@ runtime_arithmetic_error:
     mov eax, 60
     syscall
     ud2
+runtime_call_depth_error:
+    lea rsi, [rip + runtime_depth_message]
+    mov edx, OFFSET FLAT:RUNTIME_DEPTH_MESSAGE_SIZE
+    mov edi, 2
+    call runtime_write_fd
+    mov edi, 1
+    mov eax, 60
+    syscall
+    ud2
+runtime_depth_message:
+    .ascii "Ramos runtime error: call depth limit exceeded\n"
+.equ RUNTIME_DEPTH_MESSAGE_SIZE, . - runtime_depth_message
 runtime_math_message:
     .ascii "Ramos runtime error: arithmetic overflow or division by zero\n"
 .equ RUNTIME_MATH_MESSAGE_SIZE, . - runtime_math_message
@@ -83,6 +95,7 @@ runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer
 .equ RUNTIME_BOOLEAN_FILE, CODE_OFFSET + runtime_boolean - runtime_writer
+.equ RUNTIME_DEPTH_FILE, CODE_OFFSET + runtime_call_depth_error - runtime_writer
 .equ RUNTIME_ERROR_FILE, CODE_OFFSET + runtime_arithmetic_error - runtime_writer
 runtime_exit:
     mov eax, 60
@@ -93,8 +106,8 @@ runtime_exit_end:
 
 # Instruction templates are not part of the copied runtime. They are used
 # by our emitter with explicit immediate and relative-address fields.
-main_prologue: .byte 0x55, 0x48, 0x89, 0xe5, 0x48, 0x81, 0xec
-.equ MAIN_PROLOGUE_SIZE, . - main_prologue
+function_prologue: .byte 0x55, 0x48, 0x89, 0xe5, 0x48, 0x81, 0xec
+.equ FUNCTION_PROLOGUE_SIZE, . - function_prologue
 literal_prefix: .byte 0x48, 0xb8
 load_prefix: .byte 0x48, 0x8b, 0x85
 store_prefix: .byte 0x58, 0x48, 0x89, 0x85
@@ -115,3 +128,10 @@ normalize_boolean: .byte 0xc0, 0x48, 0x0f, 0xb6, 0xc0
 not_bytes: .byte 0x58, 0x48, 0x85, 0xc0, 0x0f, 0x94
 conditional_jump_bytes: .byte 0x58, 0x48, 0x85, 0xc0, 0x0f, 0x84
 comparison_opcodes: .byte 0x94, 0x95, 0x9c, 0x9e, 0x9f, 0x9d
+
+entry_initialize: .byte 0x45, 0x31, 0xe4
+# inc r12; cmp r12, CALL_DEPTH_LIMIT; ja rel32 runtime-depth-error.
+function_depth_guard: .byte 0x49, 0xff, 0xc4, 0x49, 0x83, 0xfc, CALL_DEPTH_LIMIT, 0x0f, 0x87
+function_epilogue: .byte 0xc9, 0x49, 0xff, 0xcc, 0xc3
+parameter_store_prefix: .byte 0x48, 0x89, 0x85
+argument_cleanup_prefix: .byte 0x48, 0x81, 0xc4

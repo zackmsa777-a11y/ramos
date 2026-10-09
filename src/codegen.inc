@@ -56,14 +56,20 @@ generate_executable:
     lea rsi, [rip + runtime_writer]
     mov ecx, OFFSET FLAT:RUNTIME_SIZE
     call emit_bytes
-    lea rsi, [rip + main_prologue]
-    mov ecx, OFFSET FLAT:MAIN_PROLOGUE_SIZE
+    # Process entry calls main using the private Ramos ABI.
+    lea rsi, [rip + entry_initialize]
+    mov ecx, 3
     call emit_bytes
-    mov rax, QWORD PTR [rip + symbol_count]
-    shl rax, 3
-    add rax, 15
-    and rax, -16
-    call emit_u32
+    mov eax, 0xe8
+    call emit_byte
+    mov rax, QWORD PTR [rip + main_function]
+    shl rax, 6
+    lea rcx, [rip + functions]
+    mov rax, QWORD PTR [rcx + rax + 40]
+    call record_branch
+    lea rsi, [rip + runtime_exit]
+    mov ecx, OFFSET FLAT:EXIT_SIZE
+    call emit_bytes
     lea r13, [rip + ir_buffer]
     mov rbx, QWORD PTR [rip + ir_count]
 emit_ir:
@@ -107,6 +113,14 @@ emit_control_dispatch:
     je emit_jump
     cmp r15, IR_JZ
     je emit_conditional_jump
+    cmp r15, IR_FUNCTION
+    je emit_function
+    cmp r15, IR_CALL
+    je emit_call
+    cmp r15, IR_RETURN
+    je emit_return
+    cmp r15, IR_DROP
+    je emit_drop
     jmp syntax_error
 emit_label:
     mov rax, QWORD PTR [rip + code_cursor]
@@ -124,19 +138,8 @@ emit_conditional_jump:
     mov ecx, 6
     call emit_bytes
 emit_branch_record:
-    mov rcx, QWORD PTR [rip + branch_count]
-    cmp rcx, IR_LIMIT
-    jae limit_error
-    shl rcx, 4
-    lea rdx, [rip + branch_fixups]
-    mov rax, QWORD PTR [rip + code_cursor]
-    sub rax, r14
-    mov QWORD PTR [rdx + rcx], rax
     mov rax, QWORD PTR [r13 + 8]
-    mov QWORD PTR [rdx + rcx + 8], rax
-    inc QWORD PTR [rip + branch_count]
-    xor eax, eax
-    call emit_u32
+    call record_branch
     jmp emit_ir_next
 emit_comparison:
     lea rsi, [rip + compare_bytes]

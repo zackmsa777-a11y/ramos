@@ -173,7 +173,7 @@ class RamosTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
     def test_help_and_version(self):
-        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.3')):
+        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.4')):
             result = subprocess.run([str(COMPILER), argument], capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0)
             self.assertIn(expected, result.stdout)
@@ -388,6 +388,161 @@ class RamosTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1, result.stderr)
             self.assertIn(b'limit', result.stderr)
             self.assertFalse(self.output.exists())
+
+    def test_functions_forward_calls_and_typed_returns(self):
+        self.assert_runs('fn main() {\nprint(add(20, 22))\nprint(positive(-1))\n}\n'
+                         'fn add(a: int64, b: int64) -> int64 { return a + b }\n'
+                         'fn positive(n: int64) -> bool { return n > 0 }', b'42\nfalse\n')
+
+    def test_function_recursion_and_mutual_recursion(self):
+        self.assert_runs('fn factorial(n: int64) -> int64 {\n'
+                         'if n == 0 { return 1 } else { return n * factorial(n - 1) }\n}\n'
+                         'fn odd(n: int64) -> bool {\n'
+                         'if n == 0 { return false } else { return even(n - 1) }\n}\n'
+                         'fn main() {\nprint(factorial(10))\nprint(odd(7))\nprint(even(8))\n}\n'
+                         'fn even(n: int64) -> bool {\n'
+                         'if n == 0 { return true } else { return odd(n - 1) }\n}',
+                         b'3628800\ntrue\ntrue\n')
+
+    def test_void_functions_early_return_and_discarded_value(self):
+        self.assert_runs('fn greet(active: bool) {\nif !active { return }\nprint("hi")\n}\n'
+                         'fn result() -> int64 { print(99)\nreturn 7 }\n'
+                         'fn main() {\ngreet(false)\ngreet(true)\nresult()\nreturn\nprint("after")\n}',
+                         b'hi\n99\n')
+
+    def test_argument_evaluation_and_expression_stack_survive_calls(self):
+        self.assert_runs('fn mark(n: int64) -> int64 { print(n)\nreturn n }\n'
+                         'fn difference(a: int64, b: int64) -> int64 { return a - b }\n'
+                         'fn main() {\nprint(100 + difference(mark(8), mark(3)) * mark(2))\n}',
+                         b'8\n3\n2\n110\n')
+
+    def test_functions_have_independent_frames_and_lexical_scope(self):
+        self.assert_runs('fn sum(n: int64) -> int64 {\nvar x = n\n'
+                         'if n > 0 {\nlet next = sum(n - 1)\nx = x + next\n}\nreturn x\n}\n'
+                         'fn flag(x: bool) -> bool { if true { let x = 1\nprint(x) }\nreturn x }\n'
+                         'fn main() {\nvar x = 100\nprint(sum(8))\nprint(x)\nprint(flag(true))\n}',
+                         b'36\n100\n1\ntrue\n')
+
+    def test_function_signatures_crlf_and_multiline_arguments(self):
+        self.assert_runs(('fn pick(\nvalue: int64,\nactive: bool\n) -> int64 {\n'
+                          'if active { return value } else { return -value }\n}\n'
+                          'fn main() { print(pick(\n7,\nfalse\n)) }').replace('\n', '\r\n'), b'-7\n')
+
+    def test_function_call_limit_and_counter_restoration(self):
+        prefix = 'fn recurse(n: int64) -> int64 {\n'
+        prefix += 'if n == 0 { return 0 } else { return recurse(n - 1) }\n}\n'
+        self.assert_runs(prefix + 'fn main() {\nvar i = 0\nwhile i < 10000 {\n'
+                         'recurse(62)\ni = i + 1\n}\nprint(i)\n}', b'10000\n')
+        self.output.unlink()
+        result = self.build(prefix + 'fn main() { print(recurse(63)) }')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result = subprocess.run([str(self.output)], capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b'call depth', result.stderr)
+        self.assertEqual(result.stdout, b'')
+
+    def test_function_type_scope_and_return_errors(self):
+        invalid = [
+            'fn f(n: int64) -> int64 { return n }\nfn main() { print(f(true)) }',
+            'fn f(n: int64) -> int64 { return n }\nfn main() { print(f()) }',
+            'fn f(n: int64) -> int64 { return n }\nfn main() { print(f(1, 2)) }',
+            'fn main() { print(missing()) }', 'fn main() { print(main()) }',
+            'fn f() {}\nfn main() { print(f()) }',
+            'fn f() -> bool { return 1 }\nfn main() {}',
+            'fn f() -> int64 { return }\nfn main() {}',
+            'fn f() -> int64 {}\nfn main() {}',
+            'fn f(n: bool) -> int64 { if n { return 1 } }\nfn main() {}',
+            'fn f() -> int64 { while true { return 1 } }\nfn main() {}',
+            'fn main() { return 1 }', 'fn main(n: int64) {}',
+            'fn f() {}\nfn f() {}\nfn main() {}',
+            'fn f(n: int64, n: int64) {}\nfn main() {}',
+            'fn f(n: int64) { n = 1 }\nfn main() {}',
+            'fn f(n: int64) { let n = 1 }\nfn main() {}',
+            'fn f() { let hidden = 1 }\nfn main() { print(hidden) }',
+            'fn f() { break }\nfn main() {}',
+            'fn f() -> int64 { return 1 }\nfn main() { let f = 1\nprint(f()) }',
+            'fn main() { fn f() {} }', 'fn f(n) {}\nfn main() {}',
+            'fn f(n: void) {}\nfn main() {}', 'fn f() -> string {}\nfn main() {}',
+        ]
+        for source in invalid:
+            with self.subTest(source=source):
+                result = self.build(source)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(b'error:', result.stderr)
+                self.assertFalse(self.output.exists())
+
+    def test_function_and_parameter_limits(self):
+        names = ['a' + str(i) for i in range(16)]
+        source = 'fn sum(' + ', '.join(n + ': int64' for n in names) + ') -> int64 { return '
+        source += ' + '.join(names) + ' }\nfn main() { print(sum('
+        source += ', '.join(str(i) for i in range(16)) + ')) }'
+        self.assert_runs(source, b'120\n')
+        self.output.unlink()
+        source = 'fn too_many(' + ', '.join('a' + str(i) + ': int64' for i in range(17)) + ') {}\nfn main() {}'
+        result = self.build(source)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b'limit', result.stderr)
+        source = ''.join('fn f' + str(i) + '() {}\n' for i in range(256)) + 'fn main() {}'
+        result = self.build(source)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b'limit', result.stderr)
+
+    def test_function_name_errors_point_to_the_name(self):
+        for source, location in [
+            ('fn main() {\n  missing()\n}', ':2:3: error:'),
+            ('fn helper() -> int64 {\n return missing + 1\n}\nfn main() {}', ':2:9: error:'),
+        ]:
+            with self.subTest(source=source):
+                result = self.build(source)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn((str(self.source) + location).encode(), result.stderr)
+
+    def test_signature_scan_does_not_duplicate_string_arena(self):
+        payload = 'x' * 800000
+        self.assert_runs('fn unused() { print("' + payload + '") }\n'
+                         'fn main() { print("ok") }', b'ok\n')
+
+    def test_all_function_slots_and_symbol_limits(self):
+        source = ''.join('fn f' + str(i) + '() {}\n' for i in range(255))
+        self.assert_runs(source + 'fn main() { f254()\nprint(1) }', b'1\n')
+        self.output.unlink()
+        params = ', '.join('p' + str(i) + ': int64' for i in range(16))
+        source = ''.join('fn f' + str(i) + '(' + params + ') {}\n' for i in range(255))
+        locals_ = ''.join('let x' + str(i) + ' = 1\n' for i in range(16))
+        self.assert_runs(source + 'fn main() {\n' + locals_ + 'print(x15)\n}', b'1\n')
+        self.output.unlink()
+        result = self.build(source + 'fn main() {\n' + locals_ + 'let extra = 1\n}')
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b'limit', result.stderr)
+
+    def test_legacy_benchmark_rejects_incompatible_calling_convention(self):
+        result = subprocess.run(['python3', str(ROOT / 'benchmarks/run_benchmark.py'),
+                                 '--compiler', str(COMPILER), '--work-dir',
+                                 str(self.directory / 'work'), '--output-dir',
+                                 str(self.directory / 'results'), '--steps', '1'],
+                                capture_output=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b'requires Ramos 0.2', result.stderr)
+        self.assertFalse((self.directory / 'work').exists())
+        self.assertFalse((self.directory / 'results').exists())
+
+    def test_nested_calls_in_assignment_rhs(self):
+        self.assert_runs('fn add(a: int64, b: int64) -> int64 { return a + b }\n'
+                         'fn main() {\nvar value = 1\n'
+                         'value = 100 + add(add(value, 2), add(3, 4))\nprint(value)\n}', b'110\n')
+
+    def test_nested_if_return_paths(self):
+        source = 'fn choose(a: bool, b: bool) -> int64 {\n'
+        source += 'if a { if b { return 10 } else { return 20 } }\n'
+        source += 'else { if b { return 30 } else { return 40 } }\n}\n'
+        self.assert_runs(source + 'fn main() {\nprint(choose(true, true))\n'
+                         'print(choose(true, false))\nprint(choose(false, true))\n'
+                         'print(choose(false, false))\n}', b'10\n20\n30\n40\n')
+        self.output.unlink()
+        result = self.build(source.replace('else { return 40 }', '') + 'fn main() {}')
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b'without returning', result.stderr)
+        self.assertFalse(self.output.exists())
 
     def test_native_arithmetic_matches_seeded_integer_cases(self):
         rng = random.Random(971032)

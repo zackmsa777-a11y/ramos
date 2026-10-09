@@ -39,12 +39,16 @@ def summary(samples):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--compiler', type=Path,
-                        default=Path(__file__).resolve().parents[1] / 'ramos' / 'ramos')
+                        default=Path(__file__).resolve().parents[1] / 'ramos')
     parser.add_argument('--work-dir', type=Path, default=Path('work/ramos-benchmark'))
     parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument('--steps', type=int, default=2048)
     args = parser.parse_args()
     compiler, work, output = args.compiler.resolve(), args.work_dir.resolve(), args.output_dir.resolve()
+    version = checked_run([compiler, '--version']).stdout.decode().splitlines()[0]
+    if not version.startswith('Ramos 0.2.'):
+        parser.error('this legacy binary adapter requires Ramos 0.2; '
+                     'newer native calling conventions need a new benchmark harness')
     work.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
     allowed = sorted(os.sched_getaffinity(0))
