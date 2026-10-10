@@ -27,31 +27,10 @@ runtime_write_failed:
 # below the expression stack. Conversion divides the unsigned magnitude.
 runtime_integer:
     sub rsp, 32
-    lea rsi, [rsp + 32]
-    mov r8, rsi
-    dec rsi
+    lea rsi, [rsp + 31]
     mov BYTE PTR [rsi], 10
-    mov r10, rax
-    test rax, rax
-    jns runtime_integer_magnitude
-    neg rax
-runtime_integer_magnitude:
-    mov r9d, 10
-runtime_integer_digit:
-    xor edx, edx
-    div r9
-    add dl, '0'
-    dec rsi
-    mov BYTE PTR [rsi], dl
-    test rax, rax
-    jnz runtime_integer_digit
-    test r10, r10
-    jns runtime_integer_write
-    dec rsi
-    mov BYTE PTR [rsi], '-'
-runtime_integer_write:
-    mov rdx, r8
-    sub rdx, rsi
+    call runtime_decimal_digits
+    inc rdx
     call runtime_writer
     add rsp, 32
     ret
@@ -93,6 +72,8 @@ runtime_math_message:
 .equ RUNTIME_MATH_MESSAGE_SIZE, . - runtime_math_message
 .include "bootstrap/src/buffer_runtime.inc"
 .include "bootstrap/src/io_runtime.inc"
+.include "bootstrap/src/text_runtime.inc"
+.include "bootstrap/src/stdin_runtime.inc"
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer
@@ -136,12 +117,14 @@ entry_initialize:
     xor r12d, r12d
     xor r13d, r13d
     xor r14d, r14d
-    mov rax, rsp
-    sub rsp, 48
+    mov rdx, rsp
+    sub rsp, 128
     mov r15, rsp
-    mov [r15], rax
-    mov QWORD PTR [r15 + 8], 0
-    mov QWORD PTR [r15 + 32], 0
+    mov rdi, rsp
+    xor eax, eax
+    mov ecx, 16
+    rep stosq
+    mov [r15], rdx
 .equ ENTRY_INITIALIZE_SIZE, . - entry_initialize
 builtin_pop_arguments: .byte 0x5a, 0x59, 0x58
 # inc r12; cmp r12, CALL_DEPTH_LIMIT; ja rel32 runtime-depth-error.

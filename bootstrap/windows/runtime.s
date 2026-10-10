@@ -65,31 +65,10 @@ runtime_api:
     ret
 runtime_integer:
     sub rsp, 32
-    lea rsi, [rsp + 32]
-    mov r8, rsi
-    dec rsi
+    lea rsi, [rsp + 31]
     mov BYTE PTR [rsi], 10
-    mov r10, rax
-    test rax, rax
-    jns runtime_integer_magnitude
-    neg rax
-runtime_integer_magnitude:
-    mov r9d, 10
-runtime_integer_digit:
-    xor edx, edx
-    div r9
-    add dl, '0'
-    dec rsi
-    mov [rsi], dl
-    test rax, rax
-    jnz runtime_integer_digit
-    test r10, r10
-    jns runtime_integer_write
-    dec rsi
-    mov BYTE PTR [rsi], '-'
-runtime_integer_write:
-    mov rdx, r8
-    sub rdx, rsi
+    call runtime_decimal_digits
+    inc rdx
     call runtime_writer
     add rsp, 32
     ret
@@ -566,8 +545,8 @@ runtime_temporary_retry:
     API GetCurrentProcessId
     shl rax, 32
     xor [rbp + 136], rax
-    inc QWORD PTR [r15 + 48]
-    mov rax, [r15 + 48]
+    inc QWORD PTR [r15 + 72]
+    mov rax, [r15 + 72]
     xor [rbp + 136], rax
     mov rdi, [rbp + 128]
     lea rsi, [rip + temporary_prefix]
@@ -680,6 +659,8 @@ runtime_write_return:
     pop rbp
     ret
 temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
+.include "bootstrap/src/text_runtime.inc"
+.include "bootstrap/windows/stdin.s.inc"
 runtime_initialize:
     API GetCommandLineW
     mov rcx, rax
@@ -701,11 +682,11 @@ runtime_entry:
     xor r12d, r12d
     xor r13d, r13d
     xor r14d, r14d
-    sub rsp, 64
+    sub rsp, 128
     mov r15, rsp
     mov rdi, rsp
     xor eax, eax
-    mov ecx, 8
+    mov ecx, 16
     rep stosq
     call runtime_initialize
 entry_end:

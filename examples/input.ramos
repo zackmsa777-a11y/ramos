@@ -1,0 +1,15 @@
+fn main() {
+    print("Enter a signed integer:")
+    let line = read_line()
+    if io_error() != 0 {
+        stderr("cannot read stdin\n")
+        exit(1)
+    }
+    let value = text_to_int(line)
+    if parse_error() != 0 {
+        stderr("expected a signed decimal integer in int64 range\n")
+        exit(1)
+    }
+    print("Double:")
+    print(int_to_text(value * 2))
+}

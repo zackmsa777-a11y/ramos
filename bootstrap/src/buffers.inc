@@ -1,6 +1,6 @@
 # Intrinsic records: name pointer/length, arity, result type, three argument
 # types, runtime file offset. Name resolution preserves local shadowing.
-.equ BUILTIN_COUNT, 12
+.equ BUILTIN_COUNT, 17
 find_builtin:
     push rbx
     push r12
@@ -110,6 +110,11 @@ io_error_name: .ascii "io_error"
 stderr_name: .ascii "stderr"
 exit_name: .ascii "exit"
 platform_name: .ascii "platform"
+read_line_name: .ascii "read_line"
+stdin_eof_name: .ascii "stdin_eof"
+int_to_text_name: .ascii "int_to_text"
+text_to_int_name: .ascii "text_to_int"
+parse_error_name: .ascii "parse_error"
 .balign 8
 builtin_signatures:
     .quad buffer_name, 6, 1, TYPE_BUFFER, TYPE_INT, 0, 0, RUNTIME_BUFFER_NEW_FILE
@@ -124,4 +129,9 @@ builtin_signatures:
     .quad stderr_name, 6, 1, TYPE_VOID, TYPE_BUFFER, 0, 0, RUNTIME_STDERR_FILE
     .quad exit_name, 4, 1, TYPE_VOID, TYPE_INT, 0, 0, RUNTIME_EXIT_FILE
     .quad platform_name, 8, 0, TYPE_INT, 0, 0, 0, RUNTIME_PLATFORM_FILE
+    .quad read_line_name, 9, 0, TYPE_BUFFER, 0, 0, 0, RUNTIME_READ_LINE_FILE
+    .quad stdin_eof_name, 9, 0, TYPE_BOOL, 0, 0, 0, RUNTIME_STDIN_EOF_FILE
+    .quad int_to_text_name, 11, 1, TYPE_BUFFER, TYPE_INT, 0, 0, RUNTIME_INT_TO_TEXT_FILE
+    .quad text_to_int_name, 11, 1, TYPE_INT, TYPE_BUFFER, 0, 0, RUNTIME_TEXT_TO_INT_FILE
+    .quad parse_error_name, 11, 0, TYPE_INT, 0, 0, 0, RUNTIME_PARSE_ERROR_FILE
 .section .text

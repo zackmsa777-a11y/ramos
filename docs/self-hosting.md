@@ -1,4 +1,4 @@
-# Ramos 0.8: self-hosting proved
+# Ramos 0.9: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -48,7 +48,7 @@ printing, bounded buffers, and native OS boundaries for arguments and file I/O.
 The literal is instruction data, not an embedded compiler executable.
 
 The runtime's assembly source remains in `bootstrap/src/runtime.inc`,
-`buffer_runtime.inc` and `io_runtime.inc`. The proof verifies every embedded byte
+`buffer_runtime.inc`, `io_runtime.inc`, `text_runtime.inc` and `stdin_runtime.inc`. The proof verifies every embedded byte
 and native entry offset against the bootstrap's emitted runtime. Retaining an
 assembly OS boundary does not mean the Ramos compiler invokes assembly at run
 time; once stage 1 is seeded, the next stages require no assembler or linker.
@@ -81,7 +81,12 @@ shared language tests and records the native Windows proof. See
 [Windows bootstrap instructions](windows.md).
 
 The retained assembly seed implements the 0.7 grammar. The compiler source uses
-compatible surface syntax while implementing the full 0.8 grammar itself. Tests
+compatible surface syntax while implementing the full 0.9 API and 0.8 grammar itself. Tests
 for comments and short-circuit booleans run on stages 2/3 and native Windows;
 the seed explicitly skips them. The proof JSON records both discovered counts
 and these skips. No source preprocessing or external backend is required.
+
+Version 0.9 extends the seed with the same five typed input/text intrinsics.
+The Ramos compiler itself uses `int_to_text` for decimal diagnostics. These
+contracts run on the retained seed as well as both self-hosted stages. Linux
+and Windows runtime bytes, entry offsets and fixed points are audited.

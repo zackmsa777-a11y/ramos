@@ -1,4 +1,4 @@
-# Ramos 0.8 — self-hosted compiler for Linux and Windows
+# Ramos 0.9 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -17,9 +17,13 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
-Version 0.8 adds line/block comments, short-circuit `&&`/`||` and more helpful
-diagnostics. The native validation corpus passes 106 Linux tests and 56 Windows
-tests. See [the semantics and examples](docs/usability.md).
+Version 0.9 adds buffered stdin line input and signed integer/text conversion,
+with separate EOF, I/O and parse status checks. The native validation corpus
+passes 121 Linux tests and 71 Windows tests. See [the contract and interactive
+example](docs/input-text.md).
+
+Version 0.8 added line/block comments, short-circuit `&&`/`||` and more helpful
+diagnostics. See [the semantics and examples](docs/usability.md).
 
 Version 0.7.1 optimizes constant arithmetic, stack transfers and checked buffer
 accesses without changing language syntax. See [the emitter changes](docs/optimization.md)
@@ -89,7 +93,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.8.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.9.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -324,7 +328,7 @@ fn main() {
 ```
 
 `arg_count()` includes the executable name at `arg(0)`. Reads and writes are
-fallible; `io_error()` reports the last file operation's negative error status
+fallible; `io_error()` reports the last file or stdin operation's negative error status
 (or zero). `read_file` returns an empty buffer on failure, so check the status
 before interpreting an empty result. `write_file` publishes atomically and
 returns zero or negative errno. Flags are 0 for a new ordinary file, 1 for a new
@@ -333,6 +337,24 @@ executable, 2 for replacement, and 3 for replacement with executable permissions
 common negative statuses and accepts the executable flag without POSIX modes.
 It refuses to replace the most recent successfully read file or an alias of it,
 including with replacement enabled. See [the I/O contract](docs/io.md).
+
+## Stdin and decimal text
+
+```ramos
+fn main() {
+    let line = read_line()
+    if io_error() != 0 { exit(1) }
+    let value = text_to_int(line)
+    if parse_error() != 0 { exit(1) }
+    print(int_to_text(value))
+}
+```
+
+`read_line()` removes LF or CRLF. Check `stdin_eof()` to distinguish EOF from
+a blank line; a nonempty final line is returned even without a newline.
+`text_to_int()` validates the whole buffer and distinguishes invalid syntax
+from signed overflow. See [the full contract](docs/input-text.md) and
+[examples/input.ramos](examples/input.ramos).
 
 ## Current limits and next work
 
@@ -365,7 +387,8 @@ Startup and build times are reported separately. See the
 and [workload sources](benchmarks/fixtures/). The saved 0.7.0 baseline and
 [interleaved old/new comparison](benchmarks/optimization.md) show a **2.05× overall
 speedup**. Version 0.8 emits [identical benchmark executable bytes](docs/codegen-continuity.json)
-for both targets; the timings above remain the recorded 0.7.1 measurements.
+for both targets. Version 0.9 expands the native runtime; the timings above
+remain the recorded 0.7.1 measurements, not a new 0.9 performance claim.
 
 ```sh
 make

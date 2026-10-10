@@ -46,7 +46,7 @@ symbols, 8 total declarations, 9 frame slots, 10 block depth, 11 operators,
 source override, 16 selected target (0 Linux, 1 Windows), 17 literal-end cursor,
 18 nonnegative int32 RHS literal value, 19 removable value-push end cursor.
 Token kinds preserve the bootstrap constants. Types are
-0 int64, 1 bool, 2 void, 3 bytes. Callable IDs 256..267 identify OS/buffer intrinsics.
+0 int64, 1 bool, 2 void, 3 bytes. Callable IDs 256..272 identify OS/buffer intrinsics.
 
 `f` holds up to 40,000 12-byte fixup records at zero and up to 40,000 4-byte label
 positions at 600,000. Fixup kinds are 1 function, 2 branch, 3 literal. All rel32
@@ -100,3 +100,14 @@ for the short-circuit and merge labels (call records retain their own ID/count
 meanings). The left value is consumed before the RHS is emitted; both paths
 merge with one bool value. All label marks clear the removable-push record.
 See [semantics and proof](../docs/usability.md).
+
+## Stdin and decimal text
+
+Version 0.9 adds five typed native intrinsics (IDs 268..272). `decimal` now uses
+`int_to_text`, so the compiler exercises its own conversion API. Shared assembly
+in `bootstrap/src/text_runtime.inc` handles decimal formatting/parsing and line
+assembly; each OS supplies only scratch allocation and buffered read boundaries.
+The process-state block is 128 bytes: offsets 48/56/64 hold parse status, sticky
+stdin EOF and the lazy scratch pointer; Windows temporary-file uniqueness uses
+its separate counter at 72. Existing argv and file identity fields are retained.
+See [input/text semantics](../docs/input-text.md).

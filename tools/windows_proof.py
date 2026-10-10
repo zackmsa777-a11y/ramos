@@ -23,9 +23,9 @@ def winpath(path):
     return str(path) if os.name == 'nt' else 'Z:' + str(path).replace('/', '\\')
 
 
-def execute(binary, *args, timeout=45):
+def execute(binary, *args, timeout=45, input=None, stdin=None):
     return subprocess.run([*RUNNER, str(binary), *args], cwd=ROOT, env=ENV,
-                          capture_output=True, timeout=timeout)
+                          capture_output=True, timeout=timeout, input=input, stdin=stdin)
 
 
 def compile_source(source, output, *options, compiler=None):
@@ -195,7 +195,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.8', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.9', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -235,6 +235,18 @@ for name in dir(test_usability.UsabilityTests):
         setattr(WindowsTests, name, getattr(test_usability.UsabilityTests, name))
 
 
+import test_input_text
+WindowsTests.run_native = lambda self, *args, **kwargs: execute(self.output, *args, **kwargs)
+WindowsTests.native_path = staticmethod(winpath)
+WindowsTests.start_native = lambda self: subprocess.Popen(
+    [*RUNNER, str(self.output)], cwd=ROOT, env=ENV,
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+WindowsTests.build_ok = test_input_text.InputTextTests.build_ok
+for name in dir(test_input_text.InputTextTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_input_text.InputTextTests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')
@@ -253,7 +265,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.8.0', 'target': 'x86_64-windows',
+        'version': '0.9.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

@@ -7,7 +7,7 @@ There is no interpreter, Python dependency or C runtime in generated programs.
 
 ## Use Ramos on Windows
 
-Download [ramos.exe from the 0.8 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.8.0/ramos.exe)
+Download [ramos.exe from the 0.9 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.9.0/ramos.exe)
 and open PowerShell in its directory. CI artifacts are also available from the
 [Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml). Save a UTF-8 `hello.ramos`:
 
@@ -91,3 +91,7 @@ checked runtime failures and large stack frames. CI runs it on `windows-latest`
 and uploads `windows-bootstrap-proof.json` with the executable. Linux developers
 can run the same harness under Wine using `make test-windows` with an isolated
 `WINEPREFIX`. Wine is a development test runner; end users do not need it.
+
+Version 0.9 adds native buffered stdin and signed decimal conversions. Console
+input uses the configured input code page; redirected input preserves bytes.
+See [input and conversion semantics](input-text.md).

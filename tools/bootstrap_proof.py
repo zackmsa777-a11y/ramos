@@ -48,6 +48,8 @@ def check_runtime():
         'RUNTIME_BUFFER_SET_FILE', 'RUNTIME_ARG_COUNT_FILE', 'RUNTIME_ARG_FILE',
         'RUNTIME_READ_FILE_FILE', 'RUNTIME_WRITE_FILE_FILE', 'RUNTIME_IO_ERROR_FILE',
         'RUNTIME_STDERR_FILE', 'RUNTIME_EXIT_FILE', 'RUNTIME_PLATFORM_FILE',
+        'RUNTIME_READ_LINE_FILE', 'RUNTIME_STDIN_EOF_FILE', 'RUNTIME_INT_TO_TEXT_FILE',
+        'RUNTIME_TEXT_TO_INT_FILE', 'RUNTIME_PARSE_ERROR_FILE',
     ]
     table = source[source.index('fn builtin_address'):]
     for i, const in enumerate(builtin_constants):
@@ -72,7 +74,7 @@ def main():
     if hashes['stage2'] != hashes['stage3'] or digest(ROOT / 'build/stage3-isolated') != hashes['stage3']:
         raise SystemExit('Self-hosting fixed point failed')
     report = {
-        'version': '0.8.0', 'target': 'x86_64-linux',
+        'version': '0.9.0', 'target': 'x86_64-linux',
         'compiler_source': 'compiler/ramos.ramos',
         'source_sha256': digest(ROOT / 'compiler/ramos.ramos'),
         'executables': hashes, 'stage2_equals_stage3': True,

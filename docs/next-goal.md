@@ -5,11 +5,14 @@ execution gain on the eight-task suite, with checked semantics and both native
 self-hosting proofs retained. The separate follow-up selected by the user shipped
 as **0.8**: comments, more helpful diagnostics and short-circuit boolean operators.
 
+The next approved slice shipped as **0.9**: buffered fallible stdin input,
+EOF checks and signed integer/text conversion with independent parse status.
+See [the semantics and example](input-text.md).
+
 Remaining candidates for a new goal:
 
-1. Integer-to-text and text-to-integer conversion, plus fallible stdin input.
-2. Imports and a small reusable standard library to reduce manual buffer code.
-3. Evaluate else-if, a for form, checked shifts, floats and larger limits against
+1. Imports and a small reusable standard library to reduce manual buffer code.
+2. Evaluate else-if, a for form, checked shifts, floats and larger limits against
    real programs before adding syntax or implementation cost.
 
 The benchmark index measures execution speed, not language quality. The user's

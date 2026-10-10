@@ -1,4 +1,4 @@
-# Native arguments and file I/O (0.7)
+# Native arguments, file I/O and stdin (0.9)
 
 On Linux these intrinsics use x86-64 syscalls directly; on Windows they use
 the native Windows API boundary described in [windows.md](windows.md). They are checked and typed in
@@ -10,6 +10,8 @@ the bootstrap and self-hosted compilers. No C library, shell, subprocess or exte
 | `arg` | `(int64) -> bytes` | fresh copy of an argument; invalid index traps |
 | `read_file` | `(bytes) -> bytes` | bounded regular-file read; empty bytes on failure |
 | `write_file` | `(bytes, bytes, int64) -> int64` | atomic publication; zero or negative errno |
+| `read_line` | `() -> bytes` | buffered stdin line read; empty bytes on failure |
+| `stdin_eof` | `() -> bool` | sticky EOF observed by a stdin read |
 | `io_error` | `() -> int64` | last read/write status; zero or negative errno |
 | `stderr` | `(bytes) -> void` | exact bytes to fd 2, with no added newline |
 | `platform` | `() -> int64` | host OS: 0 Linux, 1 Windows |
@@ -52,3 +54,7 @@ Windows preserves the signatures and bounds with UTF-8 arguments and UTF-16
 path conversion. `io_error` maps Windows errors into common negative statuses.
 Publication uses a same-directory temporary file and `MoveFileExW`; Windows
 does not use POSIX executable permission bits. See [Windows I/O details](windows.md).
+
+Stdin, integer/text conversion, line limits and error precedence are specified
+in [input-text.md](input-text.md). Stdin reads preserve the most recent successful
+file identity, and file writes do not change decimal parse status.
