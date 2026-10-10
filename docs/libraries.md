@@ -54,7 +54,8 @@ including a source's hardlink/symlink alias.
 ## Standard library written in Ramos
 
 Copy the repository's `stdlib` folder beside your program, then weave only the
-files you use. These are readable Ramos implementations, not native hidden APIs.
+files you use. Helpers are readable Ramos source; OS operations call documented
+native intrinsics.
 `text.ramos` itself weaves `bytes.ramos`; an explicit second weave of that file
 reuses it. All functions are checked by the ordinary compiler.
 

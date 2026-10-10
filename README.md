@@ -22,7 +22,9 @@ exclusive directory creation, path helpers, environment lookup and direct child
 execution. `rfind` searches a directory tree; `rrun` passes argument values and
 reports child exit status. Both run on Linux and Windows with fallible OS errors.
 See [the contracts and examples](docs/system.md). Current release validation is
-recorded in [system-verification.json](docs/system-verification.json).
+recorded in [system-verification.json](docs/system-verification.json):
+**226 Linux tests and 172 native Windows tests passed**, with matching compiler
+self-rebuilds on both platforms.
 
 Version 0.14 adds **easier application syntax**: `else if`, end-exclusive
 `for i in 0..n`, and `+=`/`-=`. Bounds and destinations evaluate once; integer

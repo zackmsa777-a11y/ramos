@@ -7,11 +7,15 @@
   "linux_selfhost_fixed_point": true,
   "isolated_path_rebuild_matches": true,
   "source_sha256": "b1fbd085c3745cb670a699fd09d59de39bb62ec306a2144a0bb33415cd296327",
-  "windows_native": "pending CI; no native Windows claim until proof is recorded",
   "acceptance_examples": [
     "examples/rfind.ramos",
     "examples/rrun.ramos",
     "examples/rcopy.ramos"
   ],
-  "performance": "No 0.15 comparative speed or speedup claim; 0.14 measurements remain historical."
+  "performance": "No 0.15 comparative speed or speedup claim; 0.14 measurements remain historical.",
+  "windows_discovered": 173,
+  "windows_skipped": 1,
+  "windows_passed": 172,
+  "windows_selfhost_fixed_point": true,
+  "native_ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38069230562"
 }
