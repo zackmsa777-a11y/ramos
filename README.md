@@ -69,6 +69,9 @@ and recovery. Python is only a test/proof harness.
 
 The language keeps its core rules: **simple syntax and fast native execution**.
 New performance claims require measurements; native output alone is not a benchmark.
+Read [The Ramos Book in HTML](https://zackmsa777-a11y.github.io/ramos-docs/)
+or [the Markdown edition and AI agent guide](https://github.com/zackmsa777-a11y/ramos-docs)
+for the language, libraries and runnable CLI/TUI/GUI examples.
 The [application-language roadmap](docs/roadmap-1.0.md) sets the next milestones,
 working examples and release checks under those rules.
 
