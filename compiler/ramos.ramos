@@ -1200,7 +1200,7 @@ fn pe(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> bytes {
     put(o, 360, 2097280)
     put(o, 364, 176)
     section(o, 392, ".text", rx - 4096, 4096, data - 4096, 4096, 1610612768)
-    section(o, 432, ".rdata", g(c, 14), data, data_size, data, 1073741888)
+    section(o, 432, ".rdata", 2097152 - data, data, data_size, data, 1073741888)
     section(o, 472, ".idata", 4096, 2097152, 4096, imports, -1073741760)
     section(o, 512, ".reloc", 12, 2101248, 4096, reloc, 1107296320)
     set(c, 4, imports)

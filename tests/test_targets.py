@@ -19,6 +19,11 @@ class TargetTests(unittest.TestCase):
         nt = struct.unpack_from('<I', binary, 60)[0]
         self.assertEqual(binary[nt:nt + 4], b'PE\0\0')
         self.assertEqual(struct.unpack_from('<H', binary, nt + 4)[0], 0x8664)
+        next_rva = 4096
+        for i in range(4):
+            virtual_size, rva, raw_size = struct.unpack_from('<III', binary, nt + 264 + i * 40 + 8)
+            self.assertEqual(rva, next_rva)
+            next_rva = rva + ((max(virtual_size, raw_size) + 4095) // 4096) * 4096
 
     def test_target_and_force_in_either_order(self):
         for options in [('--target', 'windows', '--force'), ('--force', '--target', 'windows')]:

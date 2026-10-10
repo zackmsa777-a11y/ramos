@@ -72,6 +72,8 @@ writes a PE32+ console image with 4096-byte file/section alignment: `.text` RX,
 `.rdata` R, `.idata` RW at RVA 0x200000, and `.reloc` R at RVA 0x201000. Relative
 code/literal offsets keep identical file offsets and RVAs. The import table's
 fixed RVA lies beyond the bounded 1 MiB output arena, avoiding extra fixups.
+The read-only section zero-fills the virtual space up to the import table so
+section RVAs remain adjacent, as required by the Windows loader.
 All code is position-independent; the relocation directory has only ABSOLUTE
 padding entries, so there are no absolute code addresses to relocate.
 

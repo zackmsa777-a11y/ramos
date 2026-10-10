@@ -76,6 +76,7 @@ class WindowsTests(unittest.TestCase):
         self.assertEqual(protections & 0x160, 0x160)  # NX, ASLR, high entropy
         start = optional + 240
         names = []
+        next_rva = 4096
         for i in range(count):
             at = start + i * 40
             names.append(binary[at:at + 8].rstrip(b'\0'))
@@ -85,6 +86,8 @@ class WindowsTests(unittest.TestCase):
             self.assertLessEqual(raw + raw_size, len(binary))
             self.assertEqual(raw % 4096, 0)
             self.assertEqual(rva % 4096, 0)
+            self.assertEqual(rva, next_rva)
+            next_rva = rva + ((max(virtual_size, raw_size) + 4095) // 4096) * 4096
         self.assertEqual(names, [b'.text', b'.rdata', b'.idata', b'.reloc'])
         self.assertIn(b'KERNEL32.dll\0', binary)
         self.assertIn(b'SHELL32.dll\0', binary)
