@@ -61,7 +61,7 @@ integer operations were needed for this milestone.
 
 The self-hosted compiler has tighter token/output limits than the bootstrap,
 which are documented in [compiler/README.md](../compiler/README.md). Diagnostics
-preserve filename, line and byte-column formatting, with simpler messages.
+preserve filename, line and byte-column formatting and give specific reasons.
 Native behavior, traps, output preservation, scopes, calls and ELF permissions
 are covered by the shared corpus.
 

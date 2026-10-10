@@ -1,4 +1,4 @@
-# Windows support (Ramos 0.7)
+# Windows support (Ramos 0.9)
 
 Ramos produces native Windows x64 console executables in PE32+ format. The same
 language supports arithmetic, booleans, scopes, control flow, typed functions,
