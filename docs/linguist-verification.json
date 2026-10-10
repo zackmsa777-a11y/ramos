@@ -1,0 +1,49 @@
+{
+  "checked_on": "2026-10-10",
+  "upstream_registration": false,
+  "upstream_pr_opened": false,
+  "blocking_condition": "No evidence meeting upstream requirement of 2000 indexed .ramos files spread across independent owners/repositories.",
+  "upstream_search_observation": {
+    "legacy_api_query": "extension:ramos",
+    "total_count": 0,
+    "limitations": "Legacy API indexing limitations apply; zero does not mean the existing Ramos sources are absent."
+  },
+  "linguist_fork": "https://github.com/zackmsa777-a11y/linguist/tree/add-ramos",
+  "linguist_commit": "831980e3999a4e83a400b22a417c71cf186ba437",
+  "upstream_base_commit": "5fbdfcb8133be2bed88bf3ce62b2335f50474525",
+  "language_id": 455734209,
+  "scope": "source.ramos",
+  "extension": ".ramos",
+  "grammar_repository": "https://github.com/zackmsa777-a11y/language-ramos",
+  "grammar_commit": "515ed2bb0e5584065680947545111f03a9c65f22",
+  "grammar_license": "MIT",
+  "sample_license": "MIT (newly authored in grammar repository)",
+  "classification_probe": {
+    "file": "compiler/ramos.ramos",
+    "sha256": "b324b1b61bb5ed9b024967b96ace90c435e6268cf27e0c6cd9a31414706ff61f",
+    "language": "Ramos",
+    "scope": "source.ramos"
+  },
+  "ruby_tests": {
+    "command": "bundle exec rake test",
+    "ruby_version": "3.2.3",
+    "tests": 2052,
+    "assertions": 41114,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "grammar_checks": {
+    "textmate_scope_assertions": 17,
+    "runnable_sample_tokenized": true,
+    "native_sample_compiled_and_executed": true,
+    "upstream_grammar_compiler_add_succeeded": true,
+    "new_grammar_license_cached_as": "mit",
+    "existing_grammar_submodules": "Most existing upstream grammar submodules were not initialized locally; complete license/grammar checks for all upstream languages still require a full checkout."
+  },
+  "editor_ci": {
+    "main": "https://github.com/zackmsa777-a11y/language-ramos/actions/runs/38038319293",
+    "tag": "https://github.com/zackmsa777-a11y/language-ramos/actions/runs/38038320442",
+    "conclusion": "success"
+  }
+}

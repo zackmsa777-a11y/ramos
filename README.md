@@ -43,7 +43,9 @@ New performance claims require measurements; native output alone is not a benchm
 
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
-[what is needed for GitHub recognition](docs/github-language.md).
+[the prepared Linguist registration and remaining acceptance requirement](docs/github-language.md).
+A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.9.0)
+provides highlighting for `.ramos` files in VS Code today.
 
 ## Try it
 
