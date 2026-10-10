@@ -1,0 +1,23 @@
+fn number(text: bytes) -> int64 {
+    var value = 0
+    var i = 0
+    while i < buffer_len(text) {
+        value = value * 10 + buffer_get(text, i) - 48
+        i = i + 1
+    }
+    return value
+}
+fn kernel(n: int64, seed: int64) -> int64 {
+    var x = seed
+    var total = 0
+    var i = 0
+    while i < n {
+        x = (x * 48271) % 2147483647
+        if x % 2 == 0 { total = (total + x % 97) % 1000000007 }
+        else { total = (total + x % 31) % 1000000007 }
+        if x % 7 == 0 { total = (total + 11) % 1000000007 }
+        i = i + 1
+    }
+    return total
+}
+fn main() { print(kernel(number(arg(1)), number(arg(2)))) }

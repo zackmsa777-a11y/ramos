@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--compiler', type=Path,
                         default=Path(__file__).resolve().parents[1] / 'ramos')
     parser.add_argument('--work-dir', type=Path, default=Path('work/ramos-benchmark'))
-    parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent)
+    parser.add_argument('--output-dir', type=Path, default=Path('work/results-0.2'))
     parser.add_argument('--steps', type=int, default=2048)
     args = parser.parse_args()
     compiler, work, output = args.compiler.resolve(), args.work_dir.resolve(), args.output_dir.resolve()

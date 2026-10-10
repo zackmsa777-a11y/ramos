@@ -1,0 +1,19 @@
+fn number(text: bytes) -> int64 {
+    var value = 0
+    var i = 0
+    while i < buffer_len(text) {
+        value = value * 10 + buffer_get(text, i) - 48
+        i = i + 1
+    }
+    return value
+}
+fn kernel(n: int64, seed: int64) -> int64 {
+    var x = seed
+    var i = 0
+    while i < n {
+        x = (x * 1664525 + 1013904223) % 2147483647
+        i = i + 1
+    }
+    return x
+}
+fn main() { print(kernel(number(arg(1)), number(arg(2)))) }

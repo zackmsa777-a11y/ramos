@@ -1,0 +1,26 @@
+fn number(text: bytes) -> int64 {
+    var value = 0
+    var i = 0
+    while i < buffer_len(text) {
+        value = value * 10 + buffer_get(text, i) - 48
+        i = i + 1
+    }
+    return value
+}
+fn tree(depth: int64, value: int64) -> int64 {
+    if depth == 0 { return value % 97 }
+    return tree(depth - 1, (value * 17 + 3) % 1000003) + tree(depth - 1, (value * 29 + 5) % 1000003)
+}
+fn kernel(n: int64, seed: int64) -> int64 {
+    var total = 0
+    var x = seed
+    var i = 0
+    while i < n {
+        x = (x * 48271) % 2147483647
+        total = (total + tree(12, x)) % 1000000007
+        i = i + 1
+    }
+    return total
+}
+
+fn main() { print(kernel(number(arg(1)), number(arg(2)))) }

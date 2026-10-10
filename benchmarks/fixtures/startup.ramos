@@ -1,0 +1,11 @@
+fn number(text: bytes) -> int64 {
+    var value = 0
+    var i = 0
+    while i < buffer_len(text) {
+        value = value * 10 + buffer_get(text, i) - 48
+        i = i + 1
+    }
+    return value
+}
+fn kernel(n: int64, seed: int64) -> int64 { return seed }
+fn main() { print(kernel(number(arg(1)), number(arg(2)))) }

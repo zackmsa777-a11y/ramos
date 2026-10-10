@@ -1,0 +1,35 @@
+fn number(text: bytes) -> int64 {
+    var value = 0
+    var i = 0
+    while i < buffer_len(text) {
+        value = value * 10 + buffer_get(text, i) - 48
+        i = i + 1
+    }
+    return value
+}
+fn kernel(n: int64, seed: int64) -> int64 {
+    let text = buffer(16384)
+    var i = 0
+    while i < 16384 {
+        buffer_set(text, i, (i * 37 + seed) % 95 + 32)
+        i = i + 1
+    }
+    var total = 0
+    var repeat = 0
+    while repeat < n {
+        buffer_set(text, repeat % 16384, (repeat + seed) % 95 + 32)
+        var count = 0
+        i = 0
+        while i < 16384 {
+            let c = buffer_get(text, i)
+            if c >= 48 { if c <= 57 { count = count + 1 } }
+            if c >= 65 { if c <= 90 { count = count + 2 } }
+            if c == 32 { count = count + 3 }
+            i = i + 1
+        }
+        total = (total + count) % 1000000007
+        repeat = repeat + 1
+    }
+    return total
+}
+fn main() { print(kernel(number(arg(1)), number(arg(2)))) }

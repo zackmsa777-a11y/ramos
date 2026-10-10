@@ -340,8 +340,26 @@ permissions. Games and browser support need further platform work.
 
 ## Benchmarks
 
-The historical 0.2 results have not been remeasured for 0.7. The old benchmark
-script requires a 0.2 compiler because its binary adapter uses that version's
-entry layout; it rejects later versions before timing or modifying generated code. See
-[the measured 0.2 comparison](benchmarks/report.md) for Ramos, C, Rust,
-and Python, including raw timings and reproduction instructions.
+Ramos 0.7 has a reproducible eight-task comparison with optimized checked C,
+Rust and CPython. On the recorded Linux VM, the execution index is **Ramos 19.93,
+C 100, Rust 119.04 and Python 2.53** (higher is faster). Ramos is **7.89× faster
+than Python** across this suite and takes **5.02× C's time**. These are geometric
+means of per-task median ratios, not a general language ranking.
+
+The suite checks outputs against independent references, runs nine randomized
+samples per task, and records raw timings, build commands and source hashes.
+Startup and build times are reported separately. See the
+[full report and methodology](benchmarks/report.md), [raw samples](benchmarks/results.json)
+and [workload sources](benchmarks/fixtures/).
+
+```sh
+make
+python3 benchmarks/run_suite.py                 # measure all eight tasks
+python3 benchmarks/run_suite.py --validate-only # output checks without timing
+```
+
+![Ramos 0.7 execution index](benchmarks/score.png)
+
+The [historical 0.2 comparison](benchmarks/report-0.2.md) used another machine
+and one unrolled workload; it is not directly comparable. Its legacy script
+still requires the 0.2 compiler and writes to `work/results-0.2` by default.
