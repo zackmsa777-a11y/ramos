@@ -171,7 +171,7 @@ print(rounds)
             ('fn f() -> int64 { return false }\nfn main() {}', b'expected int64, found bool', None),
             ('fn main() { var n = 0\nn = true }', b'expected int64, found bool', None),
             ('fn f(n: unknown) {}\nfn main() {}', b'expected type:', None),
-            ('fn main() { break }', b'enclosing while loop', None),
+            ('fn main() { break }', b'enclosing loop', None),
             ('fn main() { print(@) }', b'unexpected character', None),
             ('fn other() {}', b'missing main function', None),
         ]

@@ -1,0 +1,17 @@
+fn describe(n: int64) -> string {
+    if n < 0 { return s"negative" }
+    else if n == 0 { return s"zero" }
+    else { return s"positive" }
+}
+fn main() {
+    var total = 0
+    for i in -2..4 {
+        if i == 0 { continue }
+        total += i
+    }
+    print(total)
+    print(describe(total))
+    var message = s"Hello"
+    message += s", Ramos!"
+    print(message)
+}

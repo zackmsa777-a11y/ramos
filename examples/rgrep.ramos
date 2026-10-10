@@ -17,8 +17,7 @@ fn main() {
     let needle = arg(first)
     var found = false
     var failed = false
-    var i = first + 1
-    while i < arg_count() {
+    for i in first + 1..arg_count() {
         let path = arg(i)
         let reader = io_reader(path)
         var line_number = 0
@@ -26,22 +25,20 @@ fn main() {
         while !done {
             let line = io_line(reader)
             if reader.status != 0 { done = true }
+            else if reader.eof && buffer_len(line) == 0 { done = true }
             else {
-                if reader.eof && buffer_len(line) == 0 { done = true }
-                else {
-                    line_number = line_number + 1
-                    if bytes_find(line, needle) >= 0 {
-                        found = true
-                        var status = stdout(path)
-                        if status == 0 { status = stdout(":") }
-                        if status == 0 { status = stdout(int_to_text(line_number)) }
-                        if status == 0 { status = stdout(":") }
-                        if status == 0 { status = stdout(line) }
-                        if status == 0 { status = stdout("\n") }
-                        if status != 0 { io_close(reader)
-                            stderr("rgrep: output failed\n")
-                            exit(2) }
-                    }
+                line_number += 1
+                if bytes_find(line, needle) >= 0 {
+                    found = true
+                    var status = stdout(path)
+                    if status == 0 { status = stdout(":") }
+                    if status == 0 { status = stdout(int_to_text(line_number)) }
+                    if status == 0 { status = stdout(":") }
+                    if status == 0 { status = stdout(line) }
+                    if status == 0 { status = stdout("\n") }
+                    if status != 0 { io_close(reader)
+                        stderr("rgrep: output failed\n")
+                        exit(2) }
                 }
             }
         }
@@ -54,7 +51,6 @@ fn main() {
             stderr(")\n")
         }
         if reader.handle >= 0 { if io_close(reader) != 0 { failed = true } }
-        i = i + 1
     }
     if failed { exit(2) }
     if !found { exit(1) }

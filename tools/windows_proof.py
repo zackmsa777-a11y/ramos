@@ -195,7 +195,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.13', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.14', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -233,6 +233,12 @@ import test_usability
 for name in dir(test_usability.UsabilityTests):
     if name.startswith("test_"):
         setattr(WindowsTests, name, getattr(test_usability.UsabilityTests, name))
+
+
+import test_syntax
+for name in dir(test_syntax.SyntaxTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_syntax.SyntaxTests, name))
 
 
 import test_input_text
@@ -310,7 +316,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.13.0', 'target': 'x86_64-windows',
+        'version': '0.14.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

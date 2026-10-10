@@ -118,6 +118,8 @@ fn expected(s: bytes, c: bytes, t: int64) {
     if t == 8 { fail(s, c, "expected '}'") }
     if t == 18 { fail(s, c, "expected '=' before initializer") }
     if t == 35 { fail(s, c, "expected ':' before parameter type") }
+    if t == 53 { fail(s, c, "expected 'in' after loop variable") }
+    if t == 54 { fail(s, c, "expected '..' between range bounds") }
     bad(s, c)
 }
 fn tk(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12) }
@@ -179,8 +181,8 @@ fn utf8(s: bytes, c: bytes) {
     set(c, 15, 0)
 }
 fn lex(s: bytes, c: bytes) {
-    let words = "fn main print let var true false if else while break continue return int64 bool void bytes string struct weave "
-    let kinds = buffer(20)
+    let words = "fn main print let var true false if else while break continue return int64 bool void bytes string struct weave for in "
+    let kinds = buffer(22)
     buffer_set(kinds, 0, 2)
     buffer_set(kinds, 1, 3)
     buffer_set(kinds, 2, 4)
@@ -201,6 +203,8 @@ fn lex(s: bytes, c: bytes) {
     buffer_set(kinds, 17, 45)
     buffer_set(kinds, 18, 46)
     buffer_set(kinds, 19, 51)
+    buffer_set(kinds, 20, 52)
+    buffer_set(kinds, 21, 53)
     var i = 0
     while i < buffer_len(s) {
         let start = i
@@ -334,7 +338,13 @@ fn lex(s: bytes, c: bytes) {
                     if v == 93 { t = 49 }
                     if i < buffer_len(s) {
                         let w = buffer_get(s, i)
+                        if v == 46 { if w == 46 { t = 54
+                            i = i + 1 } }
                         if w == 61 {
+                            if t == 13 { t = 55
+                                i = i + 1 }
+                            if t == 14 { t = 56
+                                i = i + 1 }
                             if t == 18 { t = 29
                                 i = i + 1 }
                             if t == 28 { t = 30
@@ -1470,6 +1480,42 @@ fn separator(s: bytes, c: bytes) {
     if tk(c) != 1 { if tk(c) != 8 { fail(s, c, "expected newline or closing brace") } }
     skip(c)
 }
+fn assignment_kind(t: int64) -> bool {
+    if t == 18 { return true }
+    if t == 55 { return true }
+    return t == 56
+}
+fn compound(s: bytes, c: bytes, o: bytes, f: bytes, kind: int64, left: int64, right: int64, at: int64) {
+    set(c, 15, at + 1)
+    if left != right { fail(s, c, "compound assignment operands must have matching types") }
+    if left != 0 { if kind != 55 {
+        fail(s, c, "'+=' requires int64 or string; '-=' requires int64")
+    }
+    if left != 4 {
+        fail(s, c, "'+=' requires int64 or string; '-=' requires int64")
+    } }
+    set(c, 15, 0)
+    typed(s, c, left)
+    typed(s, c, right)
+    var operator = 13
+    if kind == 56 { operator = 14 }
+    push_op(s, c, operator, 0)
+    op_set(c, 0, 16, at)
+    apply(s, c, o, f)
+    pop_type(s, c)
+}
+fn hidden_slot(s: bytes, c: bytes) -> int64 {
+    if g(c, 8) >= 4096 { limit(s, c) }
+    let slot = g(c, 9)
+    set(c, 8, g(c, 8) + 1)
+    set(c, 9, slot + 1)
+    return slot
+}
+fn clear_slot(s: bytes, c: bytes, o: bytes, slot: int64) {
+    hex(s, c, o, "48c785")
+    number(s, c, o, -8 * (slot + 1), 4)
+    number(s, c, o, 0, 4)
+}
 fn aggregate_assignment(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes, found: int64) {
     if found < 0 { fail(s, c, "unknown variable") }
     var current_type = sym(c, found, 8)
@@ -1499,10 +1545,22 @@ fn aggregate_assignment(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes, found:
             emit(s, c, o, 81)
             set(c, 19, 0)
         }
-        if tk(c) == 18 {
+        if assignment_kind(tk(c)) {
+            let kind = tk(c)
+            let at = off(c)
+            if kind != 18 {
+                if indexed { hex(s, c, o, "488b442408488b0c24") }
+                else { hex(s, c, o, "488b042448b9")
+                    number(s, c, o, index, 8) }
+                emit(s, c, o, 232)
+                relative(s, c, o, native_builtin(c, 31))
+                value_push(s, c, o)
+            }
             next(c)
             let value_type = expression(s, c, o, d, f)
-            if value_type != element_type { type_error(s, c, element_type, value_type) }
+            if kind == 18 {
+                if value_type != element_type { type_error(s, c, element_type, value_type) }
+            } else { compound(s, c, o, f, kind, element_type, value_type, at) }
             consume(s, c, o, 2)
             if indexed { consume(s, c, o, 1) }
             consume(s, c, o, 0)
@@ -1569,7 +1627,9 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 let b = block(c, top, 12)
                 let returned = block(c, top, 16)
                 let then_return = block(c, top, 20)
-                clear_scope(s, c, o, block(c, top, 4))
+                var first = block(c, top, 4)
+                if kind == 4 { first = first + 1 }
+                clear_scope(s, c, o, first)
                 set(c, 7, block(c, top, 4))
                 set(c, 10, top)
                 next(c)
@@ -1590,17 +1650,47 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                         jump(s, c, o, f, b)
                         mark(c, f, a)
                         next(c)
-                        expect(s, c, 7)
-                        enter(s, c, 2, a, b, returned)
+                        skip(c)
+                        let all_return = then_return * returned
+                        if tk(c) == 23 {
+                            next(c)
+                            let condition_type = expression(s, c, o, d, f)
+                            if condition_type != 1 { type_error(s, c, 1, condition_type) }
+                            let no = label(s, c)
+                            consume(s, c, o, 0)
+                            hex(s, c, o, "4885c00f84")
+                            fix(s, c, o, f, 2, no)
+                            expect(s, c, 7)
+                            enter(s, c, 1, no, b, all_return)
+                        } else {
+                            expect(s, c, 7)
+                            enter(s, c, 2, a, b, all_return)
+                        }
                         continue
                     }
                     mark(c, f, a)
+                    mark(c, f, b)
                     if !separated { if tk(c) != 8 { bad(s, c) } }
                     continue
                 }
                 if kind == 2 {
                     mark(c, f, b)
                     if then_return == 1 { if returned == 1 { bset(c, top - 1, 16, 1) } }
+                    separator(s, c)
+                    continue
+                }
+                if kind == 4 {
+                    mark(c, f, a)
+                    load(s, c, o, block(c, top, 24))
+                    consume(s, c, o, 0)
+                    hex(s, c, o, "4883c0010f80")
+                    relative(s, c, o, native_address(c, 0))
+                    value_push(s, c, o)
+                    store(s, c, o, block(c, top, 24))
+                    jump(s, c, o, f, block(c, top, 32))
+                    mark(c, f, b)
+                    clear_slot(s, c, o, block(c, top, 24))
+                    clear_slot(s, c, o, block(c, top, 28))
                     separator(s, c)
                     continue
                 }
@@ -1621,7 +1711,42 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 hex(s, c, o, "4885c00f84")
                 fix(s, c, o, f, 2, no)
                 expect(s, c, 7)
-                enter(s, c, 1, no, end, 0)
+                enter(s, c, 1, no, end, 1)
+                continue
+            }
+            if t == 52 {
+                next(c)
+                if tk(c) != 11 { fail(s, c, "expected loop variable after 'for'") }
+                let name = off(c)
+                let name_length = length(c)
+                next(c)
+                expect(s, c, 53)
+                skip(c)
+                let start_type = expression(s, c, o, d, f)
+                if start_type != 0 { type_error(s, c, 0, start_type) }
+                expect(s, c, 54)
+                skip(c)
+                let end_type = expression(s, c, o, d, f)
+                if end_type != 0 { type_error(s, c, 0, end_type) }
+                let condition = label(s, c)
+                let increment = label(s, c)
+                let end = label(s, c)
+                expect(s, c, 7)
+                enter(s, c, 4, increment, end, 0)
+                let slot = declare(s, c, name, name_length, 0, 0)
+                let bound = hidden_slot(s, c)
+                store(s, c, o, bound)
+                store(s, c, o, slot)
+                bset(c, top + 1, 24, slot)
+                bset(c, top + 1, 28, bound)
+                bset(c, top + 1, 32, condition)
+                mark(c, f, condition)
+                load(s, c, o, slot)
+                load(s, c, o, bound)
+                consume(s, c, o, 1)
+                consume(s, c, o, 0)
+                hex(s, c, o, "4839c80f8d")
+                fix(s, c, o, f, 2, end)
                 continue
             }
             if t == 25 {
@@ -1642,10 +1767,13 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 var level = top
                 while level >= 0 {
                     if block(c, level, 0) == 3 { break }
+                    if block(c, level, 0) == 4 { break }
                     level = level - 1
                 }
-                if level < 0 { fail(s, c, "break and continue require an enclosing while loop") }
-                clear_scope(s, c, o, block(c, level, 4))
+                if level < 0 { fail(s, c, "break and continue require an enclosing loop") }
+                var first = block(c, level, 4)
+                if block(c, level, 0) == 4 { first = first + 1 }
+                clear_scope(s, c, o, first)
                 jump(s, c, o, f, block(c, level, 12))
                 next(c)
                 separator(s, c)
@@ -1655,10 +1783,13 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 var level = top
                 while level >= 0 {
                     if block(c, level, 0) == 3 { break }
+                    if block(c, level, 0) == 4 { break }
                     level = level - 1
                 }
-                if level < 0 { fail(s, c, "break and continue require an enclosing while loop") }
-                clear_scope(s, c, o, block(c, level, 4))
+                if level < 0 { fail(s, c, "break and continue require an enclosing loop") }
+                var first = block(c, level, 4)
+                if block(c, level, 0) == 4 { first = first + 1 }
+                clear_scope(s, c, o, first)
                 jump(s, c, o, f, block(c, level, 8))
                 next(c)
                 separator(s, c)
@@ -1733,13 +1864,18 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     aggregate_assignment(s, c, o, d, f, found)
                 } else { if tk(c) == 48 {
                     aggregate_assignment(s, c, o, d, f, found)
-                } else { if tk(c) == 18 {
+                } else { if assignment_kind(tk(c)) {
+                    let kind = tk(c)
+                    let at = off(c)
                     if found < 0 { set(c, 0, saved)
                         fail(s, c, "unknown variable") }
                     if sym(c, found, 12) == 0 { fail(s, c, "cannot assign to an immutable let binding") }
+                    if kind != 18 { load(s, c, o, sym(c, found, 16)) }
                     next(c)
                     let assigned_type = expression(s, c, o, d, f)
-                    if assigned_type != sym(c, found, 8) { type_error(s, c, sym(c, found, 8), assigned_type) }
+                    if kind == 18 {
+                        if assigned_type != sym(c, found, 8) { type_error(s, c, sym(c, found, 8), assigned_type) }
+                    } else { compound(s, c, o, f, kind, sym(c, found, 8), assigned_type, at) }
                     store(s, c, o, sym(c, found, 16))
                 } else {
                     if tk(c) != 5 { set(c, 0, saved)
@@ -2197,7 +2333,7 @@ fn main() {
     let argc = arg_count()
     if argc == 2 {
         let option = arg(1)
-        if equal(option, "--version") { print("Ramos 0.13.0 — compiler written in Ramos; Linux and Windows x64")
+        if equal(option, "--version") { print("Ramos 0.14.0 — compiler written in Ramos; Linux and Windows x64")
             return }
         if equal(option, "--help") { print("Usage: ramos build SOURCE.ramos -o PROGRAM [--force] [--target linux|windows] [--gui]")
             return }
