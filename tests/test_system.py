@@ -268,7 +268,7 @@ print(dir_open(arg(2)))
             self.skipTest('Wine cannot run the host Python executable as a PE child')
         self.example('rrun')
         args = ['', 'a b', 'a\t b', 'a"b', '\\', '\\\\', '\\"', '\\\\"', 'trail \\', 'é🚀', 'line\nnext', '; & $HOME']
-        code = 'import json,sys; print(json.dumps(sys.argv[1:], ensure_ascii=False))'
+        code = 'import json,sys; print(json.dumps(sys.argv[1:], ensure_ascii=True))'
         result = self.run_native(sys.executable, '-c', code, *args)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), args)
