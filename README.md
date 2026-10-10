@@ -1,14 +1,30 @@
-# Ramos 0.5
+# Ramos 0.6 — self-hosted native compiler
 
-A native x86-64 Linux compiler written entirely in assembly. Ramos source uses
-braces and `.ramos` files. The compiler emits instruction bytes and ELF executable
-headers directly, with no delegated code-generation backend.
+The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
+parser, type checker, x86-64 instruction emitter and ELF writer compile native
+Linux executables directly. There is no interpreter or delegated compiler backend.
 
-Version 0.5 adds opaque byte buffers, string-valued expressions and checked
-byte access. Buffers can be passed to functions, returned and printed. Version
-0.4 typed functions and recursion, and 0.3 structured control flow remain.
-The compiler is implemented in assembly; file I/O and compiler collections are
-next on the [self-hosting roadmap](docs/self-hosting.md).
+**Self-hosting is verified:** the assembly bootstrap builds stage 1; stage 1
+compiles the Ramos compiler into stage 2; stage 2 recompiles it into a byte-for-byte
+identical stage 3. The complete test suite runs against stages 0, 2 and 3 in
+[CI](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml).
+
+```sh
+make                         # build the self-hosted compiler as ./ramos
+make selfhost                # compare stages, run tests, record SHA-256 proof
+./ramos --version
+```
+
+Version 0.6 adds command-line arguments, fallible binary file I/O, diagnostic
+stderr and explicit exit status. It retains the byte buffers from 0.5, typed
+functions and recursion from 0.4, and structured control flow from 0.3.
+The small native OS runtime is embedded as instruction data; its assembly
+source and the original compiler are retained under `bootstrap/` for auditing
+and recovery. Python is only a test/proof harness.
+
+GitHub's language sidebar cannot yet name Ramos because it is absent from
+Linguist's registry. This repository keeps real `.ramos` sources and documents
+[what is needed for GitHub recognition](docs/github-language.md).
 
 ## Try it
 
@@ -218,73 +234,84 @@ with status 1. It never silently wraps or depends on an unhandled CPU divide
 fault. Successfully completed programs exit with status 0. Earlier output is
 retained if a later operation fails.
 
-## Build and test
+## Build, test and self-host
 
-GNU binutils (`as`, `ld`) and Make build the compiler. The source is GNU assembler
-Intel syntax; these tools bootstrap the compiler itself. They are not needed
-when the built compiler translates a `.ramos` file.
+The initial bootstrap needs x86-64 Linux, GNU binutils and Make. Python 3 runs
+integration tests and writes the proof report. Once built, `ramos` needs none of
+these tools to compile programs or rebuild itself.
 
 ```sh
-make
-make calculator
-make control-flow
-make functions
-make buffers
+make clean all selfhost
+make demo calculator control-flow functions buffers
 make test
 ```
 
-Python 3 is used only for the integration tests. The compiler has no libc,
-LLVM, C implementation, or interpreter dependency. Actual generated programs
-are executed in the tests, including arithmetic edge cases, binding semantics,
-UTF-8 strings, large programs, file protection, and executable permissions.
+`make all` installs stage 2 as `./ramos`. `make selfhost` verifies that stage 2 and
+stage 3 match, runs the corpus against stages 0, 2 and 3, verifies the embedded
+runtime against its bootstrap source, and writes `build/bootstrap-proof.json`.
+It also recompiles with an empty tool `PATH` and requires the same output.
+See [the bootstrap commands and implementation boundaries](docs/self-hosting.md)
+and [the compiler layout](compiler/README.md).
 
-Implementation files:
+Implementation:
 
-- `src/ramos.s`: CLI, input, UTF-8 validation, lexing, ELF headers, publication.
-- `src/parsing.inc`: recursive-descent expressions, typed postfix IR, hashed
-  scoped local symbol table, and semantic checks.
-- `src/codegen.inc`: bounded instruction encoding, relative-address fixups,
-  and branch-label fixups.
-- `src/functions.inc`: signature discovery, typed arguments, calls and returns.
-- `src/function_codegen.inc`: private frames, argument copying and native calls.
-- `src/runtime.inc`: position-independent I/O, integer conversion, and errors.
-- `src/buffers.inc`: typed intrinsic lookup and argument checking.
-- `src/buffer_codegen.inc`: buffer calls and mutable literal copies.
-- `src/buffer_runtime.inc`: bounded allocation, byte access and buffer output.
+- `compiler/ramos.ramos`: complete compiler pipeline and embedded runtime bytes.
+- `bootstrap/src/`: original assembly compiler plus OS intrinsics used to seed stage 1.
+- `tools/bootstrap_proof.py`: reproducibility and corpus harness; no compilation logic.
+- `tests/`: native end-to-end language, file I/O and malformed-input tests.
 
-The executable runs native instructions. Locals occupy stack slots; expressions
-use balanced pushes and pops. Code is read/execute, string data is read-only,
-and the stack is explicitly non-executable. No writable/executable load segment
-or dynamic loader is needed.
+Generated programs are static x86-64 Linux ELF executables. Code is read/execute,
+string data is read-only, buffer mappings are read/write, and the stack is
+non-executable. No writable/executable load segment or dynamic loader is needed.
+
+## Arguments and file I/O
+
+```text
+fn main() {
+    if arg_count() != 3 {
+        stderr("usage: copy INPUT OUTPUT\n")
+        exit(1)
+    }
+    let content = read_file(arg(1))
+    if io_error() != 0 {
+        stderr("cannot read input\n")
+        exit(1)
+    }
+    if write_file(arg(2), content, 0) != 0 {
+        stderr("cannot write output\n")
+        exit(1)
+    }
+}
+```
+
+`arg_count()` includes the executable name at `arg(0)`. Reads and writes are
+fallible; `io_error()` reports the last file operation's negative Linux errno
+(or zero). `read_file` returns an empty buffer on failure, so check the status
+before interpreting an empty result. `write_file` publishes atomically and
+returns zero or negative errno. Flags are 0 for a new ordinary file, 1 for a new
+executable, 2 for replacement, and 3 for replacement with executable permissions.
+It refuses to replace the most recent successfully read file or an alias of it,
+including with replacement enabled. See [the I/O contract](docs/io.md).
 
 ## Current limits and next work
 
-The compiler accepts readable regular files up to 1 MiB. Limits are 65,536
-statements, 4,096 total declarations (including blocks that have ended),
-expression depth 128, block depth 128 (including `main`), 262,144 IR records,
-and 4 MiB
-generated output. There are at most 256 functions, 16 parameters per function
-and 64 active calls. The declaration limit includes all function parameters. Complex programs may reach an IR or output limit before the
-source-size limit. Standard input and device files are not supported.
+The self-hosted compiler accepts regular source files up to 1 MiB, at most 50,000
+tokens including EOF, 4,096 total declarations including parameters and ended
+blocks, 256 functions and 16 parameters per function. Expression and block
+depth remain bounded at 128; generated programs allow 64 active calls.
+Its output and decoded string-data arenas are each 1 MiB; labels and fixups each
+have a 40,000-entry bound. These are checked limits. The retained bootstrap has
+the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).
 
-```sh
-./ramos --help
-./ramos --version
-```
-
-Next: CLI arguments, fallible file I/O, compiler collections and wrapping arithmetic. See the [bootstrap milestones](docs/self-hosting.md).
-Performance claims need repeatable workload benchmarks and later
-optimization. Native code and assembly implementation alone do not establish a
-speed advantage over mature languages.
-
-Phase 2 focuses on memory ownership, bounds checks, further hardening, and
-adversarial testing. Arithmetic checks and compiler bounds are already present.
-Generated programs run with the caller's permissions; no sandbox is provided.
-Games, web servers, and a separate browser target are later platform projects.
+The compiler is self-hosted; imports, richer collections, wrapping arithmetic,
+optimization and additional targets remain future work. Performance claims need
+new repeatable measurements. The runtime provides checked arithmetic and bounded
+buffers, but generated programs execute with the caller's operating-system
+permissions. Games and browser support need further platform work.
 
 ## Benchmarks
 
-The historical 0.2 results have not been remeasured for 0.5. The old benchmark
+The historical 0.2 results have not been remeasured for 0.6. The old benchmark
 script requires a 0.2 compiler because its binary adapter uses that version's
 entry layout; it rejects later versions before timing or modifying generated code. See
 [the measured 0.2 comparison](benchmarks/report.md) for Ramos, C, Rust,

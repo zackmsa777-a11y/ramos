@@ -1,0 +1,1205 @@
+fn get(c: bytes, p: int64) -> int64 {
+    var v = 0
+    var i = 3
+    while i >= 0 {
+        v = v * 256 + buffer_get(c, p + i)
+        i = i - 1
+    }
+    if v >= 2147483648 { v = v - 4294967296 }
+    return v
+}
+fn put(c: bytes, p: int64, v: int64) {
+    var n = v
+    if n < 0 { n = n + 4294967296 }
+    var i = 0
+    while i < 4 {
+        buffer_set(c, p + i, n % 256)
+        n = n / 256
+        i = i + 1
+    }
+}
+fn g(c: bytes, p: int64) -> int64 { return get(c, p * 4) }
+fn set(c: bytes, p: int64, v: int64) { put(c, p * 4, v) }
+fn equal(a: bytes, b: bytes) -> bool {
+    if buffer_len(a) != buffer_len(b) { return false }
+    var i = 0
+    while i < buffer_len(a) {
+        if buffer_get(a, i) != buffer_get(b, i) { return false }
+        i = i + 1
+    }
+    return true
+}
+fn same(s: bytes, a: int64, n: int64, b: int64, m: int64) -> bool {
+    if n != m { return false }
+    var i = 0
+    while i < n {
+        if buffer_get(s, a + i) != buffer_get(s, b + i) { return false }
+        i = i + 1
+    }
+    return true
+}
+fn matches(s: bytes, a: int64, n: int64, b: bytes) -> bool {
+    if n != buffer_len(b) { return false }
+    var i = 0
+    while i < n {
+        if buffer_get(s, a + i) != buffer_get(b, i) { return false }
+        i = i + 1
+    }
+    return true
+}
+fn decimal(v: int64) -> bytes {
+    let b = buffer(24)
+    var n = v
+    var p = 24
+    while true {
+        p = p - 1
+        buffer_set(b, p, 48 + n % 10)
+        n = n / 10
+        if n == 0 { break }
+    }
+    let r = buffer(24 - p)
+    var i = 0
+    while p < 24 {
+        buffer_set(r, i, buffer_get(b, p))
+        i = i + 1
+        p = p + 1
+    }
+    return r
+}
+fn fail(s: bytes, c: bytes, message: bytes) {
+    var pos = 0
+    let t = g(c, 0)
+    if t < g(c, 1) { pos = get(c, 200000 + t * 12 + 4) }
+    if g(c, 15) > 0 { pos = g(c, 15) - 1 }
+    var line = 1
+    var column = 1
+    var i = 0
+    while i < pos {
+        if buffer_get(s, i) == 10 {
+            line = line + 1
+            column = 1
+        } else { column = column + 1 }
+        i = i + 1
+    }
+    stderr(arg(2))
+    stderr(":")
+    stderr(decimal(line))
+    stderr(":")
+    stderr(decimal(column))
+    stderr(": error: ")
+    stderr(message)
+    stderr("\n")
+    exit(1)
+}
+fn limit(s: bytes, c: bytes) { fail(s, c, "compiler limit exceeded") }
+fn bad(s: bytes, c: bytes) { fail(s, c, "unexpected token or type mismatch") }
+fn tk(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12) }
+fn off(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12 + 4) }
+fn length(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12 + 8) }
+fn next(c: bytes) { set(c, 0, g(c, 0) + 1) }
+fn skip(c: bytes) { while tk(c) == 1 { next(c) } }
+fn expect(s: bytes, c: bytes, t: int64) {
+    skip(c)
+    if tk(c) != t { bad(s, c) }
+    next(c)
+}
+fn letter(v: int64) -> bool {
+    if v == 95 { return true }
+    if v >= 65 { if v <= 90 { return true } }
+    if v >= 97 { if v <= 122 { return true } }
+    return false
+}
+fn digit(v: int64) -> bool {
+    if v < 48 { return false }
+    return v <= 57
+}
+fn token(s: bytes, c: bytes, t: int64, start: int64, size: int64) {
+    let n = g(c, 1)
+    if n >= 50000 { limit(s, c) }
+    put(c, 200000 + n * 12, t)
+    put(c, 200000 + n * 12 + 4, start)
+    put(c, 200000 + n * 12 + 8, size)
+    set(c, 1, n + 1)
+}
+fn utf8(s: bytes, c: bytes) {
+    var i = 0
+    while i < buffer_len(s) {
+        set(c, 15, i + 1)
+        let v = buffer_get(s, i)
+        if v == 0 { bad(s, c) }
+        if v >= 128 {
+            var n = 2
+            if v < 194 { bad(s, c) }
+            if v >= 224 { n = 3 }
+            if v >= 240 { n = 4 }
+            if v > 244 { bad(s, c) }
+            if i + n > buffer_len(s) { bad(s, c) }
+            let w = buffer_get(s, i + 1)
+            if v == 224 { if w < 160 { bad(s, c) } }
+            if v == 237 { if w > 159 { bad(s, c) } }
+            if v == 240 { if w < 144 { bad(s, c) } }
+            if v == 244 { if w > 143 { bad(s, c) } }
+            var j = 1
+            while j < n {
+                let z = buffer_get(s, i + j)
+                if z < 128 { bad(s, c) }
+                if z > 191 { bad(s, c) }
+                j = j + 1
+            }
+            i = i + n
+        } else { i = i + 1 }
+    }
+    set(c, 15, 0)
+}
+fn lex(s: bytes, c: bytes) {
+    let words = "fn main print let var true false if else while break continue return int64 bool void bytes "
+    let kinds = buffer(17)
+    buffer_set(kinds, 0, 2)
+    buffer_set(kinds, 1, 3)
+    buffer_set(kinds, 2, 4)
+    buffer_set(kinds, 3, 19)
+    buffer_set(kinds, 4, 20)
+    buffer_set(kinds, 5, 21)
+    buffer_set(kinds, 6, 22)
+    buffer_set(kinds, 7, 23)
+    buffer_set(kinds, 8, 24)
+    buffer_set(kinds, 9, 25)
+    buffer_set(kinds, 10, 26)
+    buffer_set(kinds, 11, 27)
+    buffer_set(kinds, 12, 38)
+    buffer_set(kinds, 13, 39)
+    buffer_set(kinds, 14, 40)
+    buffer_set(kinds, 15, 41)
+    buffer_set(kinds, 16, 42)
+    var i = 0
+    while i < buffer_len(s) {
+        let start = i
+        set(c, 15, start + 1)
+        let v = buffer_get(s, i)
+        var t = 10
+        i = i + 1
+        if v == 32 { continue }
+        if v == 9 { continue }
+        if v == 10 { t = 1 }
+        if v == 13 {
+            if i >= buffer_len(s) { bad(s, c) }
+            if buffer_get(s, i) != 10 { bad(s, c) }
+            i = i + 1
+            t = 1
+        }
+        if letter(v) {
+            while i < buffer_len(s) {
+                let w = buffer_get(s, i)
+                if !letter(w) { if !digit(w) { break } }
+                i = i + 1
+            }
+            t = 11
+            var p = 0
+            var k = 0
+            while p < buffer_len(words) {
+                var end = p
+                while buffer_get(words, end) != 32 { end = end + 1 }
+                if end - p == i - start {
+                    var z = 0
+                    var ok = true
+                    while z < end - p {
+                        if buffer_get(s, start + z) != buffer_get(words, p + z) { ok = false }
+                        z = z + 1
+                    }
+                    if ok { t = buffer_get(kinds, k) }
+                }
+                p = end + 1
+                k = k + 1
+            }
+        } else {
+            if digit(v) {
+                t = 12
+                while i < buffer_len(s) {
+                    if !digit(buffer_get(s, i)) { break }
+                    i = i + 1
+                }
+            } else {
+                if v == 34 {
+                    t = 9
+                    var closed = false
+                    while i < buffer_len(s) {
+                        let w = buffer_get(s, i)
+                        i = i + 1
+                        if w == 34 { closed = true
+                            break }
+                        if w == 10 { bad(s, c) }
+                        if w == 13 { bad(s, c) }
+                        if w == 92 {
+                            if i >= buffer_len(s) { bad(s, c) }
+                            let e = buffer_get(s, i)
+                            if e != 110 { if e != 116 { if e != 114 { if e != 48 { if e != 34 { if e != 92 { bad(s, c) } } } } } }
+                            i = i + 1
+                        }
+                    }
+                    if !closed { bad(s, c) }
+                } else {
+                    if v == 40 { t = 5 }
+                    if v == 41 { t = 6 }
+                    if v == 123 { t = 7 }
+                    if v == 125 { t = 8 }
+                    if v == 43 { t = 13 }
+                    if v == 45 { t = 14 }
+                    if v == 42 { t = 15 }
+                    if v == 47 { t = 16 }
+                    if v == 37 { t = 17 }
+                    if v == 61 { t = 18 }
+                    if v == 33 { t = 28 }
+                    if v == 60 { t = 31 }
+                    if v == 62 { t = 33 }
+                    if v == 58 { t = 35 }
+                    if v == 44 { t = 36 }
+                    if i < buffer_len(s) {
+                        let w = buffer_get(s, i)
+                        if w == 61 {
+                            if t == 18 { t = 29
+                                i = i + 1 }
+                            if t == 28 { t = 30
+                                i = i + 1 }
+                            if t == 31 { t = 32
+                                i = i + 1 }
+                            if t == 33 { t = 34
+                                i = i + 1 }
+                        }
+                        if t == 14 { if w == 62 { t = 37
+                                i = i + 1 } }
+                    }
+                }
+            }
+        }
+        token(s, c, t, start, i - start)
+    }
+    token(s, c, 0, buffer_len(s), 0)
+    set(c, 15, 0)
+}
+fn field(c: bytes, n: int64, p: int64) -> int64 { return get(c, 256 + n * 256 + p) }
+fn fset(c: bytes, n: int64, p: int64, v: int64) { put(c, 256 + n * 256 + p, v) }
+fn builtin(s: bytes, a: int64, n: int64) -> int64 {
+    if matches(s, a, n, "buffer") { return 256 }
+    if matches(s, a, n, "buffer_len") { return 257 }
+    if matches(s, a, n, "buffer_get") { return 258 }
+    if matches(s, a, n, "buffer_set") { return 259 }
+    if matches(s, a, n, "arg_count") { return 260 }
+    if matches(s, a, n, "arg") { return 261 }
+    if matches(s, a, n, "read_file") { return 262 }
+    if matches(s, a, n, "write_file") { return 263 }
+    if matches(s, a, n, "io_error") { return 264 }
+    if matches(s, a, n, "stderr") { return 265 }
+    if matches(s, a, n, "exit") { return 266 }
+    return -1
+}
+fn find(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
+    var i = 0
+    while i < g(c, 2) {
+        if same(s, a, n, field(c, i, 0), field(c, i, 4)) { return i }
+        i = i + 1
+    }
+    return builtin(s, a, n)
+}
+fn arity(c: bytes, f: int64) -> int64 {
+    if f < 256 { return field(c, f, 8) }
+    if f == 260 { return 0 }
+    if f == 264 { return 0 }
+    if f == 258 { return 2 }
+    if f == 259 { return 3 }
+    if f == 263 { return 3 }
+    return 1
+}
+fn result_type(c: bytes, f: int64) -> int64 {
+    if f < 256 { return field(c, f, 12) }
+    if f == 256 { return 3 }
+    if f == 261 { return 3 }
+    if f == 262 { return 3 }
+    if f == 259 { return 2 }
+    if f == 265 { return 2 }
+    if f == 266 { return 2 }
+    return 0
+}
+fn arg_type(c: bytes, f: int64, i: int64) -> int64 {
+    if f < 256 { return field(c, f, 64 + i * 12 + 8) }
+    if f == 256 { return 0 }
+    if f == 261 { return 0 }
+    if f == 266 { return 0 }
+    if f == 263 { if i == 2 { return 0 }
+        return 3 }
+    if i == 0 { return 3 }
+    return 0
+}
+fn type(s: bytes, c: bytes) -> int64 {
+    skip(c)
+    let t = tk(c)
+    next(c)
+    if t == 39 { return 0 }
+    if t == 40 { return 1 }
+    if t == 41 { return 2 }
+    if t == 42 { return 3 }
+    bad(s, c)
+    return 2
+}
+fn discover(s: bytes, c: bytes) {
+    set(c, 3, -1)
+    while true {
+        skip(c)
+        if tk(c) == 0 { break }
+        expect(s, c, 2)
+        skip(c)
+        if tk(c) != 11 { if tk(c) != 3 { bad(s, c) } }
+        let a = off(c)
+        let n = length(c)
+        if find(s, c, a, n) != -1 { bad(s, c) }
+        let f = g(c, 2)
+        if f >= 256 { limit(s, c) }
+        fset(c, f, 0, a)
+        fset(c, f, 4, n)
+        if tk(c) == 3 { set(c, 3, f) }
+        set(c, 2, f + 1)
+        next(c)
+        expect(s, c, 5)
+        skip(c)
+        var i = 0
+        if tk(c) != 6 {
+            while true {
+                if i >= 16 { limit(s, c) }
+                if tk(c) != 11 { bad(s, c) }
+                let pa = off(c)
+                let pn = length(c)
+                var j = 0
+                while j < i {
+                    if same(s, pa, pn, field(c, f, 64 + j * 12), field(c, f, 68 + j * 12)) { bad(s, c) }
+                    j = j + 1
+                }
+                fset(c, f, 64 + i * 12, pa)
+                fset(c, f, 68 + i * 12, pn)
+                next(c)
+                expect(s, c, 35)
+                let pt = type(s, c)
+                if pt == 2 { bad(s, c) }
+                fset(c, f, 72 + i * 12, pt)
+                i = i + 1
+                skip(c)
+                if tk(c) != 36 { break }
+                next(c)
+                skip(c)
+            }
+        }
+        fset(c, f, 8, i)
+        expect(s, c, 6)
+        skip(c)
+        var rt = 2
+        if tk(c) == 37 {
+            next(c)
+            rt = type(s, c)
+        }
+        fset(c, f, 12, rt)
+        expect(s, c, 7)
+        fset(c, f, 16, g(c, 0))
+        var depth = 1
+        while depth > 0 {
+            let t = tk(c)
+            if t == 0 { bad(s, c) }
+            if t == 7 { depth = depth + 1 }
+            if t == 8 { depth = depth - 1 }
+            next(c)
+        }
+        fset(c, f, 20, g(c, 0))
+    }
+    let entry = g(c, 3)
+    if entry < 0 { bad(s, c) }
+    if arity(c, entry) != 0 { bad(s, c) }
+    if result_type(c, entry) != 2 { bad(s, c) }
+}
+fn emit(s: bytes, c: bytes, o: bytes, v: int64) {
+    let p = g(c, 4)
+    if p >= buffer_len(o) { limit(s, c) }
+    buffer_set(o, p, v)
+    set(c, 4, p + 1)
+}
+fn number(s: bytes, c: bytes, o: bytes, v: int64, size: int64) {
+    var n = v
+    var i = 0
+    while i < size {
+        var b = n % 256
+        if b < 0 { b = b + 256 }
+        emit(s, c, o, b)
+        n = (n - b) / 256
+        i = i + 1
+    }
+}
+fn hexval(v: int64) -> int64 {
+    if v <= 57 { return v - 48 }
+    return v - 87
+}
+fn hex(s: bytes, c: bytes, o: bytes, text: bytes) {
+    var i = 0
+    while i < buffer_len(text) {
+        emit(s, c, o, hexval(buffer_get(text, i)) * 16 + hexval(buffer_get(text, i + 1)))
+        i = i + 2
+    }
+}
+fn relative(s: bytes, c: bytes, o: bytes, target: int64) { number(s, c, o, target - g(c, 4) - 4, 4) }
+fn fix(s: bytes, c: bytes, o: bytes, f: bytes, kind: int64, target: int64) {
+    let n = g(c, 5)
+    if n >= 40000 { limit(s, c) }
+    put(f, n * 12, g(c, 4))
+    put(f, n * 12 + 4, kind)
+    put(f, n * 12 + 8, target)
+    set(c, 5, n + 1)
+    number(s, c, o, 0, 4)
+}
+fn label(s: bytes, c: bytes) -> int64 {
+    let n = g(c, 6)
+    if n >= 40000 { limit(s, c) }
+    set(c, 6, n + 1)
+    return n
+}
+fn mark(c: bytes, f: bytes, n: int64) { put(f, 600000 + n * 4, g(c, 4)) }
+fn jump(s: bytes, c: bytes, o: bytes, f: bytes, n: int64) {
+    emit(s, c, o, 233)
+    fix(s, c, o, f, 2, n)
+}
+fn load(s: bytes, c: bytes, o: bytes, slot: int64) {
+    hex(s, c, o, "488b85")
+    number(s, c, o, -8 * (slot + 1), 4)
+    emit(s, c, o, 80)
+}
+fn store(s: bytes, c: bytes, o: bytes, slot: int64) {
+    hex(s, c, o, "58488985")
+    number(s, c, o, -8 * (slot + 1), 4)
+}
+fn sym(c: bytes, i: int64, p: int64) -> int64 { return get(c, 70000 + i * 24 + p) }
+fn symbol(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
+    var i = g(c, 7) - 1
+    while i >= 0 {
+        if same(s, a, n, sym(c, i, 0), sym(c, i, 4)) { return i }
+        i = i - 1
+    }
+    return -1
+}
+fn declare(s: bytes, c: bytes, a: int64, n: int64, t: int64, mutable: int64) -> int64 {
+    let found = symbol(s, c, a, n)
+    if found >= 0 {
+        if sym(c, found, 20) == g(c, 10) { bad(s, c) }
+    }
+    let i = g(c, 7)
+    if g(c, 8) >= 4096 { limit(s, c) }
+    if i >= 4096 { limit(s, c) }
+    let slot = g(c, 9)
+    put(c, 70000 + i * 24, a)
+    put(c, 70000 + i * 24 + 4, n)
+    put(c, 70000 + i * 24 + 8, t)
+    put(c, 70000 + i * 24 + 12, mutable)
+    put(c, 70000 + i * 24 + 16, slot)
+    put(c, 70000 + i * 24 + 20, g(c, 10))
+    set(c, 7, i + 1)
+    set(c, 8, g(c, 8) + 1)
+    set(c, 9, slot + 1)
+    return slot
+}
+fn typed(s: bytes, c: bytes, t: int64) {
+    let n = g(c, 12)
+    if n >= 1024 { limit(s, c) }
+    put(c, 900000 + n * 4, t)
+    set(c, 12, n + 1)
+}
+fn pop_type(s: bytes, c: bytes) -> int64 {
+    let n = g(c, 12) - 1
+    if n < 0 { bad(s, c) }
+    set(c, 12, n)
+    return get(c, 900000 + n * 4)
+}
+fn prec(t: int64) -> int64 {
+    if t >= 100 { return 6 }
+    if t == 15 { return 5 }
+    if t == 16 { return 5 }
+    if t == 17 { return 5 }
+    if t == 13 { return 4 }
+    if t == 14 { return 4 }
+    if t >= 31 { if t <= 34 { return 3 } }
+    if t == 29 { return 2 }
+    if t == 30 { return 2 }
+    return 0
+}
+fn op(c: bytes, i: int64, p: int64) -> int64 { return get(c, 910000 + i * 24 + p) }
+fn op_set(c: bytes, i: int64, p: int64, n: int64) { put(c, 910000 + i * 24 + p, n) }
+fn push_op(s: bytes, c: bytes, t: int64, fnid: int64) {
+    let n = g(c, 11)
+    if n >= 1024 { limit(s, c) }
+    op_set(c, n, 0, t)
+    op_set(c, n, 4, fnid)
+    op_set(c, n, 8, 0)
+    op_set(c, n, 12, g(c, 12))
+    set(c, 11, n + 1)
+    if t == 5 { set(c, 13, g(c, 13) + 1) }
+    if t == 6 { set(c, 13, g(c, 13) + 1) }
+    if t >= 100 { set(c, 13, g(c, 13) + 1) }
+    if g(c, 13) >= 128 { limit(s, c) }
+}
+fn apply(s: bytes, c: bytes, o: bytes) {
+    let n = g(c, 11) - 1
+    let t = op(c, n, 0)
+    set(c, 11, n)
+    let right = pop_type(s, c)
+    if t >= 100 {
+        set(c, 13, g(c, 13) - 1)
+        if t == 128 {
+            if right != 1 { bad(s, c) }
+            hex(s, c, o, "584885c00f94c0480fb6c050")
+        } else {
+            if right != 0 { bad(s, c) }
+            if t == 114 {
+                hex(s, c, o, "5848f7d80f80")
+                relative(s, c, o, math_address())
+                emit(s, c, o, 80)
+            }
+        }
+        typed(s, c, right)
+        return
+    }
+    let left = pop_type(s, c)
+    if left != right { bad(s, c) }
+    if t == 29 { if left != 0 { if left != 1 { bad(s, c) } }
+        hex(s, c, o, "59584839c80f94c0480fb6c050")
+        typed(s, c, 1)
+        return }
+    if t == 30 { if left != 0 { if left != 1 { bad(s, c) } }
+        hex(s, c, o, "59584839c80f95c0480fb6c050")
+        typed(s, c, 1)
+        return }
+    if left != 0 { bad(s, c) }
+    if t >= 31 {
+        hex(s, c, o, "59584839c80f")
+        if t == 31 { emit(s, c, o, 156) }
+        if t == 32 { emit(s, c, o, 158) }
+        if t == 33 { emit(s, c, o, 159) }
+        if t == 34 { emit(s, c, o, 157) }
+        hex(s, c, o, "c0480fb6c050")
+        typed(s, c, 1)
+        return
+    }
+    if t == 13 { hex(s, c, o, "59584801c8") }
+    if t == 14 { hex(s, c, o, "59584829c8") }
+    if t == 15 { hex(s, c, o, "5958480fafc1") }
+    if t <= 15 {
+        hex(s, c, o, "0f80")
+        relative(s, c, o, math_address())
+    } else {
+        hex(s, c, o, "59584885c90f84")
+        relative(s, c, o, math_address())
+        hex(s, c, o, "48ba")
+        number(s, c, o, -9223372036854775808, 8)
+        hex(s, c, o, "4839d0750a4883f9ff0f84")
+        relative(s, c, o, math_address())
+        hex(s, c, o, "489948f7f9")
+        if t == 17 { hex(s, c, o, "4889d0") }
+    }
+    emit(s, c, o, 80)
+    typed(s, c, 0)
+}
+fn literal(s: bytes, c: bytes, o: bytes) {
+    let a = off(c)
+    let n = length(c)
+    var i = 0
+    var value = 0
+    while i < n {
+        let d = buffer_get(s, a + i) - 48
+        if value < -922337203685477580 { fail(s, c, "integer literal out of range") }
+        if value == -922337203685477580 { if d > 8 { fail(s, c, "integer literal out of range") } }
+        value = value * 10 - d
+        i = i + 1
+    }
+    if value == -9223372036854775808 {
+        let top = g(c, 11) - 1
+        if top < 0 { bad(s, c) }
+        if op(c, top, 0) != 114 { bad(s, c) }
+        set(c, 11, top)
+        set(c, 13, g(c, 13) - 1)
+    } else { value = -value }
+    hex(s, c, o, "48b8")
+    number(s, c, o, value, 8)
+    emit(s, c, o, 80)
+    typed(s, c, 0)
+    next(c)
+}
+fn string(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
+    let start = g(c, 14)
+    var p = off(c) + 1
+    let end = p + length(c) - 2
+    while p < end {
+        var v = buffer_get(s, p)
+        p = p + 1
+        if v == 92 {
+            v = buffer_get(s, p)
+            p = p + 1
+            if v == 110 { v = 10 }
+            if v == 116 { v = 9 }
+            if v == 114 { v = 13 }
+            if v == 48 { v = 0 }
+        }
+        let at = g(c, 14)
+        if at >= buffer_len(d) { limit(s, c) }
+        buffer_set(d, at, v)
+        set(c, 14, at + 1)
+    }
+    hex(s, c, o, "488d35")
+    fix(s, c, o, f, 3, start)
+    hex(s, c, o, "48b8")
+    number(s, c, o, g(c, 14) - start, 8)
+    emit(s, c, o, 232)
+    relative(s, c, o, literal_address())
+    emit(s, c, o, 80)
+    typed(s, c, 3)
+    next(c)
+}
+fn call_emit(s: bytes, c: bytes, o: bytes, f: bytes, fnid: int64) {
+    let n = arity(c, fnid)
+    if fnid >= 256 {
+        if n == 3 { emit(s, c, o, 90) }
+        if n >= 2 { emit(s, c, o, 89) }
+        if n >= 1 { emit(s, c, o, 88) }
+        emit(s, c, o, 232)
+        relative(s, c, o, builtin_address(fnid - 256))
+    } else {
+        emit(s, c, o, 232)
+        fix(s, c, o, f, 1, fnid)
+        if n > 0 {
+            hex(s, c, o, "4881c4")
+            number(s, c, o, n * 8, 4)
+        }
+    }
+    emit(s, c, o, 80)
+    typed(s, c, result_type(c, fnid))
+}
+fn argument(s: bytes, c: bytes, n: int64) {
+    let f = op(c, n, 4)
+    let i = op(c, n, 8)
+    if i >= arity(c, f) { bad(s, c) }
+    if g(c, 12) != op(c, n, 12) + 1 { bad(s, c) }
+    let t = pop_type(s, c)
+    if t != arg_type(c, f, i) { bad(s, c) }
+    op_set(c, n, 8, i + 1)
+}
+fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
+    set(c, 11, 0)
+    set(c, 12, 0)
+    set(c, 13, 0)
+    var wanted = true
+    while true {
+        let t = tk(c)
+        if wanted {
+            if t == 13 {
+                push_op(s, c, 113, 0)
+                next(c)
+                skip(c)
+                continue
+            }
+            if t == 14 {
+                push_op(s, c, 114, 0)
+                next(c)
+                skip(c)
+                continue
+            }
+            if t == 28 {
+                push_op(s, c, 128, 0)
+                next(c)
+                skip(c)
+                continue
+            }
+            if t == 5 {
+                push_op(s, c, 5, 0)
+                next(c)
+                skip(c)
+                continue
+            }
+            if t == 12 { literal(s, c, o) }
+            else {
+                if t == 9 { string(s, c, o, d, f) }
+                else {
+                    if t == 21 {
+                        hex(s, c, o, "48b8")
+                        number(s, c, o, 1, 8)
+                        emit(s, c, o, 80)
+                        typed(s, c, 1)
+                        next(c)
+                    } else {
+                        if t == 22 {
+                            hex(s, c, o, "48b8")
+                            number(s, c, o, 0, 8)
+                            emit(s, c, o, 80)
+                            typed(s, c, 1)
+                            next(c)
+                        } else {
+                            if t == 11 {
+                                let a = off(c)
+                                let n = length(c)
+                                let sy = symbol(s, c, a, n)
+                                let id = find(s, c, a, n)
+                                next(c)
+                                if tk(c) == 5 {
+                                    if sy >= 0 { bad(s, c) }
+                                    if id < 0 { next_back(c)
+                                        bad(s, c) }
+                                    push_op(s, c, 6, id)
+                                    next(c)
+                                    skip(c)
+                                    if tk(c) == 6 {
+                                        if arity(c, id) != 0 { bad(s, c) }
+                                        set(c, 11, g(c, 11) - 1)
+                                        set(c, 13, g(c, 13) - 1)
+                                        call_emit(s, c, o, f, id)
+                                        next(c)
+                                    } else { continue }
+                                } else {
+                                    if sy < 0 { next_back(c)
+                                        bad(s, c) }
+                                    load(s, c, o, sym(c, sy, 16))
+                                    typed(s, c, sym(c, sy, 8))
+                                }
+                            } else { bad(s, c) }
+                        }
+                    }
+                }
+            }
+            wanted = false
+            continue
+        }
+        while g(c, 11) > 0 {
+            if op(c, g(c, 11) - 1, 0) < 100 { break }
+            apply(s, c, o)
+        }
+        if prec(t) > 0 {
+            while g(c, 11) > 0 {
+                let top = op(c, g(c, 11) - 1, 0)
+                if prec(top) < prec(t) { break }
+                apply(s, c, o)
+            }
+            push_op(s, c, t, 0)
+            next(c)
+            skip(c)
+            wanted = true
+            continue
+        }
+        if t == 6 {
+            while g(c, 11) > 0 {
+                let top = op(c, g(c, 11) - 1, 0)
+                if top == 5 { break }
+                if top == 6 { break }
+                apply(s, c, o)
+            }
+            if g(c, 11) == 0 { break }
+            let top = g(c, 11) - 1
+            if op(c, top, 0) == 6 {
+                argument(s, c, top)
+                let id = op(c, top, 4)
+                if op(c, top, 8) != arity(c, id) { bad(s, c) }
+                set(c, 11, top)
+                call_emit(s, c, o, f, id)
+            } else {
+                if g(c, 12) != op(c, top, 12) + 1 { bad(s, c) }
+                set(c, 11, top)
+            }
+            set(c, 13, g(c, 13) - 1)
+            next(c)
+            continue
+        }
+        if t == 36 {
+            while g(c, 11) > 0 {
+                let top = op(c, g(c, 11) - 1, 0)
+                if top == 5 { break }
+                if top == 6 { break }
+                apply(s, c, o)
+            }
+            if g(c, 11) == 0 { break }
+            let top = g(c, 11) - 1
+            if op(c, top, 0) != 6 { bad(s, c) }
+            argument(s, c, top)
+            next(c)
+            skip(c)
+            wanted = true
+            continue
+        }
+        if t == 1 {
+            if g(c, 13) > 0 { skip(c)
+                continue }
+        }
+        break
+    }
+    if wanted { bad(s, c) }
+    while g(c, 11) > 0 {
+        let t = op(c, g(c, 11) - 1, 0)
+        if t == 5 { bad(s, c) }
+        if t == 6 { bad(s, c) }
+        apply(s, c, o)
+    }
+    if g(c, 12) != 1 { bad(s, c) }
+    return pop_type(s, c)
+}
+fn next_back(c: bytes) { set(c, 0, g(c, 0) - 1) }
+fn block(c: bytes, i: int64, p: int64) -> int64 { return get(c, 850000 + i * 40 + p) }
+fn bset(c: bytes, i: int64, p: int64, v: int64) { put(c, 850000 + i * 40 + p, v) }
+fn enter(s: bytes, c: bytes, kind: int64, a: int64, b: int64, returned: int64) {
+    let i = g(c, 10)
+    if i >= 128 { limit(s, c) }
+    bset(c, i, 0, kind)
+    bset(c, i, 4, g(c, 7))
+    bset(c, i, 8, a)
+    bset(c, i, 12, b)
+    bset(c, i, 16, 0)
+    bset(c, i, 20, returned)
+    set(c, 10, i + 1)
+}
+fn epilogue(s: bytes, c: bytes, o: bytes, value: bool) {
+    if value { emit(s, c, o, 88) }
+    else { hex(s, c, o, "31c0") }
+    hex(s, c, o, "c949ffccc3")
+}
+fn separator(s: bytes, c: bytes) {
+    if tk(c) != 1 { if tk(c) != 8 { fail(s, c, "expected newline or closing brace") } }
+    skip(c)
+}
+fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
+    var fnid = 0
+    while fnid < g(c, 2) {
+        set(c, 0, field(c, fnid, 16))
+        set(c, 7, 0)
+        set(c, 9, 0)
+        set(c, 10, 0)
+        enter(s, c, 0, 0, 0, 0)
+        var p = 0
+        while p < arity(c, fnid) {
+            declare(s, c, field(c, fnid, 64 + p * 12), field(c, fnid, 68 + p * 12), arg_type(c, fnid, p), 0)
+            p = p + 1
+        }
+        fset(c, fnid, 24, g(c, 4))
+        hex(s, c, o, "49ffc44983fc400f87")
+        relative(s, c, o, depth_address())
+        hex(s, c, o, "554889e54881ec")
+        let frame_patch = g(c, 4)
+        number(s, c, o, 0, 4)
+        p = 0
+        while p < arity(c, fnid) {
+            hex(s, c, o, "488b85")
+            number(s, c, o, 16 + (arity(c, fnid) - p - 1) * 8, 4)
+            hex(s, c, o, "488985")
+            number(s, c, o, -8 * (p + 1), 4)
+            p = p + 1
+        }
+        while g(c, 10) > 0 {
+            skip(c)
+            let t = tk(c)
+            if t == 0 { bad(s, c) }
+            let top = g(c, 10) - 1
+            if t == 8 {
+                let kind = block(c, top, 0)
+                let a = block(c, top, 8)
+                let b = block(c, top, 12)
+                let returned = block(c, top, 16)
+                let then_return = block(c, top, 20)
+                set(c, 7, block(c, top, 4))
+                set(c, 10, top)
+                next(c)
+                if kind == 0 {
+                    if result_type(c, fnid) != 2 { if returned == 0 { fail(s, c, "function may reach its end without returning") } }
+                    epilogue(s, c, o, false)
+                    put(o, frame_patch, ((g(c, 9) * 8 + 15) / 16) * 16)
+                    break
+                }
+                if kind == 1 {
+                    var separated = false
+                    if tk(c) == 1 { separated = true }
+                    skip(c)
+                    if tk(c) == 24 {
+                        jump(s, c, o, f, b)
+                        mark(c, f, a)
+                        next(c)
+                        expect(s, c, 7)
+                        enter(s, c, 2, a, b, returned)
+                        continue
+                    }
+                    mark(c, f, a)
+                    if !separated { if tk(c) != 8 { bad(s, c) } }
+                    continue
+                }
+                if kind == 2 {
+                    mark(c, f, b)
+                    if then_return == 1 { if returned == 1 { bset(c, top - 1, 16, 1) } }
+                    separator(s, c)
+                    continue
+                }
+                if kind == 3 {
+                    jump(s, c, o, f, a)
+                    mark(c, f, b)
+                    separator(s, c)
+                    continue
+                }
+            }
+            if t == 23 {
+                next(c)
+                if expression(s, c, o, d, f) != 1 { bad(s, c) }
+                let no = label(s, c)
+                let end = label(s, c)
+                hex(s, c, o, "584885c00f84")
+                fix(s, c, o, f, 2, no)
+                expect(s, c, 7)
+                enter(s, c, 1, no, end, 0)
+                continue
+            }
+            if t == 25 {
+                let start = label(s, c)
+                let end = label(s, c)
+                mark(c, f, start)
+                next(c)
+                if expression(s, c, o, d, f) != 1 { bad(s, c) }
+                hex(s, c, o, "584885c00f84")
+                fix(s, c, o, f, 2, end)
+                expect(s, c, 7)
+                enter(s, c, 3, start, end, 0)
+                continue
+            }
+            if t == 26 {
+                var level = top
+                while level >= 0 {
+                    if block(c, level, 0) == 3 { break }
+                    level = level - 1
+                }
+                if level < 0 { bad(s, c) }
+                jump(s, c, o, f, block(c, level, 12))
+                next(c)
+                separator(s, c)
+                continue
+            }
+            if t == 27 {
+                var level = top
+                while level >= 0 {
+                    if block(c, level, 0) == 3 { break }
+                    level = level - 1
+                }
+                if level < 0 { bad(s, c) }
+                jump(s, c, o, f, block(c, level, 8))
+                next(c)
+                separator(s, c)
+                continue
+            }
+            if t == 38 {
+                next(c)
+                let rt = result_type(c, fnid)
+                if rt == 2 {
+                    if tk(c) != 1 { if tk(c) != 8 { bad(s, c) } }
+                    epilogue(s, c, o, false)
+                } else {
+                    if expression(s, c, o, d, f) != rt { bad(s, c) }
+                    epilogue(s, c, o, true)
+                }
+                bset(c, top, 16, 1)
+                separator(s, c)
+                continue
+            }
+            if t == 4 {
+                next(c)
+                expect(s, c, 5)
+                let pt = expression(s, c, o, d, f)
+                expect(s, c, 6)
+                emit(s, c, o, 88)
+                emit(s, c, o, 232)
+                if pt == 0 { relative(s, c, o, integer_address()) }
+                else {
+                    if pt == 1 { relative(s, c, o, boolean_address()) }
+                    else {
+                        if pt != 3 { bad(s, c) }
+                        relative(s, c, o, print_buffer_address())
+                    }
+                }
+                separator(s, c)
+                continue
+            }
+            if t == 19 {
+                next(c)
+                if tk(c) != 11 { bad(s, c) }
+                let a = off(c)
+                let n = length(c)
+                next(c)
+                expect(s, c, 18)
+                let dt = expression(s, c, o, d, f)
+                if dt == 2 { bad(s, c) }
+                let slot = declare(s, c, a, n, dt, 0)
+                store(s, c, o, slot)
+                separator(s, c)
+                continue
+            }
+            if t == 20 {
+                next(c)
+                if tk(c) != 11 { bad(s, c) }
+                let a = off(c)
+                let n = length(c)
+                next(c)
+                expect(s, c, 18)
+                let dt = expression(s, c, o, d, f)
+                if dt == 2 { bad(s, c) }
+                let slot = declare(s, c, a, n, dt, 1)
+                store(s, c, o, slot)
+                separator(s, c)
+                continue
+            }
+            if t == 11 {
+                let saved = g(c, 0)
+                let found = symbol(s, c, off(c), length(c))
+                next(c)
+                if tk(c) == 18 {
+                    if found < 0 { set(c, 0, saved)
+                        bad(s, c) }
+                    if sym(c, found, 12) == 0 { bad(s, c) }
+                    next(c)
+                    if expression(s, c, o, d, f) != sym(c, found, 8) { bad(s, c) }
+                    store(s, c, o, sym(c, found, 16))
+                } else {
+                    if tk(c) != 5 { set(c, 0, saved)
+                        bad(s, c) }
+                    var end = saved + 2
+                    var nesting = 1
+                    while nesting > 0 {
+                        let token_kind = get(c, 200000 + end * 12)
+                        if token_kind == 0 { bad(s, c) }
+                        if token_kind == 5 { nesting = nesting + 1 }
+                        if token_kind == 6 { nesting = nesting - 1 }
+                        end = end + 1
+                    }
+                    set(c, 0, saved)
+                    expression(s, c, o, d, f)
+                    if g(c, 0) != end { bad(s, c) }
+                    emit(s, c, o, 88)
+                }
+                separator(s, c)
+                continue
+            }
+            bad(s, c)
+        }
+        fnid = fnid + 1
+    }
+}
+fn elf(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> bytes {
+    let rx = g(c, 4)
+    let data = ((rx + 4095) / 4096) * 4096
+    let size = data + g(c, 14)
+    if size > buffer_len(o) { limit(s, c) }
+    put(o, 0, 1179403647)
+    buffer_set(o, 4, 2)
+    buffer_set(o, 5, 1)
+    buffer_set(o, 6, 1)
+    buffer_set(o, 16, 2)
+    buffer_set(o, 18, 62)
+    put(o, 20, 1)
+    put(o, 24, 4194304 + runtime_end())
+    put(o, 32, 64)
+    buffer_set(o, 52, 64)
+    buffer_set(o, 54, 56)
+    buffer_set(o, 56, 3)
+    put(o, 64, 1)
+    put(o, 68, 5)
+    put(o, 80, 4194304)
+    put(o, 88, 4194304)
+    put(o, 96, rx)
+    put(o, 104, rx)
+    put(o, 112, 4096)
+    put(o, 120, 1)
+    put(o, 124, 4)
+    put(o, 128, data)
+    put(o, 136, 4194304 + data)
+    put(o, 144, 4194304 + data)
+    put(o, 152, g(c, 14))
+    put(o, 160, g(c, 14))
+    put(o, 168, 4096)
+    put(o, 176, 1685382481)
+    put(o, 180, 6)
+    put(o, 224, 16)
+    var i = 0
+    while i < g(c, 5) {
+        let at = get(f, i * 12)
+        let kind = get(f, i * 12 + 4)
+        let value = get(f, i * 12 + 8)
+        var target = 0
+        if kind == 1 { target = field(c, value, 24) }
+        if kind == 2 { target = get(f, 600000 + value * 4) }
+        if kind == 3 { target = data + value }
+        put(o, at, target - at - 4)
+        i = i + 1
+    }
+    i = 0
+    while i < g(c, 14) {
+        buffer_set(o, data + i, buffer_get(d, i))
+        i = i + 1
+    }
+    let result = buffer(size)
+    i = 0
+    while i < size {
+        buffer_set(result, i, buffer_get(o, i))
+        i = i + 1
+    }
+    return result
+}
+fn main() {
+    let argc = arg_count()
+    if argc == 2 {
+        let option = arg(1)
+        if equal(option, "--version") { print("Ramos 0.6.0 — compiler written in Ramos")
+            return }
+        if equal(option, "--help") { print("Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]")
+            return }
+    }
+    if argc != 5 { if argc != 6 { stderr("error: usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n")
+            exit(1) } }
+    if !equal(arg(1), "build") { stderr("error: expected build\n")
+        exit(1) }
+    if !equal(arg(3), "-o") { stderr("error: expected -o\n")
+        exit(1) }
+    var flags = 1
+    if argc == 6 {
+        if !equal(arg(5), "--force") { stderr("error: expected --force\n")
+            exit(1) }
+        flags = 3
+    }
+    let s = read_file(arg(2))
+    let c = buffer(1048576)
+    if io_error() != 0 { fail(s, c, "cannot read input (readable regular file required; source size limit is 1048576)") }
+    utf8(s, c)
+    lex(s, c)
+    discover(s, c)
+    let o = buffer(1048576)
+    let d = buffer(1048576)
+    let f = buffer(1048576)
+    set(c, 4, 4096)
+    hex(s, c, o, runtime_text())
+    hex(s, c, o, entry_text())
+    emit(s, c, o, 232)
+    fix(s, c, o, f, 1, g(c, 3))
+    hex(s, c, o, "b83c00000031ff0f05")
+    functions(s, c, o, d, f)
+    let result = elf(s, c, o, d, f)
+    if write_file(arg(4), result, flags) != 0 { fail(s, c, "cannot publish output: check existing file, source alias, directory and permissions") }
+}
+
+fn runtime_text() -> bytes { return "bf010000004885d2741ab8010000000f054883f8fc74f34885c07e094801c64829c275e6c3bf01000000b83c0000000f050f0b4883ec20488d7424204989f048ffcec6060a4989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2e882ffffff4883c420c34885c07411488d351b000000ba05000000e967ffffff488d350f000000ba06000000e956ffffff747275650a66616c73650a488d3570000000ba3d000000bf02000000e83affffffbf01000000b83c0000000f050f0b488d351d000000ba2f000000bf02000000e816ffffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a483d000010000f87b2000000488d500f4883e2f8498d0c164881f9000000010f87a70000004d85ed75325052b80900000031ffbe00000001ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff73754989c55a584889c14b8d4435004901d6488908c356e88fffffff5e488b08488d7808f3a4c3488b00c3483b0873550fb6440808c3483b08734a4881faff000000774f8854080831c0c3488b10488d7008e8ebfdffff488d350a000000ba01000000e9dafdffff0a488d3547000000ba3f000000eb28488d3578000000ba46000000eb1a488d35b0000000ba30000000eb0c488d35d2000000ba3a000000bf02000000e89efdffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a498b07488b00c3498b0f483b010f83ccfeffff488b74c10831c0803c06000f844cfeffff48ffc0483d000010000f8790feffffebe5498b4708c3488b10488d7008bf02000000e856fcffff31c0c3483dff0000000f8793feffff4889c7b83c0000000f050f0b488b084881f90010000073354885c97438488d700831d2803c1600742c48ffc24839ca72f256488d4101e870fdffff5e488d7808488b0848ffc9f3a44883c008c348c7c0dcffffffc348c7c0eaffffffc355534881ecb00000004889e549c747080000000048c78590000000ffffffffe88bffffff4885c00f88170100004889c6b80101000048c7c79cffffffba000808004531d20f054885c00f88f5000000488985900000004889c74889eeb8050000000f054885c00f88d80000008b45182500f000003d008000000f85be000000488b4530483d000010000f87a5000000e8bafcffff4889859800000031db488b8598000000488b104829da7422488d741808488bbd9000000031c00f054883f8fc74db4885c0787d74294801c3ebcf488bbd90000000488db5a8000000ba0100000031c00f054883f8fc74e34885c078547542488bbd9000000048c78590000000ffffffffb8030000000f054885c07834488b450049894710488b45084989471849c7472001000000488b8598000000488918eb2e48c7c0e5ffffffeb0748c7c0eaffffff49894708488bbd900000004885ff7807b8030000000f0531c0e8ecfbffff4881c4b00000005b5dc34885d2741cb8010000000f054883f8fc74f34885c0780c740b4801c64829c275e431c0c348c7c0fbffffffc3b806010000488b7d18488b7530488d95800000004531d20f054883f8fe74304885c0782d49837f2000741a498b4710483b8580000000750d498b4718483b8588000000740d48f7451002000000740b31c0c348c7c0eaffffffc348c7c0efffffffc355534881ec401100004889e548894d084889551048c74518ffffffff48c74520ffffffff48c745280000000049c74708000000004883fa030f87e8010000e872fdffff4885c00f88f80100004889450031c931d2803c0800740f803c082f7504488d510148ffc1ebeb4839d10f84b4010000488d341048897530488dbd100100004885d2740d4889c64889d1f3a4c60700eb0566c7072e00b80101000048c7c79cffffff488db510010000ba000029004531d20f054885c00f888601000048894518e8d7feffff4885c00f887401000031dbffc383fb100f8752010000b83e010000488dbd20110000be0800000031d20f054883f8fc74da4883f8080f8536010000488d7d40488d3585010000b90b000000f3a4488b8520110000b91000000089c283e20f83c261881748ffc748c1e804e2edc60700488b7530488d7d4031c98a040e3a040f750984c0748648ffc1ebefb801010000488b7d18488d7540bac1000a0041ba800100000f054883f8ef0f845dffffff4885c00f88c60000004889452048c74528010000004889c7488b4508488b10488d7008e8d5fdffff4885c00f889e000000b85b000000488b7d20bea401000048f74510010000007405beed0100000f054885c0787a488b7d2048c74520ffffffffb8030000000f054885c07862e8b7fdffff4885c07858b83c010000488b7d18488d75404889fa4c8b553041b80100000048f745100200000074034531c00f054885c0782a48c745280000000031c0eb1e48c7c0eaffffffeb1548c7c0efffffffeb0c4885c0780748c7c0fbffffff4889453849894708488b7d204885ff7807b8030000000f0548837d28007411b807010000488b7d18488d754031d20f05488b7d184885ff7807b8030000000f05488b45384881c4401100005b5dc32e72616d6f732d746d702d" }
+fn entry_text() -> bytes { return "fc4531e44531ed4531f64889e04883ec304989e749890749c747080000000049c7472000000000" }
+fn runtime_end() -> int64 { return 6322 }
+fn math_address() -> int64 { return 4277 }
+fn depth_address() -> int64 { return 4313 }
+fn literal_address() -> int64 { return 4564 }
+fn integer_address() -> int64 { return 4147 }
+fn boolean_address() -> int64 { return 4227 }
+fn print_buffer_address() -> int64 { return 4617 }
+fn builtin_address(n: int64) -> int64 {
+    if n == 0 { return 4457 }
+    if n == 1 { return 4581 }
+    if n == 2 { return 4585 }
+    if n == 3 { return 4596 }
+    if n == 4 { return 4964 }
+    if n == 5 { return 4971 }
+    if n == 6 { return 5147 }
+    if n == 7 { return 5653 }
+    if n == 8 { return 5017 }
+    if n == 9 { return 5022 }
+    if n == 10 { return 5042 }
+    return 0
+}

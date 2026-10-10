@@ -1,18 +1,19 @@
 # Ramos: proposed language and compiler design
 
-Status: phase 1A and the first integer/binding portion of phase 1B are implemented
-as Ramos 0.2. Broader CLI features and phase 2 remain roadmaps. See
-`ramos/README.md` for the working compiler.
+Status: Ramos 0.6 is self-hosted: the compiler pipeline is Ramos source and
+successive stage-2/stage-3 builds match. This document preserves the original
+assembly-bootstrap design and longer-term goals. See [README](../README.md)
+and [self-hosting proof](self-hosting.md) for the current implementation.
 
 ## Intent and agreed constraints
 
-Create a language with simple brace-based syntax, very fast execution as a goal, and source files ending in `.ramos`. Build the compiler and its components from scratch in assembly. An existing assembler is allowed to bootstrap the compiler. Long-term applications include command-line tools, games, and websites. Phase 2 focuses on security.
+Create a language with simple brace-based syntax, very fast execution as a goal, and source files ending in `.ramos`. Bootstrap the compiler from scratch in assembly, then implement it in Ramos. An existing assembler is allowed to bootstrap the compiler. Long-term applications include command-line tools, games, and websites. Phase 2 focuses on security.
 
 Implementation choices: Ramos is the language name; “very fast” means program execution speed, with compiler speed also measured; x86-64 Linux is the first target.
 
 ## Approach
 
-The compiler is written in x86-64 assembly and built with GNU `as` and `ld`, which were already installed. This replaces the originally proposed NASM bootstrap. These are bootstrap tools: generated Ramos programs do not require them. The compiler emits instruction bytes and ELF executable headers itself, without delegating code generation to a C compiler, LLVM, an external assembler, or an external linker.
+The original stage-0 compiler is written in x86-64 assembly and built with GNU `as` and `ld`, which were already installed. This replaces the originally proposed NASM bootstrap. These are bootstrap tools: generated Ramos programs do not require them. The compiler emits instruction bytes and ELF executable headers itself, without delegating code generation to a C compiler, LLVM, an external assembler, or an external linker.
 
 The first compiler and its generated programs use Linux system calls directly. Linux supplies the process loader and operating-system interfaces. Building an operating system or replacing CPU hardware is outside this project.
 
@@ -144,6 +145,6 @@ Phase 2 security remains an ongoing track, not a completed guarantee.
 
 Version 0.4 adds typed functions, arguments, return values and recursion with
 a bounded call counter. Version 0.5 adds process-owned byte buffers, string-valued
-expressions and checked byte access. Next add file I/O and compiler collections needed
-for a compiler written in Ramos. See
+expressions and checked byte access. Version 0.6 adds CLI arguments, fallible
+file I/O and a compiler written in Ramos with matching stage-2/stage-3 output. See
 [self-hosting milestones](self-hosting.md).

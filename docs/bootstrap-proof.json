@@ -1,0 +1,21 @@
+{
+  "version": "0.6.0",
+  "target": "x86_64-linux",
+  "compiler_source": "compiler/ramos.ramos",
+  "source_sha256": "5ffc43c35bc9ecfde71d1187f1e6d89189973f8dae35a482494ecf2196d0e05f",
+  "executables": {
+    "stage0": "2afb98d4713b71ee574e89a6c2b5b94d0ce09a869fb11ef38dfdac5552eed73d",
+    "stage1": "aef9fb537d3d23a138c4476b3399a0d4c89bc7ec7f2835e70fc7a26d2cf6b46b",
+    "stage2": "3723a13a8abfcf7c459cf2acecdec76ed915e02dfbcc95d5a308bc5a473d571c",
+    "stage3": "3723a13a8abfcf7c459cf2acecdec76ed915e02dfbcc95d5a308bc5a473d571c"
+  },
+  "stage2_equals_stage3": true,
+  "isolated_path_rebuild_matches": true,
+  "embedded_runtime_matches_bootstrap": true,
+  "tests_per_stage": 85,
+  "corpus_passed_with": [
+    "stage0",
+    "stage2",
+    "stage3"
+  ]
+}

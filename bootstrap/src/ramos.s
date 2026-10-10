@@ -1,4 +1,4 @@
-# Ramos 0.5: x86-64 Linux compiler. GNU assembler, Intel syntax.
+# Ramos 0.6 bootstrap: x86-64 Linux compiler. GNU assembler, Intel syntax.
 # No libc, LLVM, C backend, or external code generation.
 # Internal routines use caller-saved rax, rcx, rdx, rsi, rdi, r8-r11.
 .intel_syntax noprefix
@@ -986,13 +986,13 @@ expect_token:
     jne syntax_error
     jmp next_token
 
-.include "src/parsing.inc"
-.include "src/functions.inc"
-.include "src/buffers.inc"
+.include "bootstrap/src/parsing.inc"
+.include "bootstrap/src/functions.inc"
+.include "bootstrap/src/buffers.inc"
 
-.include "src/codegen.inc"
-.include "src/function_codegen.inc"
-.include "src/buffer_codegen.inc"
+.include "bootstrap/src/codegen.inc"
+.include "bootstrap/src/function_codegen.inc"
+.include "bootstrap/src/buffer_codegen.inc"
 
 # Refuse aliases to the source, even with --force. Existing destinations
 # require --force; renameat2(RENAME_NOREPLACE) also protects against races.
@@ -1156,7 +1156,7 @@ arg_version: .asciz "--version"
 colon: .asciz ":"
 newline_text: .asciz "\n"
 error_prefix: .asciz ": error: "
-version_message: .asciz "Ramos 0.5.0 — native assembly compiler\n"
+version_message: .asciz "Ramos 0.6.0 — native assembly bootstrap\n"
 help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, continue, typed functions, return, and bounded byte buffers.\nTarget: x86-64 Linux. Existing output requires --force.\n"
 usage_message: .asciz "usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]"
 input_message: .asciz "cannot read input (a readable regular file is required)"
@@ -1180,7 +1180,7 @@ exists_message: .asciz "output already exists; use --force to replace it"
 temporary_suffix: .ascii ".ramos-tmp-"
 .equ TEMPORARY_SUFFIX_SIZE, . - temporary_suffix
 
-.include "src/runtime.inc"
+.include "bootstrap/src/runtime.inc"
 
 .balign 8
 elf_header:

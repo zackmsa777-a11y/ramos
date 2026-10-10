@@ -12,12 +12,12 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-COMPILER = ROOT / 'ramos'
+COMPILER = Path(os.environ.get('RAMOS_COMPILER', ROOT / 'ramos')).resolve()
 
 
 class RamosTests(unittest.TestCase):
     def setUp(self):
-        self.assertTrue(COMPILER.is_file(), 'The assembly compiler must exist')
+        self.assertTrue(COMPILER.is_file(), 'The compiler must exist')
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name)
@@ -172,7 +172,7 @@ class RamosTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
     def test_help_and_version(self):
-        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.5')):
+        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.6')):
             result = subprocess.run([str(COMPILER), argument], capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0)
             self.assertIn(expected, result.stdout)
