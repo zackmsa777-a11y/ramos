@@ -1,0 +1,6 @@
+* text=auto
+*.ramos text eol=lf
+*.py text eol=lf
+*.s text eol=lf
+*.inc text eol=lf
+Makefile text eol=lf

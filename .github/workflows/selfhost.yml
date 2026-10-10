@@ -7,12 +7,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Bootstrap, prove deterministic self-hosting, and test all stages
-        run: make clean all selfhost
-      - name: Preserve bootstrap proof and compiler
+      - name: Bootstrap, prove Linux self-hosting, and build the Windows compiler
+        run: make clean all selfhost windows
+      - name: Preserve native compilers and Linux proof
         uses: actions/upload-artifact@v4
         with:
-          name: ramos-linux-x86_64-selfhost
+          name: ramos-native-compilers
           path: |
             ramos
+            build/ramos.exe
             build/bootstrap-proof.json
+  windows:
+    needs: bootstrap
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ramos-native-compilers
+          path: native
+      - name: Prove native Windows self-hosting and run the shared language corpus
+        shell: pwsh
+        env:
+          RAMOS_WINDOWS_COMPILER: native/build/ramos.exe
+        run: python tools/windows_proof.py
+      - name: Preserve Windows compiler and proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ramos-windows-x86_64-selfhost
+          path: |
+            native/build/ramos.exe
+            build/windows-bootstrap-proof.json

@@ -1,6 +1,6 @@
 # Ramos: proposed language and compiler design
 
-Status: Ramos 0.6 is self-hosted: the compiler pipeline is Ramos source and
+Status: Ramos 0.7 is self-hosted on Linux and Windows: the compiler pipeline is Ramos source and
 successive stage-2/stage-3 builds match. This document preserves the original
 assembly-bootstrap design and longer-term goals. See [README](../README.md)
 and [self-hosting proof](self-hosting.md) for the current implementation.
@@ -148,3 +148,7 @@ a bounded call counter. Version 0.5 adds process-owned byte buffers, string-valu
 expressions and checked byte access. Version 0.6 adds CLI arguments, fallible
 file I/O and a compiler written in Ramos with matching stage-2/stage-3 output. See
 [self-hosting milestones](self-hosting.md).
+
+Version 0.7 adds native Windows x64 PE output, a Windows-native compiler,
+Windows OS intrinsics and shared parser/code generation. Simplicity and fast
+native execution remain core rules; new performance claims require measurements.

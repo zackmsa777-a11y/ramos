@@ -1,4 +1,4 @@
-# Ramos 0.6 bootstrap: x86-64 Linux compiler. GNU assembler, Intel syntax.
+# Ramos 0.7 bootstrap: x86-64 Linux compiler. GNU assembler, Intel syntax.
 # No libc, LLVM, C backend, or external code generation.
 # Internal routines use caller-saved rax, rcx, rdx, rsi, rdi, r8-r11.
 .intel_syntax noprefix
@@ -1156,7 +1156,7 @@ arg_version: .asciz "--version"
 colon: .asciz ":"
 newline_text: .asciz "\n"
 error_prefix: .asciz ": error: "
-version_message: .asciz "Ramos 0.6.0 — native assembly bootstrap\n"
+version_message: .asciz "Ramos 0.7.0 — native assembly bootstrap\n"
 help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, continue, typed functions, return, and bounded byte buffers.\nTarget: x86-64 Linux. Existing output requires --force.\n"
 usage_message: .asciz "usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]"
 input_message: .asciz "cannot read input (a readable regular file is required)"

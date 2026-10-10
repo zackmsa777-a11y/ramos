@@ -1,0 +1,14 @@
+{
+  "version": "0.7.0",
+  "target": "x86_64-windows",
+  "execution_host": "wine",
+  "source_sha256": "0a56a473f91f9037a160987ae6ac1e80242c1f946efbe3e71b04c9756aa641e8",
+  "executables": {
+    "seed": "7e7e07bd9ac91de1812ca4047167049ac99267f5e08ec55855602e5ec97513d4",
+    "stage2": "7e7e07bd9ac91de1812ca4047167049ac99267f5e08ec55855602e5ec97513d4",
+    "stage3": "7e7e07bd9ac91de1812ca4047167049ac99267f5e08ec55855602e5ec97513d4"
+  },
+  "stage2_equals_stage3": true,
+  "seed_equals_stage2": true,
+  "tests_passed": 40
+}

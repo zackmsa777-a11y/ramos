@@ -47,7 +47,7 @@ def check_runtime():
         'RUNTIME_BUFFER_NEW_FILE', 'RUNTIME_BUFFER_LEN_FILE', 'RUNTIME_BUFFER_GET_FILE',
         'RUNTIME_BUFFER_SET_FILE', 'RUNTIME_ARG_COUNT_FILE', 'RUNTIME_ARG_FILE',
         'RUNTIME_READ_FILE_FILE', 'RUNTIME_WRITE_FILE_FILE', 'RUNTIME_IO_ERROR_FILE',
-        'RUNTIME_STDERR_FILE', 'RUNTIME_EXIT_FILE',
+        'RUNTIME_STDERR_FILE', 'RUNTIME_EXIT_FILE', 'RUNTIME_PLATFORM_FILE',
     ]
     table = source[source.index('fn builtin_address'):]
     for i, const in enumerate(builtin_constants):
@@ -64,6 +64,7 @@ def check_runtime():
 
 def main():
     check_runtime()
+    run(sys.executable, "tools/runtime_data.py")
     # The self-hosted executable runs with no assembler, linker, Python or compiler in PATH.
     environment = dict(os.environ, PATH='/nonexistent')
     run('./build/stage2', 'build', 'compiler/ramos.ramos', '-o', 'build/stage3-isolated', '--force', env=environment)
@@ -71,7 +72,7 @@ def main():
     if hashes['stage2'] != hashes['stage3'] or digest(ROOT / 'build/stage3-isolated') != hashes['stage3']:
         raise SystemExit('Self-hosting fixed point failed')
     report = {
-        'version': '0.6.0', 'target': 'x86_64-linux',
+        'version': '0.7.0', 'target': 'x86_64-linux',
         'compiler_source': 'compiler/ramos.ramos',
         'source_sha256': digest(ROOT / 'compiler/ramos.ramos'),
         'executables': hashes, 'stage2_equals_stage3': True,
@@ -80,7 +81,8 @@ def main():
     for stage in (0, 2, 3):
         env = dict(os.environ, RAMOS_COMPILER=str(ROOT / f'build/stage{stage}'))
         run(sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', env=env)
-    report['tests_per_stage'] = unittest.TestLoader().discover(str(ROOT / 'tests')).countTestCases()
+    report['tests_discovered_per_stage'] = unittest.TestLoader().discover(str(ROOT / 'tests')).countTestCases()
+    report['bootstrap_skips_linux_only_target_selection_tests'] = 4
     report['corpus_passed_with'] = ['stage0', 'stage2', 'stage3']
     (ROOT / 'build/bootstrap-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

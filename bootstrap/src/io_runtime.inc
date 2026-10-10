@@ -417,3 +417,8 @@ runtime_temporary_prefix: .ascii ".ramos-tmp-"
 .equ RUNTIME_IO_ERROR_FILE, CODE_OFFSET + runtime_io_error - runtime_writer
 .equ RUNTIME_STDERR_FILE, CODE_OFFSET + runtime_stderr - runtime_writer
 .equ RUNTIME_EXIT_FILE, CODE_OFFSET + runtime_process_exit - runtime_writer
+
+runtime_platform:
+    xor eax, eax
+    ret
+.equ RUNTIME_PLATFORM_FILE, CODE_OFFSET + runtime_platform - runtime_writer

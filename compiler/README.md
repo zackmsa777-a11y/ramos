@@ -43,15 +43,15 @@ Scalar state cell indices: 0 current token, 1 token count, 2 function count,
 3 main function index, 4 output cursor, 5 fixup count, 6 label count, 7 active
 symbols, 8 total declarations, 9 frame slots, 10 block depth, 11 operators,
 12 expression types, 13 expression nesting, 14 decoded-data length, 15 diagnostic
-source override. Token kinds preserve the bootstrap constants. Types are
-0 int64, 1 bool, 2 void, 3 bytes. Callable IDs 256..266 identify OS/buffer intrinsics.
+source override, 16 selected target (0 Linux, 1 Windows). Token kinds preserve the bootstrap constants. Types are
+0 int64, 1 bool, 2 void, 3 bytes. Callable IDs 256..267 identify OS/buffer intrinsics.
 
 `f` holds up to 40,000 12-byte fixup records at zero and up to 40,000 4-byte label
 positions at 600,000. Fixup kinds are 1 function, 2 branch, 3 literal. All rel32
 values are emitted deterministically; paths and timestamps are not embedded.
 
 Nesting is checked at 128, functions at 256, parameters at 16, and final output
-including ELF alignment and string data at 1 MiB. The bootstrap retains its
+including ELF/PE alignment and string data at 1 MiB. The bootstrap retains its
 older 4 MiB output and postfix IR representation. Different resource limits do
 not change accepted programs' runtime semantics.
 
@@ -63,3 +63,20 @@ OS/runtime boundary, not compilation logic. `tools/bootstrap_proof.py` checks
 the bytes and offsets against the original assembly runtime on every proof.
 Changes to the runtime must update those literals and constants together. Keep
 the assembly compiler under `bootstrap/` as a reproducible recovery source.
+
+## Windows target
+
+The parser and instruction selection are shared with Linux. `native_address`
+and `native_builtin` select runtime entry offsets using state cell 16. `pe`
+writes a PE32+ console image with 4096-byte file/section alignment: `.text` RX,
+`.rdata` R, `.idata` RW at RVA 0x200000, and `.reloc` R at RVA 0x201000. Relative
+code/literal offsets keep identical file offsets and RVAs. The import table's
+fixed RVA lies beyond the bounded 1 MiB output arena, avoiding extra fixups.
+All code is position-independent; the relocation directory has only ABSOLUTE
+padding entries, so there are no absolute code addresses to relocate.
+
+`bootstrap/windows/runtime.s` implements the private-ABI Windows OS boundary.
+`tools/runtime_data.py` reproducibly generates or checks the Linux/Windows
+embedded bytes, native API imports and offsets. It is an audit tool, never a
+backend used to compile Ramos programs. After changing an OS boundary, run
+`python3 tools/runtime_data.py --write` followed by both bootstrap proofs.

@@ -1,8 +1,9 @@
-# Ramos 0.6 — self-hosted native compiler
+# Ramos 0.7 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
-parser, type checker, x86-64 instruction emitter and ELF writer compile native
-Linux executables directly. There is no interpreter or delegated compiler backend.
+parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
+native Linux and Windows executables directly. There is no interpreter or
+delegated compiler backend.
 
 **Self-hosting is verified:** the assembly bootstrap builds stage 1; stage 1
 compiles the Ramos compiler into stage 2; stage 2 recompiles it into a byte-for-byte
@@ -15,12 +16,17 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
-Version 0.6 adds command-line arguments, fallible binary file I/O, diagnostic
+Version 0.7 adds native Windows executables, a Windows-native self-hosted compiler,
+and `--target linux|windows` selection. See [Windows instructions](docs/windows.md).
+Version 0.6 added command-line arguments, fallible binary file I/O, diagnostic
 stderr and explicit exit status. It retains the byte buffers from 0.5, typed
 functions and recursion from 0.4, and structured control flow from 0.3.
 The small native OS runtime is embedded as instruction data; its assembly
 source and the original compiler are retained under `bootstrap/` for auditing
 and recovery. Python is only a test/proof harness.
+
+The language keeps its core rules: **simple syntax and fast native execution**.
+New performance claims require measurements; native output alone is not a benchmark.
 
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
@@ -71,6 +77,26 @@ both `PREFIX` and `DESTDIR`.
 Existing output requires `--force`. The compiler rejects destinations that refer
 to the input, including hardlinks and symlink aliases. Failed builds preserve an
 existing destination and remove their unpublished temporary output.
+
+## Windows
+
+On Windows, use the native `ramos.exe` from the CI artifact:
+
+```powershell
+.\ramos.exe build .\hello.ramos -o .\hello.exe
+.\hello.exe
+```
+
+From Linux, cross-compile directly:
+
+```sh
+./ramos build examples/hello.ramos -o hello.exe --target windows
+make windows                 # native Windows compiler: build/ramos.exe
+```
+
+Windows is the default target for the Windows compiler; Linux is the default for
+the Linux compiler. Both can select either target explicitly. See
+[Windows setup, runtime and self-hosting](docs/windows.md).
 
 ## Syntax
 
@@ -260,9 +286,10 @@ Implementation:
 - `tools/bootstrap_proof.py`: reproducibility and corpus harness; no compilation logic.
 - `tests/`: native end-to-end language, file I/O and malformed-input tests.
 
-Generated programs are static x86-64 Linux ELF executables. Code is read/execute,
+Generated programs are x86-64 Linux ELF or Windows PE32+ executables. Code is read/execute,
 string data is read-only, buffer mappings are read/write, and the stack is
-non-executable. No writable/executable load segment or dynamic loader is needed.
+non-executable. No region is both writable and executable. Linux output is static; Windows
+uses system DLLs with NX/ASLR protections and requires no C runtime.
 
 ## Arguments and file I/O
 
@@ -285,11 +312,13 @@ fn main() {
 ```
 
 `arg_count()` includes the executable name at `arg(0)`. Reads and writes are
-fallible; `io_error()` reports the last file operation's negative Linux errno
+fallible; `io_error()` reports the last file operation's negative error status
 (or zero). `read_file` returns an empty buffer on failure, so check the status
 before interpreting an empty result. `write_file` publishes atomically and
 returns zero or negative errno. Flags are 0 for a new ordinary file, 1 for a new
 executable, 2 for replacement, and 3 for replacement with executable permissions.
+`platform()` identifies the host (0 Linux, 1 Windows). Windows maps failures to
+common negative statuses and accepts the executable flag without POSIX modes.
 It refuses to replace the most recent successfully read file or an alias of it,
 including with replacement enabled. See [the I/O contract](docs/io.md).
 
@@ -311,7 +340,7 @@ permissions. Games and browser support need further platform work.
 
 ## Benchmarks
 
-The historical 0.2 results have not been remeasured for 0.6. The old benchmark
+The historical 0.2 results have not been remeasured for 0.7. The old benchmark
 script requires a 0.2 compiler because its binary adapter uses that version's
 entry layout; it rejects later versions before timing or modifying generated code. See
 [the measured 0.2 comparison](benchmarks/report.md) for Ramos, C, Rust,

@@ -5,7 +5,7 @@ PREFIX ?= /usr/local
 DESTDIR ?=
 INSTALL ?= install
 
-.PHONY: all bootstrap selfhost test test-bootstrap demo calculator control-flow functions buffers install clean
+.PHONY: all bootstrap selfhost windows test-windows test test-bootstrap demo calculator control-flow functions buffers install clean
 all: ramos
 
 build/stage0.o: bootstrap/src/ramos.s $(wildcard bootstrap/src/*.inc)
@@ -20,6 +20,11 @@ build/stage2: build/stage1 compiler/ramos.ramos
 	./build/stage1 build compiler/ramos.ramos -o $@ --force
 build/stage3: build/stage2 compiler/ramos.ramos
 	./build/stage2 build compiler/ramos.ramos -o $@ --force
+build/ramos.exe: ramos compiler/ramos.ramos
+	./ramos build compiler/ramos.ramos -o $@ --target windows --force
+windows: build/ramos.exe
+test-windows: windows
+	$(PYTHON) tools/windows_proof.py
 ramos: build/stage2
 	$(INSTALL) -m 755 $< $@
 selfhost: build/stage3

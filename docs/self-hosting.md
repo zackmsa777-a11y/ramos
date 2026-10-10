@@ -1,9 +1,9 @@
-# Ramos 0.6: self-hosting proved
+# Ramos 0.7: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
 resolves scoped symbols, emits native x86-64 instructions, resolves labels,
-writes ELF64 headers, and publishes the resulting executable. It does not
+writes ELF64 or PE32+ headers, and publishes the resulting executable. It does not
 interpret Ramos, launch another compiler, or delegate machine-code generation.
 
 ## Reproduce from a clean checkout
@@ -33,7 +33,8 @@ differ in instruction selection from stage 2; the required fixed point is
 
 The proof harness additionally runs stage 2 with `PATH=/nonexistent`, verifies
 that its output still matches stage 3, and runs the complete language/I/O corpus
-with stages 0, 2 and 3. It writes hashes and checks to `build/bootstrap-proof.json`.
+with stages 0, 2 and 3 (the Linux-only assembly bootstrap skips target selection).
+It writes hashes and checks to `build/bootstrap-proof.json`.
 The GitHub Actions workflow rebuilds this chain and preserves the report and
 native compiler as artifacts. A local proof snapshot is in
 [bootstrap-proof.json](bootstrap-proof.json); CI is the reproducible authority.
@@ -41,9 +42,9 @@ native compiler as artifacts. A local proof snapshot is in
 ## Implementation boundary
 
 The entire compiler pipeline is Ramos source, including the machine-code and
-ELF emitter. The private native runtime is represented as a hexadecimal literal
+ELF/PE emitters. The private native runtime is represented as a hexadecimal literal
 inside that source. It provides checked arithmetic diagnostics, integer/boolean
-printing, bounded buffers, and the syscall boundary for arguments and file I/O.
+printing, bounded buffers, and native OS boundaries for arguments and file I/O.
 The literal is instruction data, not an embedded compiler executable.
 
 The runtime's assembly source remains in `bootstrap/src/runtime.inc`,
@@ -70,3 +71,11 @@ Self-hosting is a compiler property. GitHub's language sidebar is a separate
 Linguist classification service; it does not yet include Ramos. See
 [GitHub language recognition](github-language.md). The bootstrap and Python test
 harness are retained honestly rather than relabeled as Ramos.
+
+## Windows fixed point
+
+The same Ramos source builds the Windows compiler. `make windows` produces
+`build/ramos.exe`; `tools/windows_proof.py` compiles it twice on Windows and
+requires identical seed/stage-2/stage-3 PE binaries. The CI Windows job runs
+shared language tests and records the native Windows proof. See
+[Windows bootstrap instructions](windows.md).

@@ -1,18 +1,19 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "target": "x86_64-linux",
   "compiler_source": "compiler/ramos.ramos",
-  "source_sha256": "5ffc43c35bc9ecfde71d1187f1e6d89189973f8dae35a482494ecf2196d0e05f",
+  "source_sha256": "0a56a473f91f9037a160987ae6ac1e80242c1f946efbe3e71b04c9756aa641e8",
   "executables": {
-    "stage0": "2afb98d4713b71ee574e89a6c2b5b94d0ce09a869fb11ef38dfdac5552eed73d",
-    "stage1": "aef9fb537d3d23a138c4476b3399a0d4c89bc7ec7f2835e70fc7a26d2cf6b46b",
-    "stage2": "3723a13a8abfcf7c459cf2acecdec76ed915e02dfbcc95d5a308bc5a473d571c",
-    "stage3": "3723a13a8abfcf7c459cf2acecdec76ed915e02dfbcc95d5a308bc5a473d571c"
+    "stage0": "b52aefce5f88b6c6ba9b852e2e0b711001d28efbf28a0d28b59fee5350023f45",
+    "stage1": "7103925a1fc0adaf3d29f74b83d4c5b7d4bec245415d4c20cd3a7ca29bab1e7b",
+    "stage2": "3990e011b34a0fe83cfb4766987b955ddf1c278306e810fef3c1a9d31ea917e6",
+    "stage3": "3990e011b34a0fe83cfb4766987b955ddf1c278306e810fef3c1a9d31ea917e6"
   },
   "stage2_equals_stage3": true,
   "isolated_path_rebuild_matches": true,
   "embedded_runtime_matches_bootstrap": true,
-  "tests_per_stage": 85,
+  "tests_discovered_per_stage": 90,
+  "bootstrap_skips_linux_only_target_selection_tests": 4,
   "corpus_passed_with": [
     "stage0",
     "stage2",

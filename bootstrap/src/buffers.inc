@@ -1,6 +1,6 @@
 # Intrinsic records: name pointer/length, arity, result type, three argument
 # types, runtime file offset. Name resolution preserves local shadowing.
-.equ BUILTIN_COUNT, 11
+.equ BUILTIN_COUNT, 12
 find_builtin:
     push rbx
     push r12
@@ -109,6 +109,7 @@ write_file_name: .ascii "write_file"
 io_error_name: .ascii "io_error"
 stderr_name: .ascii "stderr"
 exit_name: .ascii "exit"
+platform_name: .ascii "platform"
 .balign 8
 builtin_signatures:
     .quad buffer_name, 6, 1, TYPE_BUFFER, TYPE_INT, 0, 0, RUNTIME_BUFFER_NEW_FILE
@@ -122,4 +123,5 @@ builtin_signatures:
     .quad io_error_name, 8, 0, TYPE_INT, 0, 0, 0, RUNTIME_IO_ERROR_FILE
     .quad stderr_name, 6, 1, TYPE_VOID, TYPE_BUFFER, 0, 0, RUNTIME_STDERR_FILE
     .quad exit_name, 4, 1, TYPE_VOID, TYPE_INT, 0, 0, RUNTIME_EXIT_FILE
+    .quad platform_name, 8, 0, TYPE_INT, 0, 0, 0, RUNTIME_PLATFORM_FILE
 .section .text
