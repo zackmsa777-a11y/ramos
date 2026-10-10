@@ -26,5 +26,11 @@
     "new_timings": false
   },
   "staged_install_verified": true,
-  "source_alias_protection_survives_gc": true
+  "source_alias_protection_survives_gc": true,
+  "windows_tests": 114,
+  "native_ci": {
+    "url": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38043340397",
+    "conclusion": "success",
+    "both_native_fixed_points": true
+  }
 }

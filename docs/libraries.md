@@ -140,3 +140,8 @@ source stays compatible with that grammar and implements `weave` directly in
 Ramos. Library tests run on both self-hosted Linux stages and native Windows.
 Bootstrap fixed points and embedded OS-boundary bytes remain audited. Saved
 0.7.1 speed tables are historical; this release makes no new speed claim.
+
+[Native CI](https://github.com/zackmsa777-a11y/ramos/actions/runs/38043340397)
+passed 164 Linux tests and 114 Windows tests. See
+[recorded validation](libraries-verification.json), [Linux proof](bootstrap-proof.json)
+and [Windows proof](windows-bootstrap-proof.json).

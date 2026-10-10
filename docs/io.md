@@ -31,6 +31,9 @@ size. The limit is 1 MiB. The descriptor is closed on success and failure. A
 successful empty read is distinguished from failure using `io_error()`.
 The identity of the most recent successful input (device and inode) is retained
 as an output safeguard. A failed read does not erase that protection.
+Version 0.11's compiler additionally records all root/library identities using
+its internal guard, so a weave build protects every input; ordinary user I/O
+keeps the most-recent-input contract.
 
 `write_file` flags are bit 0 = executable and bit 1 = replacement. Other values
 are rejected. On Linux, normal output mode is 0644 and executable output mode is 0755. Output
