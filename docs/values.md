@@ -159,3 +159,8 @@ reused zeroed buffers, live-heap exhaustion and cyclic graph lifetimes.
 Performance tables remain the historical 0.7.1 measurements; this release makes
 no new comparative speed claim. Syntax conveniences, imports/stdlib, floats
 and formatter/assembly tooling remain subsequent priorities.
+
+The [native CI run](https://github.com/zackmsa777-a11y/ramos/actions/runs/38041196929)
+passed 144 Linux tests and 94 Windows tests, with matching self-hosted compiler
+rebuilds on both targets. See [recorded validation](values-verification.json),
+[Linux proof](bootstrap-proof.json) and [Windows proof](windows-bootstrap-proof.json).

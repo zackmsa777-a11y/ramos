@@ -18,5 +18,11 @@
     "old_compiler_builds_new_source": true,
     "upgraded_compiler_rebuild_matches_stage2": true
   },
-  "rollback": "Use the v0.9.0 tag or its native release binary; no persistent format migration is introduced."
+  "rollback": "Use the v0.9.0 tag or its native release binary; no persistent format migration is introduced.",
+  "windows_test_count": 94,
+  "native_ci": {
+    "url": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38041196929",
+    "conclusion": "success",
+    "linux_and_windows_fixed_points": true
+  }
 }
