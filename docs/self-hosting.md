@@ -1,4 +1,4 @@
-# Ramos 0.10: self-hosting proved
+# Ramos 0.11: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -49,7 +49,7 @@ The literal is instruction data, not an embedded compiler executable.
 
 The runtime's assembly source remains in `bootstrap/src/runtime.inc`,
 `buffer_runtime.inc`, `heap_runtime.inc`, `values_runtime.inc`, `io_runtime.inc`,
-`text_runtime.inc` and `stdin_runtime.inc`. The proof verifies every embedded byte
+`text_runtime.inc`, `stdin_runtime.inc` and `source_guard.inc`. The proof verifies every embedded byte
 and native entry offset against the bootstrap's emitted runtime. Retaining an
 assembly OS boundary does not mean the Ramos compiler invokes assembly at run
 time; once stage 1 is seeded, the next stages require no assembler or linker.
@@ -83,7 +83,7 @@ shared language tests and records the native Windows proof. See
 [Windows bootstrap instructions](windows.md).
 
 The retained assembly seed implements the 0.7 grammar. The compiler source uses
-compatible surface syntax while implementing the full 0.10 API and grammar itself. Tests
+compatible surface syntax while implementing the full 0.11 API and grammar itself. Tests
 for comments, short-circuit booleans and managed-value syntax run on stages 2/3 and native Windows;
 the seed explicitly skips them. The proof JSON records both discovered counts
 and these skips. No source preprocessing or external backend is required.
@@ -96,3 +96,7 @@ and Windows runtime bytes, entry offsets and fixed points are audited.
 Version 0.10 adds shared heap collection, audited value operations and checked
 struct/array typing. The retained seed shares the heap but explicitly skips the
 new syntax tests; the proof records that separate count.
+
+Version 0.11 reads library graphs using the Ramos-written `load_sources` pipeline.
+The retained seed supplies the private source-identity guard but skips weave/stdlib
+tests; both self-hosted stages and native Windows run them.

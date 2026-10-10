@@ -53,9 +53,21 @@ fn fail(s: bytes, c: bytes, message: bytes) {
     let t = g(c, 0)
     if t < g(c, 1) { pos = get(c, 200000 + t * 12 + 4) }
     if g(c, 15) > 0 { pos = g(c, 15) - 1 }
+    var origin = 0
+    var filename = arg(2)
+    var source_id = 0
+    while source_id < g(c, 21) {
+        if module(c, source_id, 16) == 1 {
+            if pos >= module(c, source_id, 0) { if pos <= module(c, source_id, 4) {
+                origin = module(c, source_id, 0)
+                filename = module_path(c, source_id)
+            } }
+        }
+        source_id = source_id + 1
+    }
     var line = 1
     var column = 1
-    var i = 0
+    var i = origin
     while i < pos {
         if buffer_get(s, i) == 10 {
             line = line + 1
@@ -63,7 +75,7 @@ fn fail(s: bytes, c: bytes, message: bytes) {
         } else { column = column + 1 }
         i = i + 1
     }
-    stderr(arg(2))
+    stderr(filename)
     stderr(":")
     stderr(decimal(line))
     stderr(":")
@@ -99,7 +111,7 @@ fn type_error(s: bytes, c: bytes, expected: int64, actual: int64) {
     fail(s, c, concat(concat(concat("expected ", type_name(expected)), ", found "), type_name(actual)))
 }
 fn expected(s: bytes, c: bytes, t: int64) {
-    if t == 2 { fail(s, c, "expected 'fn' at top level") }
+    if t == 2 { fail(s, c, "expected 'fn' or 'struct' at top level; use 'weave' for libraries") }
     if t == 5 { fail(s, c, "expected '('") }
     if t == 6 { fail(s, c, "expected ')'") }
     if t == 7 { fail(s, c, "expected '{'") }
@@ -167,8 +179,8 @@ fn utf8(s: bytes, c: bytes) {
     set(c, 15, 0)
 }
 fn lex(s: bytes, c: bytes) {
-    let words = "fn main print let var true false if else while break continue return int64 bool void bytes string struct "
-    let kinds = buffer(19)
+    let words = "fn main print let var true false if else while break continue return int64 bool void bytes string struct weave "
+    let kinds = buffer(20)
     buffer_set(kinds, 0, 2)
     buffer_set(kinds, 1, 3)
     buffer_set(kinds, 2, 4)
@@ -188,6 +200,7 @@ fn lex(s: bytes, c: bytes) {
     buffer_set(kinds, 16, 42)
     buffer_set(kinds, 17, 45)
     buffer_set(kinds, 18, 46)
+    buffer_set(kinds, 19, 51)
     var i = 0
     while i < buffer_len(s) {
         let start = i
@@ -478,6 +491,7 @@ fn builtin(s: bytes, a: int64, n: int64) -> int64 {
     if matches(s, a, n, "array_set") { return 282 }
     if matches(s, a, n, "array_resize") { return 283 }
     if matches(s, a, n, "array_empty") { return 289 }
+    if matches(s, a, n, "_protect_input") { return 290 }
     return -1
 }
 fn find(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
@@ -501,6 +515,7 @@ fn arity(c: bytes, f: int64) -> int64 {
     if f == 272 { return 0 }
     if f == 273 { return 0 }
     if f == 274 { return 0 }
+    if f == 290 { return 0 }
     if f == 258 { return 2 }
     if f == 259 { return 3 }
     if f == 263 { return 3 }
@@ -1849,6 +1864,289 @@ fn native_builtin(c: bytes, n: int64) -> int64 {
     if g(c, 16) == 1 { return windows_builtin(n) }
     return builtin_address(n)
 }
+fn module(c: bytes, id: int64, p: int64) -> int64 { return get(c, 801000 + id * 32 + p) }
+fn mset(c: bytes, id: int64, p: int64, v: int64) { put(c, 801000 + id * 32 + p, v) }
+fn copy_bytes(out: bytes, at: int64, source: bytes, begin: int64, count: int64) {
+    var i = 0
+    while i < count { buffer_set(out, at + i, buffer_get(source, begin + i))
+        i = i + 1 }
+}
+fn module_path(c: bytes, id: int64) -> bytes {
+    let path = buffer(module(c, id, 12))
+    copy_bytes(path, 0, c, module(c, id, 8), buffer_len(path))
+    return path
+}
+fn source_context(c: bytes, path: bytes, size: int64) {
+    set(c, 0, 0)
+    set(c, 1, 0)
+    set(c, 15, 0)
+    set(c, 21, 1)
+    mset(c, 0, 0, 0)
+    mset(c, 0, 4, size)
+    mset(c, 0, 8, 803100)
+    mset(c, 0, 12, buffer_len(path))
+    mset(c, 0, 16, 1)
+    copy_bytes(c, 803100, path, 0, buffer_len(path))
+}
+fn lower_ascii(v: int64) -> int64 {
+    if v >= 65 { if v <= 90 { return v + 32 } }
+    return v
+}
+fn normalize_path(s: bytes, c: bytes, path: bytes) -> bytes {
+    if buffer_len(path) == 0 { fail(s, c, "empty source path") }
+    if buffer_len(path) >= 4096 { fail(s, c, "source path exceeds 4095 bytes") }
+    let out = buffer(4096)
+    let segments = buffer(4096)
+    var used = 0
+    var i = 0
+    var depth = 0
+    var rooted = false
+    var floor = 0
+    var base = 0
+    if buffer_get(path, 0) == 47 {
+        rooted = true
+        buffer_set(out, 0, 47)
+        used = 1
+        i = 1
+        if platform() == 1 { if buffer_len(path) > 1 { if buffer_get(path, 1) == 47 {
+            buffer_set(out, 1, 47)
+            used = 2
+            i = 2
+            floor = 2
+        } } }
+    }
+    if platform() == 1 {
+        if buffer_get(path, 0) == 92 {
+            rooted = true
+            buffer_set(out, 0, 47)
+            used = 1
+            i = 1
+            if buffer_len(path) > 1 { if buffer_get(path, 1) == 92 {
+                buffer_set(out, 1, 47)
+                used = 2
+                i = 2
+                floor = 2
+            } }
+        }
+        if buffer_len(path) >= 2 { if buffer_get(path, 1) == 58 {
+            if buffer_len(path) < 3 { fail(s, c, "drive-relative source paths are not supported") }
+            let separator = buffer_get(path, 2)
+            if separator != 47 { if separator != 92 { fail(s, c, "drive-relative source paths are not supported") } }
+            rooted = true
+            buffer_set(out, 0, buffer_get(path, 0))
+            buffer_set(out, 1, 58)
+            buffer_set(out, 2, 47)
+            used = 3
+            i = 3
+        } }
+    }
+    base = used
+    while i < buffer_len(path) {
+        let v = buffer_get(path, i)
+        if v < 32 { fail(s, c, "control characters are not allowed in source paths") }
+        if v == 47 { i = i + 1
+            continue }
+        if platform() == 1 { if v == 92 { i = i + 1
+            continue } }
+        let start = i
+        while i < buffer_len(path) {
+            let w = buffer_get(path, i)
+            if w < 32 { fail(s, c, "control characters are not allowed in source paths") }
+            if w == 47 { break }
+            if platform() == 1 { if w == 92 { break } }
+            i = i + 1
+        }
+        let n = i - start
+        if matches(path, start, n, ".") { continue }
+        if matches(path, start, n, "..") {
+            if depth > floor {
+                if get(segments, (depth - 1) * 8 + 4) == 0 {
+                    used = get(segments, (depth - 1) * 8)
+                    depth = depth - 1
+                    continue
+                }
+            }
+            if rooted { continue }
+        }
+        if depth >= 512 { fail(s, c, "source path exceeds 512 components") }
+        put(segments, depth * 8, used)
+        var parent = 0
+        if matches(path, start, n, "..") { parent = 1 }
+        put(segments, depth * 8 + 4, parent)
+        depth = depth + 1
+        if used > base { buffer_set(out, used, 47)
+            used = used + 1 }
+        copy_bytes(out, used, path, start, n)
+        used = used + n
+    }
+    if used == 0 { buffer_set(out, 0, 46)
+        used = 1 }
+    let result = buffer(used)
+    copy_bytes(result, 0, out, 0, used)
+    return result
+}
+fn module_matches(c: bytes, id: int64, path: bytes) -> bool {
+    if module(c, id, 12) != buffer_len(path) { return false }
+    var i = 0
+    while i < buffer_len(path) {
+        var a = buffer_get(c, module(c, id, 8) + i)
+        var b = buffer_get(path, i)
+        if platform() == 1 { a = lower_ascii(a)
+            b = lower_ascii(b) }
+        if a != b { return false }
+        i = i + 1
+    }
+    return true
+}
+fn module_add(s: bytes, diagnostic: bytes, c: bytes, path: bytes, parent: int64, position: int64) -> int64 {
+    var id = 0
+    while id < g(c, 21) {
+        if module_matches(c, id, path) { return id }
+        id = id + 1
+    }
+    if id >= 64 { fail(s, diagnostic, "weave limit: at most 64 source files") }
+    let at = g(c, 22)
+    if at + buffer_len(path) > 845000 { fail(s, diagnostic, "weave limit: source paths exceed 41900 bytes") }
+    mset(c, id, 8, at)
+    mset(c, id, 12, buffer_len(path))
+    mset(c, id, 20, parent)
+    mset(c, id, 24, position)
+    copy_bytes(c, at, path, 0, buffer_len(path))
+    set(c, 22, at + buffer_len(path))
+    set(c, 21, id + 1)
+    return id
+}
+fn reachable(c: bytes, start: int64, goal: int64) -> bool {
+    let seen = buffer(64)
+    let pending = buffer(64)
+    buffer_set(pending, 0, start)
+    buffer_set(seen, start, 1)
+    var count = 1
+    while count > 0 {
+        count = count - 1
+        let id = buffer_get(pending, count)
+        if id == goal { return true }
+        var child = 0
+        while child < g(c, 21) {
+            if buffer_get(c, 845000 + id * 64 + child) == 1 {
+                if buffer_get(seen, child) == 0 {
+                    buffer_set(seen, child, 1)
+                    buffer_set(pending, count, child)
+                    count = count + 1
+                }
+            }
+            child = child + 1
+        }
+    }
+    return false
+}
+fn weave_path(s: bytes, t: bytes, parent: bytes) -> bytes {
+    if tk(t) != 9 { fail(s, t, "weave requires a quoted relative source path") }
+    if length(t) - 2 >= 4096 { fail(s, t, "weave path exceeds 4095 bytes") }
+    let path = buffer(length(t) - 2)
+    var p = off(t) + 1
+    let end = off(t) + length(t) - 1
+    var used = 0
+    while p < end {
+        var v = buffer_get(s, p)
+        p = p + 1
+        if v == 92 {
+            v = buffer_get(s, p)
+            p = p + 1
+            if v == 110 { v = 10 }
+            if v == 116 { v = 9 }
+            if v == 114 { v = 13 }
+            if v == 48 { v = 0 }
+        }
+        if v < 32 { fail(s, t, "control characters are not allowed in weave paths") }
+        if v == 92 { fail(s, t, "use '/' separators in weave paths") }
+        buffer_set(path, used, v)
+        used = used + 1
+    }
+    if used == 0 { fail(s, t, "weave path must not be empty") }
+    if buffer_get(path, 0) == 47 { fail(s, t, "weave paths must be relative to the containing file") }
+    if used > 1 { if buffer_get(path, 1) == 58 { fail(s, t, "weave paths must be relative to the containing file") } }
+    var prefix = buffer_len(parent)
+    while prefix > 0 {
+        if buffer_get(parent, prefix - 1) == 47 { break }
+        prefix = prefix - 1
+    }
+    let joined = buffer(prefix + used)
+    copy_bytes(joined, 0, parent, 0, prefix)
+    copy_bytes(joined, prefix, path, 0, used)
+    return normalize_path(s, t, joined)
+}
+fn load_sources(c: bytes) -> bytes {
+    let out = buffer(1048576)
+    let temporary = buffer(1048576)
+    set(c, 22, 803100)
+    let root = normalize_path(buffer(0), c, arg(2))
+    module_add(buffer(0), c, c, root, 0, 0)
+    var id = 0
+    while id < g(c, 21) {
+        let path = module_path(c, id)
+        let source = read_file(path)
+        if io_error() != 0 {
+            if id == 0 { source_context(temporary, path, 0)
+                fail(source, temporary, "cannot read input (readable regular file required; source size limit is 1048576)") }
+            set(c, 15, module(c, id, 24) + 1)
+            fail(out, c, concat("cannot read weave source: ", path))
+        }
+        source_context(temporary, path, buffer_len(source))
+        if _protect_input() != 0 { fail(source, temporary, "cannot protect weave source identity") }
+        utf8(source, temporary)
+        lex(source, temporary)
+        set(c, 24, g(c, 24) + g(temporary, 1) - 1)
+        if g(c, 24) >= 50000 { fail(source, temporary, "compiler token limit exceeded across weave sources") }
+        var start = g(c, 23)
+        if start > 0 { if buffer_get(out, start - 1) != 10 {
+            if start >= 1048576 { fail(source, temporary, "weave source total exceeds 1048576 bytes") }
+            buffer_set(out, start, 10)
+            start = start + 1
+        } }
+        if start + buffer_len(source) > 1048576 { fail(source, temporary, "weave source total exceeds 1048576 bytes") }
+        copy_bytes(out, start, source, 0, buffer_len(source))
+        mset(c, id, 0, start)
+        mset(c, id, 4, start + buffer_len(source))
+        mset(c, id, 16, 1)
+        set(c, 23, start + buffer_len(source))
+        var braces = 0
+        while tk(temporary) != 0 {
+            let kind = tk(temporary)
+            if kind == 51 {
+                if braces != 0 { fail(source, temporary, "weave is only allowed at top level") }
+                let position = off(temporary)
+                next(temporary)
+                let child_path = weave_path(source, temporary, path)
+                let child = module_add(source, temporary, c, child_path, id, start + position)
+                if reachable(c, child, id) { fail(source, temporary, "weave dependency cycle") }
+                buffer_set(c, 845000 + id * 64 + child, 1)
+                next(temporary)
+                if tk(temporary) != 1 { if tk(temporary) != 0 { fail(source, temporary, "expected newline after weave path") } }
+                continue
+            }
+            if kind == 7 { braces = braces + 1 }
+            if kind == 8 { braces = braces - 1 }
+            if id > 0 { if kind == 2 {
+                let saved = g(temporary, 0)
+                next(temporary)
+                skip(temporary)
+                if tk(temporary) == 3 { fail(source, temporary, "weave libraries cannot define main") }
+                set(temporary, 0, saved)
+            } }
+            token(out, c, kind, start + off(temporary), length(temporary))
+            next(temporary)
+        }
+        if braces > 0 { fail(source, temporary, "expected '}' to close source body") }
+        id = id + 1
+    }
+    token(out, c, 0, g(c, 23), 0)
+    set(c, 0, 0)
+    set(c, 15, 0)
+    let result = buffer(g(c, 23))
+    copy_bytes(result, 0, out, 0, buffer_len(result))
+    return result
+}
 fn usage() {
     stderr("error: usage: ramos build SOURCE.ramos -o PROGRAM [--force] [--target linux|windows]\n")
     exit(1)
@@ -1857,7 +2155,7 @@ fn main() {
     let argc = arg_count()
     if argc == 2 {
         let option = arg(1)
-        if equal(option, "--version") { print("Ramos 0.10.0 — compiler written in Ramos; Linux and Windows x64")
+        if equal(option, "--version") { print("Ramos 0.11.0 — compiler written in Ramos; Linux and Windows x64")
             return }
         if equal(option, "--help") { print("Usage: ramos build SOURCE.ramos -o PROGRAM [--force] [--target linux|windows]")
             return }
@@ -1890,12 +2188,9 @@ fn main() {
         }
         i = i + 1
     }
-    let s = read_file(arg(2))
     let c = buffer(1048576)
     set(c, 16, target)
-    if io_error() != 0 { fail(s, c, "cannot read input (readable regular file required; source size limit is 1048576)") }
-    utf8(s, c)
-    lex(s, c)
+    let s = load_sources(c)
     records(s, c)
     discover(s, c)
     let o = buffer(1048576)
@@ -1923,101 +2218,103 @@ fn main() {
     if write_file(arg(4), result, flags) != 0 { fail(s, c, "cannot publish output: check existing file, source alias, directory and permissions") }
 }
 
-fn runtime_text() -> bytes { return "bf010000004885d2741ab8010000000f054883f8fc74f34885c07e094801c64829c275e6c3bf01000000b83c0000000f050f0b4883ec20488d74241fc6060ae8570a000048ffc2e8b4ffffff4883c420c34885c0740e488d3515000000ba05000000eb9c488d350c000000ba06000000eb8e747275650a66616c73650a488d3570000000ba3d000000bf02000000e872ffffffbf01000000b83c0000000f050f0b488d351d000000ba2f000000bf02000000e84effffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a4d85ed753ab80900000031ffbe00008001ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f83b60200004989c549c7450000000001c3483d000010000f8790020000535550488d58274883e3f831ede8a2ffffff498b7f504885ff7418498d85000000014839c7730c48837f0800750548391f73324c89ef48837f0800750548391f732348033f498d85000000014839c772e585ed0f8545020000bd01000000e8c9000000ebad488b174829da4883fa20721a488d0c1f48891148c741080000000048c741180000000048891f48c7470801000000488b042448894718488d6f184989fb488b074801f8498947504c0337488b0f48c1e9034883e9044883c72031c0f348ab4c89d84c29e8498dbd000000014889c248d1ea4801d7ffc0498b0b48c1e903f3ab4889e84883c4085d5bc34c89f0c34c39e87234498d95000000014839d073284c29e848c1e8038b048285c0741affc84c01e84883780801750e48c740080300000041b801000000c34d85ed0f84050100005051525657415041514152415353554889e64c89ff4839fe730e488b06e89bffffff4883c608ebed4531c04c89eb48837b08037526488d7320488b7b184883c7074883e7f84801f74839fe730e488b06e868ffffff4883c608ebed48031b498d85000000014839c372c44585c075b94c89eb48837b0803743248837b0801753348c74308000000004c2b334889df4c29ef48d1ef4c01ef4881c700000001488b0b48c1e90331c0f3abeb0848c743080100000048031b498d85000000014839c372b04c89eb498d8500000001488d134803134839c2731b48837b0800750f48837a08007508488b02480103ebd84889d3ebd34d896f505d5b415b415a415941585f5e5a595831c0c356e8b1fdffff5e488b08488d7808f3a4c3488b00c3483b0873550fb6440808c3483b08734a4881faff000000774f8854080831c0c3488b10488d7008e805fcffff488d350a000000ba01000000e9f4fbffff0a488d3547000000ba3f000000eb28488d3578000000ba46000000eb1a488d35b0000000ba30000000eb0c488d35d2000000ba3a000000bf02000000e8b8fbffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a498b07488b00c3498b0f483b010f83ccfeffff488b74c10831c0803c06000f844cfeffff48ffc0483d000010000f8790feffffebe5498b4708c3488b10488d7008bf02000000e870faffff31c0c3483dff0000000f8793feffff4889c7b83c0000000f050f0b488b084881f90010000073354885c97438488d700831d2803c1600742c48ffc24839ca72f256488d4101e892fbffff5e488d7808488b0848ffc9f3a44883c008c348c7c0dcffffffc348c7c0eaffffffc355534881ecb00000004889e549c747080000000048c78590000000ffffffffe88bffffff4885c00f88170100004889c6b80101000048c7c79cffffffba000808004531d20f054885c00f88f5000000488985900000004889c74889eeb8050000000f054885c00f88d80000008b45182500f000003d008000000f85be000000488b4530483d000010000f87a5000000e8dcfaffff4889859800000031db488b8598000000488b104829da7422488d741808488bbd9000000031c00f054883f8fc74db4885c0787d74294801c3ebcf488bbd90000000488db5a8000000ba0100000031c00f054883f8fc74e34885c078547542488bbd9000000048c78590000000ffffffffb8030000000f054885c07834488b450049894710488b45084989471849c7472001000000488b8598000000488918eb2e48c7c0e5ffffffeb0748c7c0eaffffff49894708488bbd900000004885ff7807b8030000000f0531c0e80efaffff4881c4b00000005b5dc34885d2741cb8010000000f054883f8fc74f34885c0780c740b4801c64829c275e431c0c348c7c0fbffffffc3b806010000488b7d18488b7530488d95800000004531d20f054883f8fe74304885c0782d49837f2000741a498b4710483b8580000000750d498b4718483b8588000000740d48f7451002000000740b31c0c348c7c0eaffffffc348c7c0efffffffc355534881ec401100004889e548894d084889551048c74518ffffffff48c74520ffffffff48c745280000000049c74708000000004883fa030f87e8010000e872fdffff4885c00f88f80100004889450031c931d2803c0800740f803c082f7504488d510148ffc1ebeb4839d10f84b4010000488d341048897530488dbd100100004885d2740d4889c64889d1f3a4c60700eb0566c7072e00b80101000048c7c79cffffff488db510010000ba000029004531d20f054885c00f888601000048894518e8d7feffff4885c00f887401000031dbffc383fb100f8752010000b83e010000488dbd20110000be0800000031d20f054883f8fc74da4883f8080f8536010000488d7d40488d3585010000b90b000000f3a4488b8520110000b91000000089c283e20f83c261881748ffc748c1e804e2edc60700488b7530488d7d4031c98a040e3a040f750984c0748648ffc1ebefb801010000488b7d18488d7540bac1000a0041ba800100000f054883f8ef0f845dffffff4885c00f88c60000004889452048c74528010000004889c7488b4508488b10488d7008e8d5fdffff4885c00f889e000000b85b000000488b7d20bea401000048f74510010000007405beed0100000f054885c0787a488b7d2048c74520ffffffffb8030000000f054885c07862e8b7fdffff4885c07858b83c010000488b7d18488d75404889fa4c8b553041b80100000048f745100200000074034531c00f054885c0782a48c745280000000031c0eb1e48c7c0eaffffffeb1548c7c0efffffffeb0c4885c0780748c7c0fbffffff4889453849894708488b7d204885ff7807b8030000000f0548837d28007411b807010000488b7d18488d754031d20f05488b7d184885ff7807b8030000000f05488b45384881c4401100005b5dc32e72616d6f732d746d702d31c0c34989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e8d1f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8df0000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e852f7ffffeb1248c7c0e5ffffff4989470831c0e8f5f4ffff4883c4205b5dc3498b47404885c07533b80900000031ffbe00301000ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f8360f7ffff49894740c3488d704031ffba0010000031c00f054883f8fc74f6c3488d7008488b384801f731c94839fe0f83d20000000fb61648ffc648ffc181fa8000000072e681fac20000000f828602000081faf40000000f877a02000041b80100000041b98000000041babf00000081fae0000000725841b80200000081fae0000000750641b9a000000081faed000000750641ba9f00000081faf0000000722e41b80300000041b98000000041babf00000081faf0000000750641b99000000081faf4000000750641ba8f0000004839fe0f83ff0100000fb61648ffc64439ca0f82f00100004439d20f87e701000041b98000000041babf00000041ffc875cee925ffffffc350e812ffffff58488d7008488b00e9e9f5ffffe800ffffff4889c8c34885c90f88bc0100004839ca0f8cb3010000488d7008488b384801f74531c04989f14939c875034989f14939d0742f4839fe0f838d01000048ffc64839fe7319440fb6164181e2c00000004181fa80000000750548ffc6ebe249ffc0ebc44889f04c29c84c89cee974f5ffff5051488b00480301e81ef3ffff4989c0488d7808488b742408488b0e4883c608f3a45e488b0e4883c608f3a44883c4084c89c0c3488b10483b11751c488d7008488d79084889d131c04885c97404f3a67505b801000000c331c0c331c931d2eb004881f9000002000f87fc00000052488d04cd00000000e8aff2ffff5a4989c0488b0848c1e903488d78084889d0f348ab4c89c0c3488b0048c1e803c3488b1048c1ea034839d10f83ce000000488b44c808c34c8b0049c1e8034c39c10f83b8000000488954c80831c0c34881f9000002000f8792000000505152e881ffffff4989c0488d7808488b742410488b0e483b087603488b0848c1e9034883c608f348a54883c4184c89c0c35648c1e003e817f2ffff5e488d7808488b0848c1e903488d74cef84885c97413488b164889174883ee084883c70848ffc9ebe8c3e95affffffe96bffffff488d353d000000ba2a000000e9a4f4ffff488d3556000000ba30000000e993f4ffff488d3575000000ba3d000000e982f4ffff488d35a1000000ba2f000000e971f4ffff52616d6f732072756e74696d65206572726f723a20696e76616c6964205554462d3820737472696e670a52616d6f732072756e74696d65206572726f723a20737472696e6720736c696365206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a2061727261792073697a65206d757374206265206265747765656e203020616e64203133313037320a52616d6f732072756e74696d65206572726f723a20617272617920696e646578206f7574206f6620626f756e64730a" }
+fn runtime_text() -> bytes { return "bf010000004885d2741ab8010000000f054883f8fc74f34885c07e094801c64829c275e6c3bf01000000b83c0000000f050f0b4883ec20488d74241fc6060ae8780a000048ffc2e8b4ffffff4883c420c34885c0740e488d3515000000ba05000000eb9c488d350c000000ba06000000eb8e747275650a66616c73650a488d3570000000ba3d000000bf02000000e872ffffffbf01000000b83c0000000f050f0b488d351d000000ba2f000000bf02000000e84effffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a4d85ed753ab80900000031ffbe00008001ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f83bf0200004989c549c7450000000001c3483d000010000f8799020000535550488d58274883e3f831ede8a2ffffff498b7f504885ff7418498d85000000014839c7730c48837f0800750548391f73324c89ef48837f0800750548391f732348033f498d85000000014839c772e585ed0f854e020000bd01000000e8c9000000ebad488b174829da4883fa20721a488d0c1f48891148c741080000000048c741180000000048891f48c7470801000000488b042448894718488d6f184989fb488b074801f8498947504c0337488b0f48c1e9034883e9044883c72031c0f348ab4c89d84c29e8498dbd000000014889c248d1ea4801d7ffc0498b0b48c1e903f3ab4889e84883c4085d5bc34c89f0c34c39e87234498d95000000014839d073284c29e848c1e8038b048285c0741affc84c01e84883780801750e48c740080300000041b801000000c34d85ed0f840e010000505152565741504151415241535355498b4758e8a5ffffff4889e64c89ff4839fe730e488b06e892ffffff4883c608ebed4531c04c89eb48837b08037526488d7320488b7b184883c7074883e7f84801f74839fe730e488b06e85fffffff4883c608ebed48031b498d85000000014839c372c44585c075b94c89eb48837b0803743248837b0801753348c74308000000004c2b334889df4c29ef48d1ef4c01ef4881c700000001488b0b48c1e90331c0f3abeb0848c743080100000048031b498d85000000014839c372b04c89eb498d8500000001488d134803134839c2731b48837b0800750f48837a08007508488b02480103ebd84889d3ebd34d896f505d5b415b415a415941585f5e5a595831c0c356e8a8fdffff5e488b08488d7808f3a4c3488b00c3483b0873550fb6440808c3483b08734a4881faff000000774f8854080831c0c3488b10488d7008e8fcfbffff488d350a000000ba01000000e9ebfbffff0a488d3547000000ba3f000000eb28488d3578000000ba46000000eb1a488d35b0000000ba30000000eb0c488d35d2000000ba3a000000bf02000000e8affbffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a498b07488b00c3498b0f483b010f83ccfeffff488b74c10831c0803c06000f844cfeffff48ffc0483d000010000f8790feffffebe5498b4708c3488b10488d7008bf02000000e867faffff31c0c3483dff0000000f8793feffff4889c7b83c0000000f050f0b488b084881f90010000073354885c97438488d700831d2803c1600742c48ffc24839ca72f256488d4101e889fbffff5e488d7808488b0848ffc9f3a44883c008c348c7c0dcffffffc348c7c0eaffffffc355534881ecb00000004889e549c747080000000048c78590000000ffffffffe88bffffff4885c00f88170100004889c6b80101000048c7c79cffffffba000808004531d20f054885c00f88f5000000488985900000004889c74889eeb8050000000f054885c00f88d80000008b45182500f000003d008000000f85be000000488b4530483d000010000f87a5000000e8d3faffff4889859800000031db488b8598000000488b104829da7422488d741808488bbd9000000031c00f054883f8fc74db4885c0787d74294801c3ebcf488bbd90000000488db5a8000000ba0100000031c00f054883f8fc74e34885c078547542488bbd9000000048c78590000000ffffffffb8030000000f054885c07834488b450049894710488b45084989471849c7472001000000488b8598000000488918eb2e48c7c0e5ffffffeb0748c7c0eaffffff49894708488bbd900000004885ff7807b8030000000f0531c0e805faffff4881c4b00000005b5dc34885d2741cb8010000000f054883f8fc74f34885c0780c740b4801c64829c275e431c0c348c7c0fbffffffc3b806010000488b7d18488b7530488d95800000004531d20f054883f8fe74484885c07845488b8580000000488b9588000000e8490900004885c0752e49837f2000741a498b4710483b8580000000750d498b4718483b8588000000740d48f7451002000000740b31c0c348c7c0eaffffffc348c7c0efffffffc355534881ec401100004889e548894d084889551048c74518ffffffff48c74520ffffffff48c745280000000049c74708000000004883fa030f87e8010000e85afdffff4885c00f88f80100004889450031c931d2803c0800740f803c082f7504488d510148ffc1ebeb4839d10f84b4010000488d341048897530488dbd100100004885d2740d4889c64889d1f3a4c60700eb0566c7072e00b80101000048c7c79cffffff488db510010000ba000029004531d20f054885c00f888601000048894518e8bffeffff4885c00f887401000031dbffc383fb100f8752010000b83e010000488dbd20110000be0800000031d20f054883f8fc74da4883f8080f8536010000488d7d40488d3585010000b90b000000f3a4488b8520110000b91000000089c283e20f83c261881748ffc748c1e804e2edc60700488b7530488d7d4031c98a040e3a040f750984c0748648ffc1ebefb801010000488b7d18488d7540bac1000a0041ba800100000f054883f8ef0f845dffffff4885c00f88c60000004889452048c74528010000004889c7488b4508488b10488d7008e8bdfdffff4885c00f889e000000b85b000000488b7d20bea401000048f74510010000007405beed0100000f054885c0787a488b7d2048c74520ffffffffb8030000000f054885c07862e89ffdffff4885c07858b83c010000488b7d18488d75404889fa4c8b553041b80100000048f745100200000074034531c00f054885c0782a48c745280000000031c0eb1e48c7c0eaffffffeb1548c7c0efffffffeb0c4885c0780748c7c0fbffffff4889453849894708488b7d204885ff7807b8030000000f0548837d28007411b807010000488b7d18488d754031d20f05488b7d184885ff7807b8030000000f05488b45384881c4401100005b5dc32e72616d6f732d746d702d31c0c34989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e8b9f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8df0000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e83af7ffffeb1248c7c0e5ffffff4989470831c0e8d4f4ffff4883c4205b5dc3498b47404885c07533b80900000031ffbe00301000ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f8348f7ffff49894740c3488d704031ffba0010000031c00f054883f8fc74f6c3488d7008488b384801f731c94839fe0f83d20000000fb61648ffc648ffc181fa8000000072e681fac20000000f828602000081faf40000000f877a02000041b80100000041b98000000041babf00000081fae0000000725841b80200000081fae0000000750641b9a000000081faed000000750641ba9f00000081faf0000000722e41b80300000041b98000000041babf00000081faf0000000750641b99000000081faf4000000750641ba8f0000004839fe0f83ff0100000fb61648ffc64439ca0f82f00100004439d20f87e701000041b98000000041babf00000041ffc875cee925ffffffc350e812ffffff58488d7008488b00e9d1f5ffffe800ffffff4889c8c34885c90f88bc0100004839ca0f8cb3010000488d7008488b384801f74531c04989f14939c875034989f14939d0742f4839fe0f838d01000048ffc64839fe7319440fb6164181e2c00000004181fa80000000750548ffc6ebe249ffc0ebc44889f04c29c84c89cee95cf5ffff5051488b00480301e8fdf2ffff4989c0488d7808488b742408488b0e4883c608f3a45e488b0e4883c608f3a44883c4084c89c0c3488b10483b11751c488d7008488d79084889d131c04885c97404f3a67505b801000000c331c0c331c931d2eb004881f9000002000f87fc00000052488d04cd00000000e88ef2ffff5a4989c0488b0848c1e903488d78084889d0f348ab4c89c0c3488b0048c1e803c3488b1048c1ea034839d10f83ce000000488b44c808c34c8b0049c1e8034c39c10f83b8000000488954c80831c0c34881f9000002000f8792000000505152e881ffffff4989c0488d7808488b742410488b0e483b087603488b0848c1e9034883c608f348a54883c4184c89c0c35648c1e003e8f6f1ffff5e488d7808488b0848c1e903488d74cef84885c97413488b164889174883ee084883c70848ffc9ebe8c3e95affffffe96bffffff488d353d000000ba2a000000e98cf4ffff488d3556000000ba30000000e97bf4ffff488d3575000000ba3d000000e96af4ffff488d35a1000000ba2f000000e959f4ffff52616d6f732072756e74696d65206572726f723a20696e76616c6964205554462d3820737472696e670a52616d6f732072756e74696d65206572726f723a20737472696e6720736c696365206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a2061727261792073697a65206d757374206265206265747765656e203020616e64203133313037320a52616d6f732072756e74696d65206572726f723a20617272617920696e646578206f7574206f6620626f756e64730a49837f2000745249837f5800750eb800040000e8a0f0ffff49894758498b4710498b5718e8400000004885c07528498b4f604883f94073294d8b475848c1e104498b47104989440808498b4718498944081049ff476031c0c348c7c0eaffffffc348c7c0e5ffffffc34d8b47584d85c074274d8b4f604983c0084d85c9741a493b00750c493b50087506b801000000c34983c01049ffc9ebe131c0c3" }
 fn entry_text() -> bytes { return "fc4531e44531ed4531f64889e24881ec800000004989e74889e731c0b910000000f348ab498917" }
-fn runtime_end() -> int64 { return 8344 }
+fn runtime_end() -> int64 { return 8533 }
 fn math_address() -> int64 { return 4221 }
 fn depth_address() -> int64 { return 4257 }
-fn literal_address() -> int64 { return 5050 }
+fn literal_address() -> int64 { return 5059 }
 fn integer_address() -> int64 { return 4147 }
 fn boolean_address() -> int64 { return 4177 }
-fn print_buffer_address() -> int64 { return 5103 }
+fn print_buffer_address() -> int64 { return 5112 }
 fn builtin_address(n: int64) -> int64 {
     if n == 0 { return 4465 }
-    if n == 1 { return 5067 }
-    if n == 2 { return 5071 }
-    if n == 3 { return 5082 }
-    if n == 4 { return 5450 }
-    if n == 5 { return 5457 }
-    if n == 6 { return 5633 }
-    if n == 7 { return 6139 }
-    if n == 8 { return 5503 }
-    if n == 9 { return 5508 }
-    if n == 10 { return 5528 }
-    if n == 11 { return 6808 }
-    if n == 12 { return 7073 }
-    if n == 13 { return 7068 }
-    if n == 14 { return 6867 }
-    if n == 15 { return 6894 }
-    if n == 16 { return 7063 }
+    if n == 1 { return 5076 }
+    if n == 2 { return 5080 }
+    if n == 3 { return 5091 }
+    if n == 4 { return 5459 }
+    if n == 5 { return 5466 }
+    if n == 6 { return 5642 }
+    if n == 7 { return 6172 }
+    if n == 8 { return 5512 }
+    if n == 9 { return 5517 }
+    if n == 10 { return 5537 }
+    if n == 11 { return 6841 }
+    if n == 12 { return 7106 }
+    if n == 13 { return 7101 }
+    if n == 14 { return 6900 }
+    if n == 15 { return 6927 }
+    if n == 16 { return 7096 }
     if n == 17 { return 4777 }
     if n == 18 { return 4715 }
-    if n == 19 { return 7614 }
-    if n == 20 { return 7621 }
-    if n == 21 { return 7633 }
-    if n == 22 { return 7642 }
-    if n == 23 { return 7847 }
-    if n == 24 { return 7899 }
-    if n == 25 { return 7907 }
-    if n == 26 { return 7929 }
-    if n == 27 { return 7953 }
-    if n == 28 { return 7750 }
-    if n == 29 { return 7802 }
-    if n == 30 { return 8016 }
-    if n == 31 { return 8068 }
-    if n == 32 { return 8073 }
-    if n == 33 { return 7841 }
+    if n == 19 { return 7647 }
+    if n == 20 { return 7654 }
+    if n == 21 { return 7666 }
+    if n == 22 { return 7675 }
+    if n == 23 { return 7880 }
+    if n == 24 { return 7932 }
+    if n == 25 { return 7940 }
+    if n == 26 { return 7962 }
+    if n == 27 { return 7986 }
+    if n == 28 { return 7783 }
+    if n == 29 { return 7835 }
+    if n == 30 { return 8049 }
+    if n == 31 { return 8101 }
+    if n == 32 { return 8106 }
+    if n == 33 { return 7874 }
+    if n == 34 { return 8377 }
     return 0
 }
-fn windows_runtime() -> bytes { return "bf0100000055534883ec184889e54889d3b9f5ffffff83ff027505b9f4ffffff488b0559f01f00e8510000004889c74885db742f4889f94889f24989d84c8d4d004531d2488b053df01f00e82d00000085c074168b450085c0740f4801c64829c3ebcc4883c4185b5dc3b901000000488b051af01f00e8020000000f0b554889e54883e4f04883ec604c895424204c895c2428488974243048897c2438ffd04889ec5dc34883ec20488d74241fc6060ae8f70b000048ffc2e843ffffff4883c420c34885c07411488d351b000000ba05000000e928ffffff488d350f000000ba06000000e917ffffff747275650a66616c73650a488d3568000000ba3d000000eb44488d3597000000ba2f000000eb36488d35b8000000ba3f000000eb28488d35e9000000ba46000000eb1a488d3521010000ba30000000eb0c488d3543010000ba3a000000bf02000000e8b5feffffb901000000488b0534ef1f00e81cffffff0f0b52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a4d85ed753331c9ba0000800141b80030000041b904000000488b05bbed1f00e89bfdffff4885c00f8433feffff4989c549c7450000000001c3483d000010000f870dfeffff535550488d58274883e3f831ede8a9ffffff498b7f504885ff7418498d85000000014839c7730c48837f0800750548391f73324c89ef48837f0800750548391f732348033f498d85000000014839c772e585ed0f85c2fdffffbd01000000e8c9000000ebad488b174829da4883fa20721a488d0c1f48891148c741080000000048c741180000000048891f48c7470801000000488b042448894718488d6f184989fb488b074801f8498947504c0337488b0f48c1e9034883e9044883c72031c0f348ab4c89d84c29e8498dbd000000014889c248d1ea4801d7ffc0498b0b48c1e903f3ab4889e84883c4085d5bc34c89f0c34c39e87234498d95000000014839d073284c29e848c1e8038b048285c0741affc84c01e84883780801750e48c740080300000041b801000000c34d85ed0f84050100005051525657415041514152415353554889e64c89ff4839fe730e488b06e89bffffff4883c608ebed4531c04c89eb48837b08037526488d7320488b7b184883c7074883e7f84801f74839fe730e488b06e868ffffff4883c608ebed48031b498d85000000014839c372c44585c075b94c89eb48837b0803743248837b0801753348c74308000000004c2b334889df4c29ef48d1ef4c01ef4881c700000001488b0b48c1e90331c0f3abeb0848c743080100000048031b498d85000000014839c372b04c89eb498d8500000001488d134803134839c2731b48837b0800750f48837a08007508488b02480103ebd84889d3ebd34d896f505d5b415b415a415941585f5e5a595831c0c356e8b1fdffff5e488b08488d7808f3a4c3488b00c3483b080f83cefbffff0fb6440808c3483b080f83bffbffff4881faff0000000f87c0fbffff8854080831c0c3488b10488d7008e873faffff488d350a000000ba01000000e962faffff0a498b4728c3493b47280f837efbffff55534883ec104889e5498b0f488b1cc1b9e9fd0000ba800000004989d841b9ffffffff4531d24531db31f631ff488b05beea1f00e896faffff85c00f844bfbffffe803fdffff48894500b9e9fd0000ba800000004989d841b9ffffffff4c8d50084c8b1831f631ff488b0583ea1f00e85bfaffff85c00f8410fbffff488b450048ff084883c4105b5dc3498b4708c3488b10488d7008bf02000000e8b7f9ffff31c0c3483dff0000000f87ddfaffff4889c1488b0529ea1f00e811faffff0f0bb801000000c355534883ec104889e54889c3488b084885c974604881f900100000736031d2807c100800744e48ffc24839ca72f1488d044d02000000e848fcffff48894500b9e9fd0000ba080000004c8d43084c8b0b4c8d50084c8b1849d1eb488b05d3e91f00e8a3f9ffff85c0740a488b45004883c008eb1048c7c0eaffffffeb0748c7c0dcffffff4883c4105b5dc3488b05aae91f00e872f9ffff83f802741e83f803741983f805741c83f850741f3db7000000741848c7c0fbffffffc348c7c0feffffffc348c7c0f3ffffffc348c7c0efffffffc355534881ec800000004889e548c74540ffffffff49c7470800000000e80dffffff4885c00f885f0100004889c1ba0000008041b8070000004531c941ba0300000041bb8000000031f6488b0522e91f00e8e2f8ffff4883f8ff0f8425010000488945404889c1488b0515e91f00e8c5f8ffff83f8010f8500010000488b4d404889ea488b0501e91f00e8a9f8ffff85c00f84ee000000f74500100000000f85d8000000837d20000f85c50000008b45243d000010000f87b7000000e8f1faffff4889454831db488b45484c8b004929d87430488b4d40488d5418084c8d4d504531d2488b05a9e81f00e849f8ffff85c00f848e0000008b455085c074304801c3ebc4488b4d40488d555841b8010000004c8d4d504531d2488b0574e81f00e814f8ffff85c0745d837d50007545488b4d4048c74540ffffffff488b053ae81f00e8f2f7ffff85c0743b8b451c498947108b452c48c1e0208b55304809d04989471849c7472001000000488b4548488918eb3848c7c0e5ffffffeb0e48c7c0eaffffffeb05e830feffff49894708488b4d404883f9ff740c488b05dce71f00e894f7ffff31c0e807faffff4881c4800000005b5dc3488b4d1031d241b8070000004531c941ba0300000041bb8000000031f6488b059ae71f00e85af7ffff4883f8ff746a504889c1488d5540488b0598e71f00e840f7ffff85c0743d59488b0577e71f00e82ff7ffff49837f2000741c8b455c493b471075138b456c48c1e0208b55704809d0493b4718742e48f7450802000000742c31c0c359488b053ae71f00e8f2f6ffff48c7c0fbffffffc3e867fdffff4883f8fe74ddc348c7c0eaffffffc348c7c0efffffffc355534881eca00000004889e548894d004889550848c74520ffffffff48c745280000000049c74708000000004883fa037728e88efcffff4885c00f88640200004889453848c7c000200000e8f8f8ffff4c8d40084c894510eb0c48c7c0eaffffffe93e020000488b4d38ba001000004c8b45104531c9488b05b4e61f00e84cf6ffff85c00f84150200003d0010000073c9488b451031c931db66833c4800741066833c485c7504488d590148ffc1ebe94881fbe30f000077a14839d9749c48895d78e884feffff4885c00f88d401000048c7c000200000e86cf8ffff488d780848897d18488b7510488b4d7848d1e1f3a44889bd8000000031dbffc383fb100f8788010000488b052de61f00e8bdf5ffff48898588000000488b0522e61f00e8aaf5ffff48c1e0204831858800000049ff4748498b474848318588000000488bbd80000000488d359b010000b916000000f3a4488b8588000000b91000000089c283e20f83c2616689174883c70248c1e804e2eb66c7070000488b7510488b7d18668b06663b0775136685c00f8468ffffff4883c6024883c702ebe5488b4d18ba000000404531c04531c941ba0100000041bb8000000031f6488b0549e51f00e809f5ffff4883f8ff0f84ad0000004889452048c745280100000031db488b45004c8b004929d87436488b4d20488d5418084c8d8d900000004531d2488b05d6e41f00e8c6f4ffff85c00f848f0000008b859000000085c0747c4801c3ebbe488b4d2048c74520ffffffff488b05dfe41f00e897f4ffff85c07464e80bfdffff4885c0785f488b4d18488b55104531c048f7450802000000740641b801000000488b05e2e41f00e862f4ffff85c0742f48c745280000000031c0eb28e8cffaffff4883f8ef0f846ffeffffeb1748c7c0efffffffeb0e48c7c0fbffffffeb05e8acfaffff4889453049894708488b4d204883f9ff740c488b0554e41f00e80cf4ffff48837d28007410488b4d18488b057de41f00e8f5f3ffff488b45304881c4a00000005b5dc32e00720061006d006f0073002d0074006d0070002d004989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e846f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8d80000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e8c7f6ffffeb1248c7c0e5ffffff4989470831c0e86af4ffff4883c4205b5dc3498b47404885c0752c31c9ba0030100041b80030000041b904000000488b05e1e11f00e8c1f1ffff4885c00f8459f2ffff49894740c3554883ec204889e548894500b9f6ffffff488b059ee11f00e896f1ffff4889c1488b55004883c24041b8001000004c8d4d084531d2488b05d2e11f00e872f1ffff85c074058b4508eb1f488b0595e11f00e85df1ffff83f86d740c83f8267407e8d0f7ffffeb0231c04883c4205dc3488d7008488b384801f731c94839fe0f83d20000000fb61648ffc648ffc181fa8000000072e681fac20000000f828602000081faf40000000f877a02000041b80100000041b98000000041babf00000081fae0000000725841b80200000081fae0000000750641b9a000000081faed000000750641ba9f00000081faf0000000722e41b80300000041b98000000041babf00000081faf0000000750641b99000000081faf4000000750641ba8f0000004839fe0f83ff0100000fb61648ffc64439ca0f82f00100004439d20f87e701000041b98000000041babf00000041ffc875cee925ffffffc350e812ffffff58488d7008488b00e90cf5ffffe800ffffff4889c8c34885c90f88bc0100004839ca0f8cb3010000488d7008488b384801f74531c04989f14939c875034989f14939d0742f4839fe0f838d01000048ffc64839fe7319440fb6164181e2c00000004181fa80000000750548ffc6ebe249ffc0ebc44889f04c29c84c89cee997f4ffff5051488b00480301e841f2ffff4989c0488d7808488b742408488b0e4883c608f3a45e488b0e4883c608f3a44883c4084c89c0c3488b10483b11751c488d7008488d79084889d131c04885c97404f3a67505b801000000c331c0c331c931d2eb004881f9000002000f87fc00000052488d04cd00000000e8d2f1ffff5a4989c0488b0848c1e903488d78084889d0f348ab4c89c0c3488b0048c1e803c3488b1048c1ea034839d10f83ce000000488b44c808c34c8b0049c1e8034c39c10f83b8000000488954c80831c0c34881f9000002000f8792000000505152e881ffffff4989c0488d7808488b742410488b0e483b087603488b0848c1e9034883c608f348a54883c4184c89c0c35648c1e003e83af1ffff5e488d7808488b0848c1e903488d74cef84885c97413488b164889174883ee084883c70848ffc9ebe8c3e95affffffe96bffffff488d353d000000ba2a000000e944efffff488d3556000000ba30000000e933efffff488d3575000000ba3d000000e922efffff488d35a1000000ba2f000000e911efffff52616d6f732072756e74696d65206572726f723a20696e76616c6964205554462d3820737472696e670a52616d6f732072756e74696d65206572726f723a20737472696e6720736c696365206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a2061727261792073697a65206d757374206265206265747765656e203020616e64203133313037320a52616d6f732072756e74696d65206572726f723a20617272617920696e646578206f7574206f6620626f756e64730a488b0506de1f00e876edffff4889c1498d5728488b050bde1f00e863edffff4885c00f84fbedffff498907b9e9fd0000488b05dedd1f00e846edffffc331c9488b054fdd1f00e837edffff0f0b" }
+fn windows_runtime() -> bytes { return "bf0100000055534883ec184889e54889d3b9f5ffffff83ff027505b9f4ffffff488b0559f01f00e8510000004889c74885db742f4889f94889f24989d84c8d4d004531d2488b053df01f00e82d00000085c074168b450085c0740f4801c64829c3ebcc4883c4185b5dc3b901000000488b051af01f00e8020000000f0b554889e54883e4f04883ec604c895424204c895c2428488974243048897c2438ffd04889ec5dc34883ec20488d74241fc6060ae81e0c000048ffc2e843ffffff4883c420c34885c07411488d351b000000ba05000000e928ffffff488d350f000000ba06000000e917ffffff747275650a66616c73650a488d3568000000ba3d000000eb44488d3597000000ba2f000000eb36488d35b8000000ba3f000000eb28488d35e9000000ba46000000eb1a488d3521010000ba30000000eb0c488d3543010000ba3a000000bf02000000e8b5feffffb901000000488b0534ef1f00e81cffffff0f0b52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a4d85ed753331c9ba0000800141b80030000041b904000000488b05bbed1f00e89bfdffff4885c00f8433feffff4989c549c7450000000001c3483d000010000f870dfeffff535550488d58274883e3f831ede8a9ffffff498b7f504885ff7418498d85000000014839c7730c48837f0800750548391f73324c89ef48837f0800750548391f732348033f498d85000000014839c772e585ed0f85c2fdffffbd01000000e8c9000000ebad488b174829da4883fa20721a488d0c1f48891148c741080000000048c741180000000048891f48c7470801000000488b042448894718488d6f184989fb488b074801f8498947504c0337488b0f48c1e9034883e9044883c72031c0f348ab4c89d84c29e8498dbd000000014889c248d1ea4801d7ffc0498b0b48c1e903f3ab4889e84883c4085d5bc34c89f0c34c39e87234498d95000000014839d073284c29e848c1e8038b048285c0741affc84c01e84883780801750e48c740080300000041b801000000c34d85ed0f840e010000505152565741504151415241535355498b4758e8a5ffffff4889e64c89ff4839fe730e488b06e892ffffff4883c608ebed4531c04c89eb48837b08037526488d7320488b7b184883c7074883e7f84801f74839fe730e488b06e85fffffff4883c608ebed48031b498d85000000014839c372c44585c075b94c89eb48837b0803743248837b0801753348c74308000000004c2b334889df4c29ef48d1ef4c01ef4881c700000001488b0b48c1e90331c0f3abeb0848c743080100000048031b498d85000000014839c372b04c89eb498d8500000001488d134803134839c2731b48837b0800750f48837a08007508488b02480103ebd84889d3ebd34d896f505d5b415b415a415941585f5e5a595831c0c356e8a8fdffff5e488b08488d7808f3a4c3488b00c3483b080f83c5fbffff0fb6440808c3483b080f83b6fbffff4881faff0000000f87b7fbffff8854080831c0c3488b10488d7008e86afaffff488d350a000000ba01000000e959faffff0a498b4728c3493b47280f8375fbffff55534883ec104889e5498b0f488b1cc1b9e9fd0000ba800000004989d841b9ffffffff4531d24531db31f631ff488b05b5ea1f00e88dfaffff85c00f8442fbffffe8fafcffff48894500b9e9fd0000ba800000004989d841b9ffffffff4c8d50084c8b1831f631ff488b057aea1f00e852faffff85c00f8407fbffff488b450048ff084883c4105b5dc3498b4708c3488b10488d7008bf02000000e8aef9ffff31c0c3483dff0000000f87d4faffff4889c1488b0520ea1f00e808faffff0f0bb801000000c355534883ec104889e54889c3488b084885c974604881f900100000736031d2807c100800744e48ffc24839ca72f1488d044d02000000e83ffcffff48894500b9e9fd0000ba080000004c8d43084c8b0b4c8d50084c8b1849d1eb488b05cae91f00e89af9ffff85c0740a488b45004883c008eb1048c7c0eaffffffeb0748c7c0dcffffff4883c4105b5dc3488b05a1e91f00e869f9ffff83f802741e83f803741983f805741c83f850741f3db7000000741848c7c0fbffffffc348c7c0feffffffc348c7c0f3ffffffc348c7c0efffffffc355534881ec800000004889e548c74540ffffffff49c7470800000000e80dffffff4885c00f885f0100004889c1ba0000008041b8070000004531c941ba0300000041bb8000000031f6488b0519e91f00e8d9f8ffff4883f8ff0f8425010000488945404889c1488b050ce91f00e8bcf8ffff83f8010f8500010000488b4d404889ea488b05f8e81f00e8a0f8ffff85c00f84ee000000f74500100000000f85d8000000837d20000f85c50000008b45243d000010000f87b7000000e8e8faffff4889454831db488b45484c8b004929d87430488b4d40488d5418084c8d4d504531d2488b05a0e81f00e840f8ffff85c00f848e0000008b455085c074304801c3ebc4488b4d40488d555841b8010000004c8d4d504531d2488b056be81f00e80bf8ffff85c0745d837d50007545488b4d4048c74540ffffffff488b0531e81f00e8e9f7ffff85c0743b8b451c498947108b452c48c1e0208b55304809d04989471849c7472001000000488b4548488918eb3848c7c0e5ffffffeb0e48c7c0eaffffffeb05e830feffff49894708488b4d404883f9ff740c488b05d3e71f00e88bf7ffff31c0e8fef9ffff4881c4800000005b5dc3488b4d1031d241b8070000004531c941ba0300000041bb8000000031f6488b0591e71f00e851f7ffff4883f8ff0f8484000000504889c1488d5540488b058be71f00e833f7ffff85c0745759488b056ae71f00e822f7ffff8b455c8b556c48c1e2208b4d704809cae81b0a00004885c0755149837f2000741c8b455c493b471075138b456c48c1e0208b55704809d0493b4718742e48f7450802000000742c31c0c359488b0513e71f00e8cbf6ffff48c7c0fbffffffc3e849fdffff4883f8fe74ddc348c7c0eaffffffc348c7c0efffffffc355534881eca00000004889e548894d004889550848c74520ffffffff48c745280000000049c74708000000004883fa037728e870fcffff4885c00f88640200004889453848c7c000200000e8d1f8ffff4c8d40084c894510eb0c48c7c0eaffffffe93e020000488b4d38ba001000004c8b45104531c9488b058de61f00e825f6ffff85c00f84150200003d0010000073c9488b451031c931db66833c4800741066833c485c7504488d590148ffc1ebe94881fbe30f000077a14839d9749c48895d78e866feffff4885c00f88d401000048c7c000200000e845f8ffff488d780848897d18488b7510488b4d7848d1e1f3a44889bd8000000031dbffc383fb100f8788010000488b0506e61f00e896f5ffff48898588000000488b05fbe51f00e883f5ffff48c1e0204831858800000049ff4748498b474848318588000000488bbd80000000488d359b010000b916000000f3a4488b8588000000b91000000089c283e20f83c2616689174883c70248c1e804e2eb66c7070000488b7510488b7d18668b06663b0775136685c00f8468ffffff4883c6024883c702ebe5488b4d18ba000000404531c04531c941ba0100000041bb8000000031f6488b0522e51f00e8e2f4ffff4883f8ff0f84ad0000004889452048c745280100000031db488b45004c8b004929d87436488b4d20488d5418084c8d8d900000004531d2488b05afe41f00e89ff4ffff85c00f848f0000008b859000000085c0747c4801c3ebbe488b4d2048c74520ffffffff488b05b8e41f00e870f4ffff85c07464e8edfcffff4885c0785f488b4d18488b55104531c048f7450802000000740641b801000000488b05bbe41f00e83bf4ffff85c0742f48c745280000000031c0eb28e8b1faffff4883f8ef0f846ffeffffeb1748c7c0efffffffeb0e48c7c0fbffffffeb05e88efaffff4889453049894708488b4d204883f9ff740c488b052de41f00e8e5f3ffff48837d28007410488b4d18488b0556e41f00e8cef3ffff488b45304881c4a00000005b5dc32e00720061006d006f0073002d0074006d0070002d004989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e828f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8d80000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e8a9f6ffffeb1248c7c0e5ffffff4989470831c0e843f4ffff4883c4205b5dc3498b47404885c0752c31c9ba0030100041b80030000041b904000000488b05bae11f00e89af1ffff4885c00f8432f2ffff49894740c3554883ec204889e548894500b9f6ffffff488b0577e11f00e86ff1ffff4889c1488b55004883c24041b8001000004c8d4d084531d2488b05abe11f00e84bf1ffff85c074058b4508eb1f488b056ee11f00e836f1ffff83f86d740c83f8267407e8b2f7ffffeb0231c04883c4205dc3488d7008488b384801f731c94839fe0f83d20000000fb61648ffc648ffc181fa8000000072e681fac20000000f828602000081faf40000000f877a02000041b80100000041b98000000041babf00000081fae0000000725841b80200000081fae0000000750641b9a000000081faed000000750641ba9f00000081faf0000000722e41b80300000041b98000000041babf00000081faf0000000750641b99000000081faf4000000750641ba8f0000004839fe0f83ff0100000fb61648ffc64439ca0f82f00100004439d20f87e701000041b98000000041babf00000041ffc875cee925ffffffc350e812ffffff58488d7008488b00e9eef4ffffe800ffffff4889c8c34885c90f88bc0100004839ca0f8cb3010000488d7008488b384801f74531c04989f14939c875034989f14939d0742f4839fe0f838d01000048ffc64839fe7319440fb6164181e2c00000004181fa80000000750548ffc6ebe249ffc0ebc44889f04c29c84c89cee979f4ffff5051488b00480301e81af2ffff4989c0488d7808488b742408488b0e4883c608f3a45e488b0e4883c608f3a44883c4084c89c0c3488b10483b11751c488d7008488d79084889d131c04885c97404f3a67505b801000000c331c0c331c931d2eb004881f9000002000f87fc00000052488d04cd00000000e8abf1ffff5a4989c0488b0848c1e903488d78084889d0f348ab4c89c0c3488b0048c1e803c3488b1048c1ea034839d10f83ce000000488b44c808c34c8b0049c1e8034c39c10f83b8000000488954c80831c0c34881f9000002000f8792000000505152e881ffffff4989c0488d7808488b742410488b0e483b087603488b0848c1e9034883c608f348a54883c4184c89c0c35648c1e003e813f1ffff5e488d7808488b0848c1e903488d74cef84885c97413488b164889174883ee084883c70848ffc9ebe8c3e95affffffe96bffffff488d353d000000ba2a000000e91defffff488d3556000000ba30000000e90cefffff488d3575000000ba3d000000e9fbeeffff488d35a1000000ba2f000000e9eaeeffff52616d6f732072756e74696d65206572726f723a20696e76616c6964205554462d3820737472696e670a52616d6f732072756e74696d65206572726f723a20737472696e6720736c696365206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a2061727261792073697a65206d757374206265206265747765656e203020616e64203133313037320a52616d6f732072756e74696d65206572726f723a20617272617920696e646578206f7574206f6620626f756e64730a49837f2000745249837f5800750eb800040000e8bdefffff49894758498b4710498b5718e8400000004885c07528498b4f604883f94073294d8b475848c1e104498b47104989440808498b4718498944081049ff476031c0c348c7c0eaffffffc348c7c0e5ffffffc34d8b47584d85c074274d8b4f604983c0084d85c9741a493b00750c493b50087506b801000000c34983c01049ffc9ebe131c0c3488b0543dd1f00e8b3ecffff4889c1498d5728488b0548dd1f00e8a0ecffff4885c00f8438edffff498907b9e9fd0000488b051bdd1f00e883ecffffc331c9488b058cdc1f00e874ecffff0f0b" }
 fn windows_entry() -> bytes { return "fc4531e44531ed4531f64881ec800000004989e74889e731c0b910000000f348abe88dffffff" }
 fn windows_imports() -> bytes { return "0002200000000000000000000003200080002000a002200000000000000000000e03200020012000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a032000000000002a032000000000003603200000000000440320000000000054032000000000006a03200000000000800320000000000090032000000000009e03200000000000ac03200000000000ba03200000000000d803200000000000e403200000000000f8032000000000000a0420000000000020042000000000002e042000000000003c042000000000004e04200000000000000000000000000064042000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a032000000000002a032000000000003603200000000000440320000000000054032000000000006a03200000000000800320000000000090032000000000009e03200000000000ac03200000000000ba03200000000000d803200000000000e403200000000000f8032000000000000a0420000000000020042000000000002e042000000000003c042000000000004e0420000000000000000000000000006404200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b45524e454c33322e646c6c00005348454c4c33322e646c6c00000047657453746448616e646c6500000000577269746546696c650000004578697450726f636573730000005669727475616c416c6c6f63000000005769646543686172546f4d756c7469427974650000004d756c746942797465546f57696465436861720000004765744c6173744572726f720000000043726561746546696c6557000000436c6f736548616e646c6500000047657446696c655479706500000047657446696c65496e666f726d6174696f6e427948616e646c65000000005265616446696c650000000047657446756c6c506174684e616d6557000000004765745469636b436f756e7436340000000047657443757272656e7450726f6365737349640000004d6f766546696c6545785700000044656c65746546696c6557000000476574436f6d6d616e644c696e6557000000536574436f6e736f6c654f7574707574435000000000436f6d6d616e644c696e65546f4172677657000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" }
-fn windows_end() -> int64 { return 9032 }
+fn windows_end() -> int64 { return 9227 }
 fn windows_stack_probe() -> bytes { return "483d0010000072144881ec0010000048830c2400482d00100000ebe44829c4" }
-fn windows_return() -> int64 { return 9016 }
+fn windows_return() -> int64 { return 9211 }
 fn windows_address(n: int64) -> int64 {
     if n == 0 { return 4340 }
     if n == 1 { return 4354 }
-    if n == 2 { return 5440 }
+    if n == 2 { return 5449 }
     if n == 3 { return 4260 }
     if n == 4 { return 4290 }
-    if n == 5 { return 5505 }
+    if n == 5 { return 5514 }
     return 0
 }
 fn windows_builtin(n: int64) -> int64 {
     if n == 0 { return 4855 }
-    if n == 1 { return 5457 }
-    if n == 2 { return 5461 }
-    if n == 3 { return 5476 }
-    if n == 4 { return 5535 }
-    if n == 5 { return 5540 }
-    if n == 6 { return 5958 }
-    if n == 7 { return 6575 }
-    if n == 8 { return 5688 }
-    if n == 9 { return 5693 }
-    if n == 10 { return 5713 }
-    if n == 11 { return 5742 }
-    if n == 12 { return 7602 }
-    if n == 13 { return 7597 }
-    if n == 14 { return 7396 }
-    if n == 15 { return 7423 }
-    if n == 16 { return 7592 }
+    if n == 1 { return 5466 }
+    if n == 2 { return 5470 }
+    if n == 3 { return 5485 }
+    if n == 4 { return 5544 }
+    if n == 5 { return 5549 }
+    if n == 6 { return 5967 }
+    if n == 7 { return 6614 }
+    if n == 8 { return 5697 }
+    if n == 9 { return 5702 }
+    if n == 10 { return 5722 }
+    if n == 11 { return 5751 }
+    if n == 12 { return 7641 }
+    if n == 13 { return 7636 }
+    if n == 14 { return 7435 }
+    if n == 15 { return 7462 }
+    if n == 16 { return 7631 }
     if n == 17 { return 5167 }
     if n == 18 { return 5105 }
-    if n == 19 { return 8225 }
-    if n == 20 { return 8232 }
-    if n == 21 { return 8244 }
-    if n == 22 { return 8253 }
-    if n == 23 { return 8458 }
-    if n == 24 { return 8510 }
-    if n == 25 { return 8518 }
-    if n == 26 { return 8540 }
-    if n == 27 { return 8564 }
-    if n == 28 { return 8361 }
-    if n == 29 { return 8413 }
-    if n == 30 { return 8627 }
-    if n == 31 { return 8679 }
-    if n == 32 { return 8684 }
-    if n == 33 { return 8452 }
+    if n == 19 { return 8264 }
+    if n == 20 { return 8271 }
+    if n == 21 { return 8283 }
+    if n == 22 { return 8292 }
+    if n == 23 { return 8497 }
+    if n == 24 { return 8549 }
+    if n == 25 { return 8557 }
+    if n == 26 { return 8579 }
+    if n == 27 { return 8603 }
+    if n == 28 { return 8400 }
+    if n == 29 { return 8452 }
+    if n == 30 { return 8666 }
+    if n == 31 { return 8718 }
+    if n == 32 { return 8723 }
+    if n == 33 { return 8491 }
+    if n == 34 { return 8994 }
     return 0
 }

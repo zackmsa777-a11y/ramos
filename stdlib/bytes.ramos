@@ -1,0 +1,37 @@
+// Mutable binary copies; indices remain byte offsets.
+fn bytes_copy(source: bytes) -> bytes {
+    let out = buffer(buffer_len(source))
+    var i = 0
+    while i < buffer_len(source) { buffer_set(out, i, buffer_get(source, i))
+        i = i + 1 }
+    return out
+}
+fn bytes_equal(a: bytes, b: bytes) -> bool {
+    if buffer_len(a) != buffer_len(b) { return false }
+    var i = 0
+    while i < buffer_len(a) {
+        if buffer_get(a, i) != buffer_get(b, i) { return false }
+        i = i + 1
+    }
+    return true
+}
+fn bytes_slice(source: bytes, start: int64, end: int64) -> bytes {
+    if start < 0 || end < start || end > buffer_len(source) {
+        stderr("Ramos library error: byte slice out of bounds\n")
+        exit(1)
+    }
+    let out = buffer(end - start)
+    var i = 0
+    while i < buffer_len(out) { buffer_set(out, i, buffer_get(source, start + i))
+        i = i + 1 }
+    return out
+}
+fn bytes_put(out: bytes, start: int64, source: bytes) {
+    if start < 0 || start + buffer_len(source) > buffer_len(out) {
+        stderr("Ramos library error: byte copy out of bounds\n")
+        exit(1)
+    }
+    var i = 0
+    while i < buffer_len(source) { buffer_set(out, start + i, buffer_get(source, i))
+        i = i + 1 }
+}

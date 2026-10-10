@@ -426,6 +426,14 @@ runtime_check_destination:
     jz runtime_destination_info_failed
     pop rcx
     API CloseHandle
+    mov eax, [rbp + 92]
+    mov edx, [rbp + 108]
+    shl rdx, 32
+    mov ecx, [rbp + 112]
+    or rdx, rcx
+    call runtime_guard_alias
+    test rax, rax
+    jnz runtime_destination_alias
     cmp QWORD PTR [r15 + 32], 0
     je runtime_destination_exists
     mov eax, [rbp + 92]
@@ -650,6 +658,7 @@ temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
 .include "bootstrap/windows/stdin.s.inc"
 .set runtime_value_error, runtime_error
 .include "bootstrap/src/values_runtime.inc"
+.include "bootstrap/src/source_guard.inc"
 runtime_initialize:
     API GetCommandLineW
     mov rcx, rax

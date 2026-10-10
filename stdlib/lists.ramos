@@ -1,0 +1,34 @@
+// Growable integer list with checked logical bounds and doubling capacity.
+struct IntList { data: [int64], count: int64 }
+fn list_new() -> IntList { return IntList(array_empty(int64), 0) }
+fn list_len(list: IntList) -> int64 { return list.count }
+fn list_push(list: IntList, value: int64) {
+    if list.count == array_len(list.data) {
+        var capacity = array_len(list.data) * 2
+        if capacity == 0 { capacity = 4 }
+        list.data = array_resize(list.data, capacity, 0)
+    }
+    list.data[list.count] = value
+    list.count = list.count + 1
+}
+fn list_get(list: IntList, index: int64) -> int64 {
+    if index < 0 || index >= list.count {
+        stderr("Ramos library error: list index out of bounds\n")
+        exit(1)
+    }
+    return list.data[index]
+}
+fn list_set(list: IntList, index: int64, value: int64) {
+    if index < 0 || index >= list.count {
+        stderr("Ramos library error: list index out of bounds\n")
+        exit(1)
+    }
+    list.data[index] = value
+}
+fn list_pop(list: IntList) -> int64 {
+    if list.count == 0 { stderr("Ramos library error: pop from empty list\n")
+        exit(1) }
+    list.count = list.count - 1
+    return list.data[list.count]
+}
+fn list_clear(list: IntList) { list.count = 0 }

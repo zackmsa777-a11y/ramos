@@ -1,0 +1,20 @@
+// Small checked integer helpers. Overflow retains the native Ramos trap.
+fn num_min(a: int64, b: int64) -> int64 {
+    if a < b { return a }
+    return b
+}
+fn num_max(a: int64, b: int64) -> int64 {
+    if a > b { return a }
+    return b
+}
+fn num_abs(n: int64) -> int64 {
+    if n < 0 { return -n }
+    return n
+}
+fn num_clamp(n: int64, low: int64, high: int64) -> int64 {
+    if low > high { stderr("Ramos library error: reversed clamp bounds\n")
+        exit(1) }
+    return num_min(num_max(n, low), high)
+}
+fn num_text(n: int64) -> string { return string(int_to_text(n)) }
+fn num_parse(text: string) -> int64 { return text_to_int(to_bytes(text)) }

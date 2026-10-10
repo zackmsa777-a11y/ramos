@@ -1,0 +1,30 @@
+{
+  "version": "0.11.0",
+  "keyword": "weave",
+  "source_sha256": "c424089bb4417aabe311aac69f4c592decad85b0b8e8f343bafab3dc327ccdb5",
+  "linux_tests": 164,
+  "library_tests": 20,
+  "standard_library_files": [
+    "bytes.ramos",
+    "lists.ramos",
+    "maps.ramos",
+    "numbers.ramos",
+    "text.ramos"
+  ],
+  "standard_library_language": "Ramos",
+  "limits": {
+    "source_files": 64,
+    "combined_source_bytes": 1048576,
+    "tokens_with_eof": 50000,
+    "path_bytes": 4095,
+    "path_components": 512,
+    "path_pool_bytes": 41900
+  },
+  "benchmark_outputs_verified": {
+    "programs": 36,
+    "input_cases_per_program": 9,
+    "new_timings": false
+  },
+  "staged_install_verified": true,
+  "source_alias_protection_survives_gc": true
+}

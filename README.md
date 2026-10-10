@@ -1,4 +1,4 @@
-# Ramos 0.10 — self-hosted compiler for Linux and Windows
+# Ramos 0.11 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,13 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.11 adds **`weave "library.ramos"`** and a small standard library
+written in Ramos: number/text/byte helpers, growable integer lists and string
+maps. Nested paths resolve relative to the containing source, dependencies load
+once, and errors retain the original filename. The native corpus passes 164 Linux
+tests and 114 Windows tests. See [simple libraries](docs/libraries.md) and
+[the example](examples/library_demo.ramos).
 
 Version 0.10 adds immutable UTF-8 `string` values, automatic reclamation of
 unused memory, mutable structs and typed arrays on both native targets. Old byte
@@ -101,7 +108,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.10.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.11.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -134,7 +141,8 @@ fn main() {
 ```
 
 - Exactly one parameterless `main` returning void is required. Other top-level
-  functions and structs may appear before or after it.
+  functions and structs may appear before or after it. `weave` adds library
+  definitions at top level.
 - `print` accepts a string literal, buffer, integer expression, or boolean expression
   and adds a newline. Booleans print as `true` or `false`.
 - Integer expressions support `+`, `-`, `*`, `/`, `%`, unary `+`/`-`, and
@@ -293,6 +301,24 @@ their contents. `array_resize` returns a fresh resized array. The runtime reclai
 unreachable values, including cycles, while keeping active values valid.
 See [the complete contracts and limits](docs/values.md).
 
+## Libraries
+
+```ramos
+weave "stdlib/numbers.ramos"
+weave "stdlib/lists.ramos"
+fn main() {
+    let scores = list_new()
+    list_push(scores, num_max(7, 42))
+    print(list_get(scores, 0))
+}
+```
+
+Copy `stdlib/` beside your source. `weave` paths are relative to that source,
+including in nested libraries. Libraries share a checked namespace and compile
+into the executable; no runtime package loader is needed. Repeated dependencies
+load once, cycles fail, and output protection covers every source. Run
+`make library-demo` or see [library semantics and APIs](docs/libraries.md).
+
 ## Arithmetic behavior
 
 Generated native instructions check signed overflow for addition, subtraction,
@@ -387,7 +413,8 @@ from signed overflow. See [the full contract](docs/input-text.md) and
 
 ## Current limits and next work
 
-The self-hosted compiler accepts regular source files up to 1 MiB, at most 50,000
+The self-hosted compiler accepts up to 64 regular source files totaling 1 MiB
+(with boundary separators), at most 50,000
 tokens including EOF, 4,096 total declarations including parameters and ended
 blocks, 256 functions and 16 parameters per function. Structs are limited to 64
 types with 16 fields each; array type nesting to 16. Expression and block
@@ -396,7 +423,7 @@ Its output and decoded string-data arenas are each 1 MiB; labels and fixups each
 have a 40,000-entry bound. These are checked limits. The retained bootstrap has
 the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).
 
-The compiler is self-hosted; imports, a standard library, floats, syntax conveniences, wrapping arithmetic,
+The compiler is self-hosted; namespaces, more library types, floats, syntax conveniences, wrapping arithmetic,
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
@@ -417,7 +444,7 @@ Startup and build times are reported separately. See the
 and [workload sources](benchmarks/fixtures/). The saved 0.7.0 baseline and
 [interleaved old/new comparison](benchmarks/optimization.md) show a **2.05× overall
 speedup**. Version 0.8 emits [identical benchmark executable bytes](docs/codegen-continuity.json)
-for both targets. Versions 0.9 and 0.10 expand the native runtime; the timings above
+for both targets. Versions 0.9–0.11 expand the native runtime; the timings above
 remain the recorded 0.7.1 measurements, not a current-version performance claim.
 
 ```sh

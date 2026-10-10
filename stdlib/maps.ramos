@@ -1,0 +1,46 @@
+// String-to-string map. Lookup is linear; capacity grows by doubling.
+struct StringMap { keys: [string], values: [string], count: int64 }
+fn map_new() -> StringMap {
+    return StringMap(array_empty(string), array_empty(string), 0)
+}
+fn map_len(map: StringMap) -> int64 { return map.count }
+fn map_index(map: StringMap, key: string) -> int64 {
+    var i = 0
+    while i < map.count {
+        if map.keys[i] == key { return i }
+        i = i + 1
+    }
+    return -1
+}
+fn map_has(map: StringMap, key: string) -> bool { return map_index(map, key) >= 0 }
+fn map_get(map: StringMap, key: string, fallback: string) -> string {
+    let index = map_index(map, key)
+    if index < 0 { return fallback }
+    return map.values[index]
+}
+fn map_set(map: StringMap, key: string, value: string) {
+    let index = map_index(map, key)
+    if index >= 0 { map.values[index] = value
+        return }
+    if map.count == array_len(map.keys) {
+        var capacity = array_len(map.keys) * 2
+        if capacity == 0 { capacity = 4 }
+        let keys = array_resize(map.keys, capacity, s"")
+        let values = array_resize(map.values, capacity, s"")
+        map.keys = keys
+        map.values = values
+    }
+    map.keys[map.count] = key
+    map.values[map.count] = value
+    map.count = map.count + 1
+}
+fn map_remove(map: StringMap, key: string) -> bool {
+    let index = map_index(map, key)
+    if index < 0 { return false }
+    map.count = map.count - 1
+    map.keys[index] = map.keys[map.count]
+    map.values[index] = map.values[map.count]
+    map.keys[map.count] = s""
+    map.values[map.count] = s""
+    return true
+}

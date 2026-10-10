@@ -1,7 +1,8 @@
 # Compiler written in Ramos
 
-`ramos.ramos` is the executable compiler source. It has no imports or generated
-host-language parser. `main` calls `read_file`, `utf8`, `lex`, `records`, `discover`,
+`ramos.ramos` is the executable compiler source. It has no generated
+host-language parser. `main` calls `load_sources` (native reads, UTF-8 validation
+and per-file lexing), `records`, `discover`,
 `functions`, and `elf`, then publishes the binary with `write_file`.
 
 The lexer keeps source spans in a token table and validates string escapes.
@@ -26,7 +27,7 @@ There are no handle-to-integer conversions or forged buffer pointers.
 
 | Buffer | Layout |
 | --- | --- |
-| `s` | input source, at most 1 MiB |
+| `s` | combined source, at most 1 MiB including boundary separators |
 | `c` | 1 MiB compiler state and tables |
 | `o` | 1 MiB generated executable arena |
 | `d` | 1 MiB decoded literal bytes |
@@ -34,7 +35,8 @@ There are no handle-to-integer conversions or forged buffer pointers.
 
 `c` byte offsets: scalar state 0..255; 256 function records of 256 bytes at 256;
 4,096 active symbol records of 24 bytes at 70,000; at most 50,000 token records
-of 12 bytes at 200,000; 128 block records of 40 bytes at 850,000; type stack at
+of 12 bytes at 200,000; 64 source records of 32 bytes at 801,000; path bytes
+at 803,100..844,999; dependency edges at 845,000..849,095; 128 block records of 40 bytes at 850,000; type stack at
 900,000; 64 struct records of 512 bytes at 857,000; operator/call records of 24 bytes at 910,000. Each region ends before
 the next. Function parameters occupy sixteen 12-byte records at record offset
 64. The symbol counter also tracks 4,096 total declarations across all functions.
@@ -45,12 +47,14 @@ symbols, 8 total declarations, 9 frame slots, 10 block depth, 11 operators,
 12 expression types, 13 expression nesting, 14 decoded-data length, 15 diagnostic
 source override, 16 selected target (0 Linux, 1 Windows), 17 literal-end cursor,
 18 nonnegative int32 RHS literal value, 19 removable value-push end cursor,
-20 struct count.
+20 struct count, 21 source count, 22 path-pool cursor, 23 combined-source bytes,
+24 aggregate lexical-token count.
 Token kinds preserve the bootstrap constants. Types are
 0 int64, 1 bool, 2 void, 3 bytes, 4 string, 1000 + struct index; an array
 adds 100000 to its element type (at most 16 levels). IDs 256..283 and 289 identify
-public intrinsics; 512 + struct index identifies a constructor. Private runtime
-helper offsets are never exposed as callable source intrinsics.
+public intrinsics; 290 is the compiler-only `_protect_input` binding;
+512 + struct index identifies a constructor. Private runtime
+aggregate helper offsets are never exposed as callable source intrinsics.
 
 `f` holds up to 40,000 12-byte fixup records at zero and up to 40,000 4-byte label
 positions at 600,000. Fixup kinds are 1 function, 2 branch, 3 literal. All rel32
@@ -131,3 +135,20 @@ roots, including interior pointers. A cached next block accelerates allocation;
 a complete scan and collection/retry handle fragmentation and exhaustion.
 Generated frames start zeroed and ended scopes clear locals. Process-state offset
 80 stores the allocation cursor. See [semantics and limits](../docs/values.md).
+
+## Source libraries
+
+Version 0.11 adds `weave` token kind 51. `load_sources` uses a bounded breadth-first
+queue and dependency graph, lexes each normalized source path once, removes only
+top-level directives from the merged token stream, and keeps each token's original
+source span. Source records store begin/end offsets, path span, loaded state,
+parent ID and requesting directive offset. `fail` translates combined offsets
+back to the source's filename/line/byte column, including boundary positions.
+
+The 1 MiB scratch lexer state is reused across files. Source paths and all limits
+are checked before copies. Cycles are rejected through explicit graph reachability;
+loader depth never consumes Ramos recursion. Libraries have no runtime initialization
+or separate ABI. The standard library files are ordinary checked Ramos source.
+Process-state offsets 88/96 hold the protected-input handle/count. The collector
+roots that handle, and both native publishers compare destination identities
+against the complete registered table. See [contracts](../docs/libraries.md).

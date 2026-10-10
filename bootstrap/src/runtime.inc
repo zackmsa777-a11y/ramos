@@ -76,6 +76,7 @@ runtime_math_message:
 .include "bootstrap/src/stdin_runtime.inc"
 .set runtime_value_error, runtime_buffer_error
 .include "bootstrap/src/values_runtime.inc"
+.include "bootstrap/src/source_guard.inc"
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer

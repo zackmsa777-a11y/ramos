@@ -1,0 +1,17 @@
+weave "../stdlib/numbers.ramos"
+weave "../stdlib/text.ramos"
+weave "../stdlib/lists.ramos"
+weave "../stdlib/maps.ramos"
+
+fn main() {
+    print(s"Hello, " + text_repeat(s"🌍", 2))
+    print(num_text(num_clamp(42, 0, 10)))
+    let scores = list_new()
+    list_push(scores, 7)
+    list_push(scores, 42)
+    print(list_get(scores, 1))
+    let names = map_new()
+    map_set(names, s"language", s"Ramos")
+    print(map_get(names, s"language", s"unknown"))
+    print(text_contains(s"simple libraries", s"libraries"))
+}

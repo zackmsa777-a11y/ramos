@@ -12,13 +12,15 @@ See [the semantics and example](input-text.md).
 The first three developer-feedback priorities ship as **0.10**: immutable UTF-8
 strings, automatic reclamation, structs and typed arrays. See [values.md](values.md).
 
+Version **0.11** implements the user's selected `weave` keyword and a small
+standard library written in Ramos. See [libraries.md](libraries.md).
+
 Remaining priorities, in the feedback's order:
 
 1. Syntax conveniences: else-if, range for, assignment shortcuts and a reviewed call-depth limit.
-2. Imports and a small standard library written in Ramos.
-3. Floats for graphics and numerical programs.
-4. Source-line/caret diagnostics, formatting and assembly output tooling.
-5. Further optimization only after useful programs identify measured costs.
+2. Floats for graphics and numerical programs.
+3. Source-line/caret diagnostics, formatting and assembly output tooling.
+4. Further optimization only after useful programs identify measured costs.
 
 The benchmark index measures execution speed, not language quality. The user's
 8/10 project and roughly 4/10 practical-language assessment is useful feedback,

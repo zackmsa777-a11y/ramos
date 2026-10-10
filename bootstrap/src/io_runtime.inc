@@ -196,6 +196,11 @@ runtime_check_destination:
     je runtime_destination_ok
     test rax, rax
     js runtime_destination_return
+    mov rax, [rbp + 128]
+    mov rdx, [rbp + 136]
+    call runtime_guard_alias
+    test rax, rax
+    jnz runtime_destination_alias
     cmp QWORD PTR [r15 + 32], 0
     je runtime_destination_exists
     mov rax, [r15 + 16]
@@ -422,3 +427,5 @@ runtime_platform:
     xor eax, eax
     ret
 .equ RUNTIME_PLATFORM_FILE, CODE_OFFSET + runtime_platform - runtime_writer
+
+.equ RUNTIME_PROTECT_FILE, CODE_OFFSET + runtime_protect_input - runtime_writer
