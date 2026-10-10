@@ -23,7 +23,8 @@ buttons, Unicode text inputs/editors, colored panels and resize/input events.
 [Ramos Notes app](examples/notes.ramos) edits and saves UTF-8 text with native
 controls. No external GUI toolkit or Python runtime is needed. Linux can
 cross-compile GUI apps; its GUI backend is not implemented yet (startup returns
-`-38`). See [the GUI library and commands](docs/gui.md).
+`-38`). Validation passes **194 Linux tests and 140 native Windows tests**,
+with both self-hosting fixed points retained. See [the GUI library and commands](docs/gui.md).
 
 Version 0.12 adds **streamed file I/O and terminal interfaces**. Build native
 copy/search tools that process files larger than 1 MiB, and a colored, full-screen
