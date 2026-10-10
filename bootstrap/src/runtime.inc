@@ -18,6 +18,7 @@ runtime_write_again:
 runtime_write_done:
     ret
 runtime_write_failed:
+    call runtime_terminal_cleanup
     mov edi, 1
     mov eax, 60
     syscall
@@ -51,6 +52,7 @@ runtime_arithmetic_error:
     mov edx, OFFSET FLAT:RUNTIME_MATH_MESSAGE_SIZE
     mov edi, 2
     call runtime_write_fd
+    call runtime_terminal_cleanup
     mov edi, 1
     mov eax, 60
     syscall
@@ -60,6 +62,7 @@ runtime_call_depth_error:
     mov edx, OFFSET FLAT:RUNTIME_DEPTH_MESSAGE_SIZE
     mov edi, 2
     call runtime_write_fd
+    call runtime_terminal_cleanup
     mov edi, 1
     mov eax, 60
     syscall
@@ -77,6 +80,9 @@ runtime_math_message:
 .set runtime_value_error, runtime_buffer_error
 .include "bootstrap/src/values_runtime.inc"
 .include "bootstrap/src/source_guard.inc"
+.include "bootstrap/src/stream_runtime.inc"
+.include "bootstrap/src/stream_os.inc"
+.include "bootstrap/src/terminal_os.inc"
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer
@@ -128,6 +134,18 @@ entry_initialize:
     mov ecx, 16
     rep stosq
     mov [r15], rdx
+    sub rsp, 32
+    mov QWORD PTR [rsp], 1
+    mov QWORD PTR [rsp + 8], 0
+    mov QWORD PTR [rsp + 16], 0
+    mov QWORD PTR [rsp + 24], 0
+    mov edi, 13
+    mov rsi, rsp
+    xor edx, edx
+    mov r10d, 8
+    mov eax, 13
+    syscall
+    add rsp, 32
 .equ ENTRY_INITIALIZE_SIZE, . - entry_initialize
 builtin_pop_arguments: .byte 0x5a, 0x59, 0x58
 # inc r12; cmp r12, CALL_DEPTH_LIMIT; ja rel32 runtime-depth-error.

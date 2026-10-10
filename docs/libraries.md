@@ -64,6 +64,9 @@ reuses it. All functions are checked by the ordinary compiler.
 | `text.ramos` | `text_starts`, `text_ends`, `text_find`, `text_contains`, `text_join`, `text_repeat` |
 | `bytes.ramos` | `bytes_copy`, `bytes_equal`, `bytes_slice`, `bytes_put` |
 | `lists.ramos` | `IntList`, `list_new`, `list_len`, `list_push`, `list_get`, `list_set`, `list_pop`, `list_clear` |
+| `io.ramos` (0.12) | Streamed readers, lines, seeking, copy |
+| `cli.ramos` (0.12) | Argument/option scan helpers |
+| `tui.ramos` (0.12) | Full-screen terminal, colors, cursor, boxes and key input |
 | `maps.ramos` | `StringMap`, `map_new`, `map_len`, `map_has`, `map_get`, `map_set`, `map_remove` (plus `map_index`) |
 
 Number operations keep checked int64 semantics: `num_abs(INT64_MIN)` traps.
@@ -145,3 +148,5 @@ Bootstrap fixed points and embedded OS-boundary bytes remain audited. Saved
 passed 164 Linux tests and 114 Windows tests. See
 [recorded validation](libraries-verification.json), [Linux proof](bootstrap-proof.json)
 and [Windows proof](windows-bootstrap-proof.json).
+
+Version 0.12 expands the bundle with [CLI and TUI libraries](cli-tui.md).

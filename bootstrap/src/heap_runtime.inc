@@ -124,6 +124,10 @@ runtime_collect:
     push rbp
     mov rax, [r15 + 88]
     call runtime_heap_mark
+    mov rax, [r15 + 104]
+    call runtime_heap_mark
+    mov rax, [r15 + 112]
+    call runtime_heap_mark
     mov rsi, rsp
     mov rdi, r15                  # Process-state block is above active frames.
 runtime_heap_roots:

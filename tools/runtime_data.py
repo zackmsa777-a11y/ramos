@@ -11,12 +11,13 @@ KERNEL = ['GetStdHandle', 'WriteFile', 'ExitProcess', 'VirtualAlloc',
           'WideCharToMultiByte', 'MultiByteToWideChar', 'GetLastError',
           'CreateFileW', 'CloseHandle', 'GetFileType', 'GetFileInformationByHandle',
           'ReadFile', 'GetFullPathNameW', 'GetTickCount64', 'GetCurrentProcessId',
-          'MoveFileExW', 'DeleteFileW', 'GetCommandLineW', 'SetConsoleOutputCP']
+          'MoveFileExW', 'DeleteFileW', 'GetCommandLineW', 'SetConsoleOutputCP', 'GetConsoleMode', 'SetConsoleMode',
+          'GetConsoleScreenBufferInfo', 'ReadConsoleInputW', 'WaitForSingleObject', 'SetConsoleCtrlHandler', 'SetFilePointerEx']
 BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'arg', 'read_file', 'write_file', 'io_error', 'stderr', 'process_exit', 'platform',
             'read_line', 'stdin_eof', 'int_to_text', 'text_to_int', 'parse_error', 'collect', 'memory_used', 'string_from_bytes', 'string_to_bytes', 'string_len', 'string_slice',
             'array_new', 'array_len', 'array_get', 'array_set', 'array_resize',
-            'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty', 'protect_input']
+            'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty', 'protect_input', 'stdout', 'file_open', 'file_read', 'file_write', 'file_eof', 'file_close', 'terminal_start', 'terminal_stop', 'terminal_width', 'terminal_height', 'terminal_key', 'file_seek']
 ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print']
 
 
@@ -56,6 +57,7 @@ def imports():
     offsets['CommandLineToArgvW'] = 128 + count * 8
     struct.pack_into('<IIIII', data, 0, 0x200200, 0, 0, kernel_name, 0x200080)
     struct.pack_into('<IIIII', data, 20, 0x200200 + count * 8, 0, 0, shell_name, 0x200080 + count * 8)
+    assert cursor < 3000, "Import names overlap reserved console state pointer"
     return bytes(data), offsets
 
 
@@ -82,6 +84,7 @@ def generated():
     asm = '.intel_syntax noprefix\n.section .idata,"aw"\nimports:\n.incbin "build/windows-imports.bin"\n'
     for n, offset in offsets.items():
         asm += f'.global iat_{n}\n.set iat_{n}, imports + {offset}\n'
+    asm += '.global terminal_process_state\n.set terminal_process_state, imports + 3000\n'
     (ROOT / 'build/windows-imports.s').write_text(asm)
     run('as', '--64', '-o', 'build/windows-runtime.o', 'bootstrap/windows/runtime.s')
     run('as', '--64', '-o', 'build/windows-imports.o', 'build/windows-imports.s')

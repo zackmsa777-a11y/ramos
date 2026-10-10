@@ -5,7 +5,7 @@ PREFIX ?= /usr/local
 DESTDIR ?=
 INSTALL ?= install
 
-.PHONY: all bootstrap selfhost windows test-windows test test-bootstrap demo calculator control-flow functions buffers library-demo install clean
+.PHONY: all bootstrap selfhost windows test-windows test test-bootstrap demo calculator control-flow functions buffers library-demo cli-tools install clean
 all: ramos
 
 build/stage0.o: bootstrap/src/ramos.s $(wildcard bootstrap/src/*.inc)
@@ -53,6 +53,10 @@ buffers: ramos
 library-demo: ramos
 	./ramos build examples/library_demo.ramos -o build/library-demo --force
 	./build/library-demo
+cli-tools: ramos
+	./ramos build examples/rcopy.ramos -o build/rcopy --force
+	./ramos build examples/rgrep.ramos -o build/rgrep --force
+	./ramos build examples/rview.ramos -o build/rview --force
 install: ramos
 	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/bin"
 	$(INSTALL) -m 755 ramos "$(DESTDIR)$(PREFIX)/bin/ramos"

@@ -1,0 +1,61 @@
+weave "../stdlib/io.ramos"
+weave "../stdlib/bytes.ramos"
+
+fn main() {
+    if arg_count() == 2 {
+        if bytes_equal(arg(1), "--help") {
+            print("usage: rgrep [--] LITERAL FILE...\nLiteral binary-safe line search; exit 0 matches, 1 none, 2 error.")
+            return
+        }
+    }
+    var first = 1
+    if arg_count() > 1 { if bytes_equal(arg(1), "--") { first = 2 } }
+    if arg_count() < first + 2 {
+        stderr("usage: rgrep [--] LITERAL FILE...\n")
+        exit(2)
+    }
+    let needle = arg(first)
+    var found = false
+    var failed = false
+    var i = first + 1
+    while i < arg_count() {
+        let path = arg(i)
+        let reader = io_reader(path)
+        var line_number = 0
+        var done = reader.status != 0
+        while !done {
+            let line = io_line(reader)
+            if reader.status != 0 { done = true }
+            else {
+                if reader.eof && buffer_len(line) == 0 { done = true }
+                else {
+                    line_number = line_number + 1
+                    if bytes_find(line, needle) >= 0 {
+                        found = true
+                        var status = stdout(path)
+                        if status == 0 { status = stdout(":") }
+                        if status == 0 { status = stdout(int_to_text(line_number)) }
+                        if status == 0 { status = stdout(":") }
+                        if status == 0 { status = stdout(line) }
+                        if status == 0 { status = stdout("\n") }
+                        if status != 0 { io_close(reader)
+                            stderr("rgrep: output failed\n")
+                            exit(2) }
+                    }
+                }
+            }
+        }
+        if reader.status != 0 {
+            failed = true
+            stderr("rgrep: cannot read ")
+            stderr(path)
+            stderr(" (I/O status ")
+            stderr(int_to_text(reader.status))
+            stderr(")\n")
+        }
+        if reader.handle >= 0 { if io_close(reader) != 0 { failed = true } }
+        i = i + 1
+    }
+    if failed { exit(2) }
+    if !found { exit(1) }
+}

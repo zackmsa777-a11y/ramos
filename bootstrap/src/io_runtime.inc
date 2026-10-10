@@ -30,6 +30,7 @@ runtime_stderr:
 runtime_process_exit:
     cmp rax, 255
     ja runtime_buffer_value_error
+    call runtime_terminal_cleanup
     mov rdi, rax
     mov eax, 60
     syscall
@@ -196,6 +197,11 @@ runtime_check_destination:
     je runtime_destination_ok
     test rax, rax
     js runtime_destination_return
+    mov rax, [rbp + 128]
+    mov rdx, [rbp + 136]
+    call runtime_stream_alias
+    test rax, rax
+    jnz runtime_destination_alias
     mov rax, [rbp + 128]
     mov rdx, [rbp + 136]
     call runtime_guard_alias

@@ -1,0 +1,22 @@
+weave "../stdlib/io.ramos"
+weave "../stdlib/bytes.ramos"
+
+fn main() {
+    if arg_count() == 2 {
+        if bytes_equal(arg(1), "--help") {
+            print("usage: rcopy SOURCE DESTINATION\nCopies any-size regular files; destination must be new.")
+            return
+        }
+    }
+    if arg_count() != 3 {
+        stderr("usage: rcopy SOURCE DESTINATION\n")
+        exit(2)
+    }
+    let status = io_copy(arg(1), arg(2))
+    if status != 0 {
+        stderr("rcopy: copy failed (I/O status ")
+        stderr(int_to_text(status))
+        stderr("); a new destination may be partial\n")
+        exit(1)
+    }
+}

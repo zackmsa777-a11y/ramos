@@ -1,4 +1,4 @@
-# Windows support (Ramos 0.11)
+# Windows support (Ramos 0.12)
 
 Ramos produces native Windows x64 console executables in PE32+ format. The same
 language supports arithmetic, booleans, scopes, control flow, typed functions,
@@ -7,7 +7,7 @@ There is no interpreter, Python dependency or C runtime in generated programs.
 
 ## Use Ramos on Windows
 
-Download [ramos.exe from the 0.11 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.11.0/ramos.exe)
+Download [ramos.exe from the 0.12 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos.exe)
 and open PowerShell in its directory. CI artifacts are also available from the
 [Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml). Save a UTF-8 `hello.ramos`:
 
@@ -57,7 +57,8 @@ stack guard behavior. Arithmetic, buffer, allocation and call-depth checks remai
 
 Arguments use Windows' command-line parsing rules and are converted from UTF-16
 to UTF-8. Paths are converted from UTF-8 to UTF-16 with invalid encodings rejected.
-File reads reject non-disk files/directories and enforce the 1 MiB bound. Writes
+Whole-file `read_file` rejects non-disk files/directories and enforces the 1 MiB bound;
+0.12 streams process regular files in bounded chunks. Atomic `write_file` writes
 use a separate same-directory temporary file, handle partial writes, close the
 file and publish it with `MoveFileExW`. Existing output requires the replacement
 flag, and source/hardlink aliases are rejected even with replacement enabled.
@@ -102,3 +103,9 @@ the same contracts as Linux. See [values and memory](values.md).
 Version 0.11 supports source-relative `weave` libraries and the Ramos standard
 library. Extract the libraries archive before building its examples; use `/` in
 directives even on Windows. See [libraries.md](libraries.md).
+
+Version 0.12 adds regular-file streams and TUI console controls. The Windows
+runtime enables VT output, reads native key events, and restores console modes
+on return, exit, Ramos traps and control termination. Use Windows Terminal or a
+real interactive console; redirected handles are rejected for TUI startup.
+See [file tools and terminal interfaces](cli-tui.md).

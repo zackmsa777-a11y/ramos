@@ -262,6 +262,25 @@ for name in dir(test_libraries.LibraryTests):
         setattr(WindowsTests, name, getattr(test_libraries.LibraryTests, name))
 
 
+import test_cli_streams
+WindowsTests.example = test_cli_streams.StreamTests.example
+for name in dir(test_cli_streams.StreamTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_cli_streams.StreamTests, name))
+
+import test_tui
+for name in dir(test_tui.TUITests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_tui.TUITests, name))
+
+import test_console_native
+WindowsTests.console_probe = test_console_native.WindowsConsoleTests.console_probe
+if os.name == 'nt':
+    for name in dir(test_console_native.WindowsConsoleTests):
+        if name.startswith("test_"):
+            setattr(WindowsTests, name, getattr(test_console_native.WindowsConsoleTests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')
@@ -280,7 +299,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.11.0', 'target': 'x86_64-windows',
+        'version': '0.12.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

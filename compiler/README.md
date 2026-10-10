@@ -152,3 +152,19 @@ or separate ABI. The standard library files are ordinary checked Ramos source.
 Process-state offsets 88/96 hold the protected-input handle/count. The collector
 roots that handle, and both native publishers compare destination identities
 against the complete registered table. See [contracts](../docs/libraries.md).
+
+## Stream and terminal boundaries (0.12)
+
+Public intrinsic IDs 291..302 add stdout, regular-file streams, terminal controls
+and read seeking. The shared `stream_runtime.inc` owns checked modes, generation
+IDs, EOF and the 64-slot registry; each OS supplies open/read/write/close/seek.
+Process-state +104 roots its 4096-byte registry and +120 holds the monotonic ID
+counter. Active read identities join existing publication guards. +112 roots
+saved terminal state. Collection never substitutes for closing OS resources.
+
+The Ramos `io`, `cli` and `tui` libraries implement readers/builders, option scans,
+VT layout and Linux escape-key decoding. Native terminal boundaries save/restore
+modes, dimensions and timed input. Linux entry ignores SIGPIPE, and handled tty
+termination restores modes. Windows reserves import-data offset 3000 for a
+process-state pointer used by its console callback thread; import-name generation
+checks that names cannot overlap it. Native exit/trap paths invoke cleanup.

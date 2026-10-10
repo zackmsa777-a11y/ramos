@@ -1,4 +1,4 @@
-# Native arguments, file I/O and stdin (0.9)
+# Native arguments, file I/O and stdin
 
 On Linux these intrinsics use x86-64 syscalls directly; on Windows they use
 the native Windows API boundary described in [windows.md](windows.md). They are checked and typed in
@@ -61,3 +61,9 @@ does not use POSIX executable permission bits. See [Windows I/O details](windows
 Stdin, integer/text conversion, line limits and error precedence are specified
 in [input-text.md](input-text.md). Stdin reads preserve the most recent successful
 file identity, and file writes do not change decimal parse status.
+
+Version 0.12 adds fallible exact-byte `stdout`, checked regular-file stream IDs,
+read/write/seek/EOF/close operations and terminal controls. Streams process files
+larger than a single buffer. Append and the atomic publisher protect all active
+stream inputs as well as the prior input/source guards. See
+[CLI/TUI signatures and lifecycle](cli-tui.md).

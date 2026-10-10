@@ -47,6 +47,7 @@ runtime_write_done:
     pop rbp
     ret
 runtime_write_failed:
+    call runtime_terminal_cleanup
     mov ecx, 1
     API ExitProcess
     ud2
@@ -110,6 +111,7 @@ runtime_buffer_value_error:
 runtime_error:
     mov edi, 2
     call runtime_write_fd
+    call runtime_terminal_cleanup
     mov ecx, 1
     API ExitProcess
     ud2
@@ -227,6 +229,7 @@ runtime_stderr:
 runtime_process_exit:
     cmp rax, 255
     ja runtime_buffer_value_error
+    call runtime_terminal_cleanup
     mov rcx, rax
     API ExitProcess
     ud2
@@ -426,6 +429,14 @@ runtime_check_destination:
     jz runtime_destination_info_failed
     pop rcx
     API CloseHandle
+    mov eax, [rbp + 92]
+    mov edx, [rbp + 108]
+    shl rdx, 32
+    mov ecx, [rbp + 112]
+    or rdx, rcx
+    call runtime_stream_alias
+    test rax, rax
+    jnz runtime_destination_alias
     mov eax, [rbp + 92]
     mov edx, [rbp + 108]
     shl rdx, 32
@@ -659,6 +670,9 @@ temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
 .set runtime_value_error, runtime_error
 .include "bootstrap/src/values_runtime.inc"
 .include "bootstrap/src/source_guard.inc"
+.include "bootstrap/src/stream_runtime.inc"
+.include "bootstrap/windows/stream.s.inc"
+.include "bootstrap/windows/terminal.s.inc"
 runtime_initialize:
     API GetCommandLineW
     mov rcx, rax
@@ -671,6 +685,7 @@ runtime_initialize:
     API SetConsoleOutputCP
     ret
 runtime_main_return:
+    call runtime_terminal_cleanup
     xor ecx, ecx
     API ExitProcess
     ud2

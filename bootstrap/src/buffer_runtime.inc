@@ -69,6 +69,7 @@ runtime_buffer_value_error:
 runtime_buffer_error:
     mov edi, 2
     call runtime_write_fd
+    call runtime_terminal_cleanup
     mov edi, 1
     mov eax, 60
     syscall

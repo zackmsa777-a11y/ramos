@@ -1,4 +1,4 @@
-# Ramos 0.11 — self-hosted compiler for Linux and Windows
+# Ramos 0.12 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,11 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.12 adds **streamed file I/O and terminal interfaces**. Build native
+copy/search tools that process files larger than 1 MiB, and a colored, full-screen
+file viewer with keyboard navigation. New Ramos libraries cover I/O, CLI helpers
+and TUI layout/input. See [the APIs and runnable tools](docs/cli-tui.md).
 
 Version 0.11 adds **`weave "library.ramos"`** and a small standard library
 written in Ramos: number/text/byte helpers, growable integer lists and string
@@ -108,7 +113,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.11.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -125,6 +130,21 @@ make windows                 # native Windows compiler: build/ramos.exe
 Windows is the default target for the Windows compiler; Linux is the default for
 the Linux compiler. Both can select either target explicitly. See
 [Windows setup, runtime and self-hosting](docs/windows.md).
+
+## File tools and terminal UI
+
+```sh
+make cli-tools
+./build/rcopy source.bin new-copy.bin
+./build/rgrep needle README.md
+./build/rview README.md
+```
+
+`rview` displays a colored frame, highlighted lines and page status; use arrows,
+j/k, Space/n, p and q. Programs use the same native compiler and the ordinary
+Ramos-written `stdlib/io.ramos`, `cli.ramos` and `tui.ramos` libraries. Download
+[the complete CLI/TUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos-0.12.0-cli-tui.zip)
+and keep its folders together. See [contracts, examples and limits](docs/cli-tui.md).
 
 ## Syntax
 

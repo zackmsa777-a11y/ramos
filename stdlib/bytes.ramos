@@ -35,3 +35,19 @@ fn bytes_put(out: bytes, start: int64, source: bytes) {
     while i < buffer_len(source) { buffer_set(out, start + i, buffer_get(source, i))
         i = i + 1 }
 }
+// Literal binary search. Empty needle matches at zero; -1 means missing.
+fn bytes_find(haystack: bytes, needle: bytes) -> int64 {
+    if buffer_len(needle) == 0 { return 0 }
+    var i = 0
+    while i <= buffer_len(haystack) - buffer_len(needle) {
+        var j = 0
+        var matches = true
+        while j < buffer_len(needle) && matches {
+            if buffer_get(haystack, i + j) != buffer_get(needle, j) { matches = false }
+            j = j + 1
+        }
+        if matches { return i }
+        i = i + 1
+    }
+    return -1
+}

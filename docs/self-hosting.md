@@ -1,4 +1,4 @@
-# Ramos 0.11: self-hosting proved
+# Ramos 0.12: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -49,7 +49,8 @@ The literal is instruction data, not an embedded compiler executable.
 
 The runtime's assembly source remains in `bootstrap/src/runtime.inc`,
 `buffer_runtime.inc`, `heap_runtime.inc`, `values_runtime.inc`, `io_runtime.inc`,
-`text_runtime.inc`, `stdin_runtime.inc` and `source_guard.inc`. The proof verifies every embedded byte
+`text_runtime.inc`, `stdin_runtime.inc`, `source_guard.inc`,
+`stream_runtime.inc`, `stream_os.inc` and `terminal_os.inc`. The proof verifies every embedded byte
 and native entry offset against the bootstrap's emitted runtime. Retaining an
 assembly OS boundary does not mean the Ramos compiler invokes assembly at run
 time; once stage 1 is seeded, the next stages require no assembler or linker.

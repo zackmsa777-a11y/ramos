@@ -1,0 +1,104 @@
+weave "numbers.ramos"
+weave "text.ramos"
+
+// Terminal UI controls use VT sequences after native console setup.
+fn tui_escape() -> string {
+    let value = buffer(1)
+    buffer_set(value, 0, 27)
+    return string(value)
+}
+fn tui_write(value: string) {
+    if stdout(to_bytes(value)) != 0 {
+        terminal_stop()
+        stderr("Ramos TUI error: cannot write terminal\n")
+        exit(1)
+    }
+}
+fn tui_control(value: string) { tui_write(tui_escape() + s"[" + value) }
+fn tui_begin() -> int64 {
+    let status = terminal_start()
+    if status == 0 { tui_control(s"?1049h")
+        tui_control(s"?25l")
+        tui_clear() }
+    return status
+}
+fn tui_end() -> int64 { return terminal_stop() }
+fn tui_clear() { tui_control(s"2J")
+    tui_control(s"H") }
+fn tui_move(row: int64, column: int64) {
+    if row < 1 || column < 1 || row > 65535 || column > 65535 {
+        stderr("Ramos TUI error: invalid cursor position\n")
+        exit(1)
+    }
+    tui_control(num_text(row) + s";" + num_text(column) + s"H")
+}
+fn tui_color(foreground: int64, background: int64) {
+    if foreground < 0 || foreground > 7 || background < 0 || background > 7 {
+        stderr("Ramos TUI error: color must be 0..7\n")
+        exit(1)
+    }
+    tui_control(num_text(30 + foreground) + s";" + num_text(40 + background) + s"m")
+}
+fn tui_reset() { tui_control(s"0m") }
+fn tui_at(row: int64, column: int64, value: string) {
+    tui_move(row, column)
+    tui_write(value)
+}
+fn tui_box(row: int64, column: int64, width: int64, height: int64) {
+    if width < 2 || height < 2 || width > 4096 || height > 4096 {
+        stderr("Ramos TUI error: invalid box dimensions\n")
+        exit(1)
+    }
+    let edge = s"+" + text_repeat(s"-", width - 2) + s"+"
+    tui_at(row, column, edge)
+    var y = 1
+    while y < height - 1 {
+        tui_at(row + y, column, s"|")
+        tui_at(row + y, column + width - 1, s"|")
+        y = y + 1
+    }
+    tui_at(row + height - 1, column, edge)
+}
+// Printable ASCII preview prevents file contents from injecting terminal codes.
+// Non-ASCII/control bytes become ?. This is byte clipping, not Unicode width.
+fn tui_safe(value: bytes, width: int64) -> string {
+    if width < 0 || width > 1048576 {
+        stderr("Ramos TUI error: invalid preview width\n")
+        exit(1)
+    }
+    let size = num_min(buffer_len(value), width)
+    let out = buffer(size)
+    var i = 0
+    while i < size {
+        let byte = buffer_get(value, i)
+        if byte >= 32 && byte < 127 { buffer_set(out, i, byte) }
+        else { buffer_set(out, i, 63) }
+        i = i + 1
+    }
+    return string(out)
+}
+// ASCII bytes, Escape 27, arrows 256..259, Home/End 260/261,
+// PageUp/PageDown 262/263, Delete 264. -1 is timeout/error (check io_error).
+fn tui_key(timeout_ms: int64) -> int64 {
+    let first = terminal_key(timeout_ms)
+    if first != 27 { return first }
+    let prefix = terminal_key(30)
+    if prefix != 91 && prefix != 79 { return 27 }
+    let code = terminal_key(30)
+    if code == 65 { return 256 }
+    if code == 66 { return 257 }
+    if code == 67 { return 258 }
+    if code == 68 { return 259 }
+    if code == 72 { return 260 }
+    if code == 70 { return 261 }
+    if code >= 49 && code <= 54 {
+        if terminal_key(30) == 126 {
+            if code == 49 { return 260 }
+            if code == 51 { return 264 }
+            if code == 52 { return 261 }
+            if code == 53 { return 262 }
+            if code == 54 { return 263 }
+        }
+    }
+    return 27
+}

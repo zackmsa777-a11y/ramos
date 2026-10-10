@@ -1,0 +1,108 @@
+weave "bytes.ramos"
+
+// A reader keeps only a 64 KiB input chunk. offset counts consumed raw bytes.
+struct FileReader {
+    handle: int64, chunk: bytes, cursor: int64,
+    eof: bool, status: int64, offset: int64
+}
+struct ByteBuilder { data: bytes, count: int64, overflow: bool }
+fn io_reader(path: bytes) -> FileReader {
+    let handle = file_open(path, 0)
+    let status = io_error()
+    return FileReader(handle, "", 0, handle < 0, status, 0)
+}
+fn io_close(reader: FileReader) -> int64 {
+    let result = file_close(reader.handle)
+    reader.handle = -1
+    reader.eof = true
+    return result
+}
+fn io_byte(reader: FileReader) -> int64 {
+    if reader.status != 0 || reader.eof { return -1 }
+    if reader.cursor == buffer_len(reader.chunk) {
+        reader.chunk = file_read(reader.handle, 65536)
+        reader.status = io_error()
+        reader.cursor = 0
+        if reader.status != 0 { return -1 }
+        if buffer_len(reader.chunk) == 0 { reader.eof = true
+            return -1 }
+    }
+    let value = buffer_get(reader.chunk, reader.cursor)
+    reader.cursor = reader.cursor + 1
+    reader.offset = reader.offset + 1
+    return value
+}
+fn io_append(builder: ByteBuilder, value: int64) {
+    if builder.overflow { return }
+    if builder.count == 1048576 { builder.overflow = true
+        return }
+    if builder.count == buffer_len(builder.data) {
+        let grown = buffer(buffer_len(builder.data) * 2)
+        bytes_put(grown, 0, builder.data)
+        builder.data = grown
+    }
+    buffer_set(builder.data, builder.count, value)
+    builder.count = builder.count + 1
+}
+// Strip LF or CRLF, preserve other bytes. Oversized lines are drained and
+// report -27; the next call recovers. OS failures stay in reader.status.
+fn io_line(reader: FileReader) -> bytes {
+    if reader.status == -27 { reader.status = 0 }
+    let out = ByteBuilder(buffer(256), 0, false)
+    var pending_cr = false
+    var done = false
+    while !done {
+        let value = io_byte(reader)
+        if value == 10 { done = true }
+        else {
+            if pending_cr { io_append(out, 13)
+                pending_cr = false }
+            if value < 0 { done = true }
+            else {
+                if value == 13 { pending_cr = true }
+                else { io_append(out, value) }
+            }
+        }
+    }
+    if reader.status != 0 { return "" }
+    if out.overflow { reader.status = -27
+        return "" }
+    return bytes_slice(out.data, 0, out.count)
+}
+// Exact writes. Returns first I/O failure; existing destinations are preserved.
+// A failure after creation can leave a partial new destination.
+fn io_copy(source: bytes, destination: bytes) -> int64 {
+    let input = file_open(source, 0)
+    if input < 0 { return input }
+    let output = file_open(destination, 1)
+    if output < 0 { file_close(input)
+        return output }
+    var status = 0
+    var done = false
+    while !done {
+        let part = file_read(input, 65536)
+        status = io_error()
+        if status != 0 { done = true }
+        else {
+            if buffer_len(part) == 0 { done = true }
+            else { status = file_write(output, part)
+                if status != 0 { done = true } }
+        }
+    }
+    let input_status = file_close(input)
+    let output_status = file_close(output)
+    if status == 0 { status = input_status }
+    if status == 0 { status = output_status }
+    return status
+}
+fn io_seek(reader: FileReader, offset: int64) -> int64 {
+    let result = file_seek(reader.handle, offset)
+    reader.status = io_error()
+    if result >= 0 {
+        reader.chunk = ""
+        reader.cursor = 0
+        reader.eof = false
+        reader.offset = result
+    }
+    return reader.status
+}

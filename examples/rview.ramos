@@ -1,0 +1,136 @@
+weave "../stdlib/io.ramos"
+weave "../stdlib/tui.ramos"
+weave "../stdlib/lists.ramos"
+
+struct ViewPage { lines: [string], count: int64 }
+fn view_page(reader: FileReader) -> ViewPage {
+    let page = ViewPage(array(string, 20, s""), 0)
+    var done = false
+    while page.count < 20 && !done {
+        let line = io_line(reader)
+        if reader.status != 0 { done = true }
+        else {
+            if reader.eof && buffer_len(line) == 0 { done = true }
+            else {
+                page.lines[page.count] = tui_safe(line, 240)
+                page.count = page.count + 1
+            }
+        }
+    }
+    return page
+}
+fn view_draw(page: ViewPage, name: string, number: int64, selected: int64) {
+    let width = num_min(terminal_width(), 244)
+    let height = num_min(terminal_height(), 26)
+    tui_clear()
+    if width < 30 || height < 8 {
+        tui_at(1, 1, s"Resize terminal; q quits")
+        return
+    }
+    tui_color(6, 0)
+    tui_box(1, 1, width, height - 1)
+    tui_at(1, 3, s" Ramos file viewer ")
+    tui_color(7, 0)
+    tui_at(2, 3, slice(name, 0, num_min(len(name), width - 4)))
+    let visible = height - 5
+    let top = num_max(0, selected - visible + 1)
+    var row = 0
+    while row < visible && top + row < page.count {
+        let index = top + row
+        if index == selected { tui_color(7, 4) }
+        else { tui_color(7, 0) }
+        let line = page.lines[index]
+        tui_at(row + 3, 3, slice(line, 0, num_min(len(line), width - 4)))
+        tui_reset()
+        row = row + 1
+    }
+    tui_color(3, 0)
+    let status = s"Page " + num_text(number + 1) + s" | line " + num_text(number * 20 + selected + 1)
+    tui_at(height - 2, 3, slice(status, 0, num_min(len(status), width - 4)))
+    tui_reset()
+    let help = s"j/k arrows | Space/n next | p prev | q quit"
+    tui_at(height, 1, slice(help, 0, num_min(len(help), width - 1)))
+}
+fn main() {
+    if arg_count() == 2 {
+        if bytes_equal(arg(1), "--help") {
+            print("usage: rview FILE\nFullscreen paged viewer: arrows/j/k, Space/n, p, q.")
+            return
+        }
+    }
+    if arg_count() != 2 { stderr("usage: rview FILE\n")
+        exit(2) }
+    let reader = io_reader(arg(1))
+    if reader.status != 0 { stderr("rview: cannot open file\n")
+        exit(1) }
+    var page = view_page(reader)
+    if reader.status != 0 { io_close(reader)
+        stderr("rview: cannot read file or line exceeds 1 MiB\n")
+        exit(1) }
+    if tui_begin() != 0 { io_close(reader)
+        stderr("rview: stdin and stdout must be an interactive terminal\n")
+        exit(1) }
+    let name = tui_safe(arg(1), 240)
+    let starts = list_new()
+    list_push(starts, 0)
+    var number = 0
+    var selected = 0
+    var width = -1
+    var height = -1
+    var redraw = true
+    var done = false
+    var status = 0
+    while !done {
+        let new_width = terminal_width()
+        let new_height = terminal_height()
+        if new_width != width || new_height != height { redraw = true
+            width = new_width
+            height = new_height }
+        if redraw { view_draw(page, name, number, selected)
+            redraw = false }
+        let key = tui_key(100)
+        if io_error() != 0 { status = 1
+            done = true }
+        if key == 113 || key == 27 { done = true }
+        if key == 3 { status = 130
+            done = true }
+        if key == 106 || key == 257 {
+            selected = num_min(selected + 1, num_max(0, page.count - 1))
+            redraw = true
+        }
+        if key == 107 || key == 256 { selected = num_max(0, selected - 1)
+            redraw = true }
+        if key == 260 { selected = 0
+            redraw = true }
+        if key == 261 { selected = num_max(0, page.count - 1)
+            redraw = true }
+        if key == 32 || key == 110 || key == 263 {
+            let offset = reader.offset
+            let next_page = view_page(reader)
+            if next_page.count > 0 {
+                number = number + 1
+                if number == list_len(starts) { list_push(starts, offset) }
+                page = next_page
+                selected = 0
+                redraw = true
+            }
+        }
+        if key == 112 || key == 262 {
+            if number > 0 {
+                number = number - 1
+                if io_seek(reader, list_get(starts, number)) != 0 { status = 1
+                    done = true }
+                else { page = view_page(reader)
+                    selected = 0
+                    redraw = true }
+            }
+        }
+        if reader.status != 0 { status = 1
+            done = true }
+    }
+    let close_status = io_close(reader)
+    let terminal_status = tui_end()
+    if status == 0 { if close_status != 0 || terminal_status != 0 { status = 1 } }
+    if status == 1 { stderr("rview: file or terminal I/O failed\n") }
+    exit(status)
+}
