@@ -1,0 +1,387 @@
+{
+  "cases": 7,
+  "matching_output_exit_and_errors": true,
+  "sources": {
+    "old": {
+      "sha256": "ce641e822692fdd4a2564520bd0b0268ac5fc66bc8f46c15e2987c71db34d3c0",
+      "lines": 61
+    },
+    "new": {
+      "sha256": "d687175929a0121b8d2c1740dc09552ce1f4ad2e5f2a44121c970d8d56f408ca",
+      "lines": 57
+    }
+  },
+  "compile_timings": {
+    "compiler": {
+      "samples_ns": {
+        "old": [
+          441387639,
+          439146180,
+          514633432,
+          569326922,
+          707227834,
+          560274016,
+          434566774,
+          438116837,
+          478970389,
+          559902615
+        ],
+        "new": [
+          456354325,
+          498750744,
+          543013952,
+          429023663,
+          518102263,
+          418191951,
+          402984066,
+          443238828,
+          575364314,
+          456864887
+        ]
+      },
+      "median_ns": {
+        "old": 496801910.5,
+        "new": 456609606.0
+      },
+      "meaning": "compiler uses identical source; rgrep uses equivalent old/new syntax; includes process startup"
+    },
+    "rgrep": {
+      "samples_ns": {
+        "old": [
+          33781476,
+          21685318,
+          25298838,
+          22731883,
+          23383121,
+          25846491,
+          51896668,
+          37949949,
+          38660425,
+          39441076
+        ],
+        "new": [
+          24583743,
+          24885258,
+          23318245,
+          21980079,
+          24644633,
+          24387528,
+          43568848,
+          42045495,
+          49910663,
+          37613429
+        ]
+      },
+      "median_ns": {
+        "old": 29813983.5,
+        "new": 24764945.5
+      },
+      "meaning": "compiler uses identical source; rgrep uses equivalent old/new syntax; includes process startup"
+    }
+  },
+  "version": "0.14.0",
+  "linux_passed": 209,
+  "linux_discovered": 213,
+  "linux_skipped": 4,
+  "focused_tests": 15,
+  "linux_selfhost_fixed_point": true,
+  "compile_timing_context": "Interleaved samples on the shared Linux VM while validation/benchmark jobs were active; diagnostic timings only, no comparative speed claim. These compiler/app timing samples predate the final range-condition tuning; hashes identify that build.",
+  "range_timing": {
+    "compiler_version": "Ramos 0.14.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+    "compiler_sha256": "84c2eec9cca7bf655a0e78baf000e2e71db4404b844939b14402c158fc3e9d48",
+    "pinned_cpu": 0,
+    "work_count": 5000000,
+    "sources_sha256": {
+      "while": "ddd884cbee85d7ba59008d97d638f79280120c0bb2adbab553ab9b76e834a345",
+      "for": "8bc42e600d5461b5ca42c0f66e497eccaf5b6f99dbe273270c58e884c67223de"
+    },
+    "binaries_sha256": {
+      "while": "d9131bd35d0f1c4df0ae1351766d61e7b6cfc2edb48b9ab94b9c51c9e133899c",
+      "for": "226196c6b70492d1a35ed8d56bc6092a34af7def84a6a37847ea2ebbab122881"
+    },
+    "samples_ns": {
+      "while": [
+        18122895,
+        18127437,
+        18394940,
+        19008356,
+        18462807,
+        18720529,
+        21062111,
+        18895544,
+        18686849,
+        18547151,
+        18287179,
+        20067003,
+        18330311,
+        18062169,
+        19000272,
+        19028921,
+        18449105
+      ],
+      "for": [
+        14306406,
+        13439900,
+        13701964,
+        14308351,
+        14202573,
+        13712723,
+        14065961,
+        13887159,
+        13503278,
+        13672052,
+        13379202,
+        13530929,
+        13465096,
+        13560264,
+        14314726,
+        12616371,
+        12857632
+      ]
+    },
+    "median_ns": {
+      "while": 18547151,
+      "for": 13672052
+    },
+    "orders": [
+      [
+        "while",
+        "for"
+      ],
+      [
+        "for",
+        "while"
+      ],
+      [
+        "for",
+        "while"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "for",
+        "while"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "for",
+        "while"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "for",
+        "while"
+      ],
+      [
+        "while",
+        "for"
+      ],
+      [
+        "for",
+        "while"
+      ],
+      [
+        "for",
+        "while"
+      ]
+    ],
+    "warmups": 2,
+    "random_seed": 14004,
+    "meaning": "Equivalent checked sum loops on a shared VM. Startup included; no general speedup or language ranking."
+  },
+  "range_condition_before_after": {
+    "workload": "checked sum 0..5000000",
+    "samples_ns": {
+      "while": [
+        18276566,
+        18446816,
+        26955570,
+        18753738,
+        19059562,
+        19169607,
+        18309350,
+        18635230,
+        18581537,
+        19038227,
+        21727370,
+        18400590,
+        18394118,
+        18320425,
+        18699996,
+        18265788,
+        18544610
+      ],
+      "for-before": [
+        22531077,
+        22221508,
+        22237825,
+        22419448,
+        22652523,
+        21657781,
+        22083986,
+        22573078,
+        22201606,
+        22159194,
+        21721480,
+        22802786,
+        21824082,
+        22154846,
+        22356708,
+        22009296,
+        21976309
+      ],
+      "for": [
+        14582396,
+        13996802,
+        13640459,
+        12736457,
+        13422457,
+        14702897,
+        13955219,
+        12877504,
+        13627881,
+        14180495,
+        14314423,
+        13711453,
+        13679597,
+        14349543,
+        13107791,
+        13264212,
+        13693742
+      ]
+    },
+    "median_ns": {
+      "while": 18581537,
+      "for-before": 22201606,
+      "for": 13693742
+    },
+    "orders": [
+      [
+        "for",
+        "while",
+        "for-before"
+      ],
+      [
+        "for-before",
+        "for",
+        "while"
+      ],
+      [
+        "for-before",
+        "for",
+        "while"
+      ],
+      [
+        "while",
+        "for-before",
+        "for"
+      ],
+      [
+        "while",
+        "for",
+        "for-before"
+      ],
+      [
+        "for-before",
+        "for",
+        "while"
+      ],
+      [
+        "for-before",
+        "while",
+        "for"
+      ],
+      [
+        "for-before",
+        "for",
+        "while"
+      ],
+      [
+        "for-before",
+        "while",
+        "for"
+      ],
+      [
+        "for",
+        "while",
+        "for-before"
+      ],
+      [
+        "for",
+        "while",
+        "for-before"
+      ],
+      [
+        "for",
+        "for-before",
+        "while"
+      ],
+      [
+        "while",
+        "for-before",
+        "for"
+      ],
+      [
+        "for-before",
+        "for",
+        "while"
+      ],
+      [
+        "while",
+        "for",
+        "for-before"
+      ],
+      [
+        "while",
+        "for-before",
+        "for"
+      ],
+      [
+        "for",
+        "for-before",
+        "while"
+      ]
+    ],
+    "pinned_cpu": 0,
+    "meaning": "Targeted single-workload shared-VM comparison; not a general language speedup.",
+    "prototype_compiler_sha256": "cc36c60cab7d65492cf86853ab081ab0ae057a6551f68667b1886ea4a80dd5d4",
+    "final_compiler_sha256": "84c2eec9cca7bf655a0e78baf000e2e71db4404b844939b14402c158fc3e9d48"
+  },
+  "windows_passed": 155,
+  "windows_selfhost_fixed_point": true,
+  "native_ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38063579492",
+  "source_sha256": "e2f9fc96048b14257bfcd50065c1c27f3d2222a50d52ce7a9fcbb141e65310d1",
+  "compile_timing_compilers": {
+    "baseline_0_13_sha256": "8bebdd629aebe439e1f4f29b5190a1efcc46c61182e69bf958e90d1c554ea822",
+    "initial_0_14_sha256": "cc36c60cab7d65492cf86853ab081ab0ae057a6551f68667b1886ea4a80dd5d4",
+    "compiler_input_source_sha256": "e6cccc4d8629a85b53600f54628f2174e2fd60744b9c2407e587d38ea9e401d0"
+  }
+}

@@ -1,0 +1,2351 @@
+{
+  "schema_version": 1,
+  "suite": "ramos-eight-task-cli-v1",
+  "measured_at_utc": "2026-10-10T15:31:11.038801+00:00",
+  "ramos_version": "Ramos 0.14.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+  "compiler_sha256": "84c2eec9cca7bf655a0e78baf000e2e71db4404b844939b14402c158fc3e9d48",
+  "environment": {
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz",
+    "platform": "Linux-6.17.0-1020-oracle-x86_64-with-glibc2.39",
+    "pinned_cpu": 0,
+    "logical_cpus": 2,
+    "versions": {
+      "ramos": "Ramos 0.14.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+      "python": "Python 3.12.3"
+    }
+  },
+  "settings": {
+    "samples": 9,
+    "target_native_ms": 30,
+    "warmups": 2,
+    "random_seed": 7012026,
+    "index_reference": "C=100",
+    "equal_task_weights": true,
+    "startup_in_index": false,
+    "fixed_baseline_work_counts": true
+  },
+  "tasks": {
+    "lcg": {
+      "description": "Serial integer arithmetic / modulo",
+      "work_count": 6461457,
+      "seed": 17,
+      "expected_stdout": "610825815\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 43235424,
+          "p10_ns": 43184924.2,
+          "p90_ns": 43647554.4,
+          "min_ns": 43130981,
+          "max_ns": 44390540,
+          "samples_ns": [
+            43441533,
+            43229166,
+            43130981,
+            43461808,
+            43198410,
+            44390540,
+            43415820,
+            43235424,
+            43205374
+          ]
+        },
+        "C": {
+          "median_ns": 30517985,
+          "p10_ns": 30010547.0,
+          "p90_ns": 31246726.0,
+          "min_ns": 29846887,
+          "max_ns": 31263798,
+          "samples_ns": [
+            31242458,
+            30517985,
+            30933970,
+            29846887,
+            30051462,
+            31263798,
+            30388172,
+            30795005,
+            30051758
+          ]
+        },
+        "Rust": {
+          "median_ns": 32261344,
+          "p10_ns": 32146170.6,
+          "p90_ns": 33425198.0,
+          "min_ns": 32130337,
+          "max_ns": 33889626,
+          "samples_ns": [
+            32130337,
+            33296676,
+            32150950,
+            32150129,
+            33889626,
+            33309091,
+            32157191,
+            32442221,
+            32261344
+          ]
+        },
+        "Python": {
+          "median_ns": 1041264758,
+          "p10_ns": 1038037413.4,
+          "p90_ns": 1062291434.4,
+          "min_ns": 1037303303,
+          "max_ns": 1067526456,
+          "samples_ns": [
+            1067526456,
+            1045954269,
+            1041264758,
+            1037303303,
+            1039511581,
+            1047282545,
+            1038962493,
+            1038220941,
+            1060982679
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "Ramos",
+          "Python",
+          "C",
+          "Rust"
+        ],
+        [
+          "C",
+          "Rust",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Python",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "C",
+          "Rust",
+          "Ramos",
+          "Python"
+        ],
+        [
+          "Ramos",
+          "Python",
+          "C",
+          "Rust"
+        ],
+        [
+          "C",
+          "Ramos",
+          "Rust",
+          "Python"
+        ],
+        [
+          "Python",
+          "Ramos",
+          "C",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "C",
+          "Python"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 6781017,
+          "p10_ns": 6591885.8,
+          "p90_ns": 6933277.8,
+          "min_ns": 6544603,
+          "max_ns": 6971343,
+          "samples_ns": [
+            6781017,
+            6544603,
+            6971343
+          ]
+        },
+        "C": {
+          "median_ns": 46912924,
+          "p10_ns": 45236216.0,
+          "p90_ns": 58007680.8,
+          "min_ns": 44817039,
+          "max_ns": 60781370,
+          "samples_ns": [
+            46912924,
+            44817039,
+            60781370
+          ]
+        },
+        "Rust": {
+          "median_ns": 157103461,
+          "p10_ns": 156171008.2,
+          "p90_ns": 167193476.2,
+          "min_ns": 155937895,
+          "max_ns": 169715980,
+          "samples_ns": [
+            155937895,
+            157103461,
+            169715980
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/lcg-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/lcg-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/lcg-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/lcg-ramos",
+          "6461457",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/lcg-c",
+          "6461457",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/lcg-rust",
+          "6461457",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.py",
+          "6461457",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 16088,
+        "Rust": 4505440
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/lcg.ramos",
+          "bytes": 440,
+          "sha256": "dc0e70b67f86d1007d6eeccad2529e20311df529d60e800b9ccbb5da78f981f4"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/lcg.c",
+          "bytes": 1234,
+          "sha256": "1bb04883382af80e8296a5e50d58f1e338323cb35548e8c6404bce777bfbd853"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/lcg.rs",
+          "bytes": 636,
+          "sha256": "5551233d55ab42d0f02c0c269c2fd56003479edcbd7151f37c9c24b312658210"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/lcg.py",
+          "bytes": 235,
+          "sha256": "12ae883c821a862caa9957913809549eb242f95d35dc5df2047529849787bf1f"
+        }
+      }
+    },
+    "branches": {
+      "description": "Data-dependent branches",
+      "work_count": 2705679,
+      "seed": 17,
+      "expected_stdout": "89551397\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 55157321,
+          "p10_ns": 54214308.8,
+          "p90_ns": 56455121.2,
+          "min_ns": 54167204,
+          "max_ns": 58328138,
+          "samples_ns": [
+            55944414,
+            54412662,
+            58328138,
+            55986867,
+            54226085,
+            55271358,
+            54621076,
+            54167204,
+            55157321
+          ]
+        },
+        "C": {
+          "median_ns": 30245283,
+          "p10_ns": 29612604.8,
+          "p90_ns": 31079963.6,
+          "min_ns": 29131316,
+          "max_ns": 31737430,
+          "samples_ns": [
+            29732927,
+            29881359,
+            29754484,
+            30633460,
+            30915597,
+            29131316,
+            31737430,
+            30655064,
+            30245283
+          ]
+        },
+        "Rust": {
+          "median_ns": 30863480,
+          "p10_ns": 29959065.0,
+          "p90_ns": 31280743.8,
+          "min_ns": 29802685,
+          "max_ns": 31738243,
+          "samples_ns": [
+            30914096,
+            30268390,
+            30794273,
+            30863480,
+            30905436,
+            29802685,
+            31738243,
+            29998160,
+            31166369
+          ]
+        },
+        "Python": {
+          "median_ns": 711833233,
+          "p10_ns": 706991424.2,
+          "p90_ns": 726522436.0,
+          "min_ns": 697098845,
+          "max_ns": 731275744,
+          "samples_ns": [
+            697098845,
+            712020440,
+            725334109,
+            716081487,
+            731275744,
+            710093575,
+            711833233,
+            711225225,
+            709464569
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "C",
+          "Python",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Rust",
+          "Python",
+          "Ramos",
+          "C"
+        ],
+        [
+          "C",
+          "Rust",
+          "Ramos",
+          "Python"
+        ],
+        [
+          "Python",
+          "C",
+          "Rust",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Rust",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "Ramos",
+          "C",
+          "Rust",
+          "Python"
+        ],
+        [
+          "Python",
+          "Rust",
+          "C",
+          "Ramos"
+        ],
+        [
+          "Ramos",
+          "Python",
+          "C",
+          "Rust"
+        ],
+        [
+          "Rust",
+          "Python",
+          "C",
+          "Ramos"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 6368276,
+          "p10_ns": 6159392.8,
+          "p90_ns": 6405382.4,
+          "min_ns": 6107172,
+          "max_ns": 6414659,
+          "samples_ns": [
+            6107172,
+            6368276,
+            6414659
+          ]
+        },
+        "C": {
+          "median_ns": 48756277,
+          "p10_ns": 48634813.0,
+          "p90_ns": 49861431.4,
+          "min_ns": 48604447,
+          "max_ns": 50137720,
+          "samples_ns": [
+            48604447,
+            48756277,
+            50137720
+          ]
+        },
+        "Rust": {
+          "median_ns": 160225510,
+          "p10_ns": 159063402.8,
+          "p90_ns": 161439782.8,
+          "min_ns": 158772876,
+          "max_ns": 161743351,
+          "samples_ns": [
+            160225510,
+            158772876,
+            161743351
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/branches-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/branches-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/branches-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/branches-ramos",
+          "2705679",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/branches-c",
+          "2705679",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/branches-rust",
+          "2705679",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.py",
+          "2705679",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 16088,
+        "Rust": 4505360
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/branches.ramos",
+          "bytes": 626,
+          "sha256": "db8c2e9a51a69421426ef5c12b7e4c31daf285a6ed1596f641a3ba6fe26304d9"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/branches.c",
+          "bytes": 1410,
+          "sha256": "ecb6807e5ed70b320a64fda3f547d7547616b0960cd1bb2803cb41830afd3dcc"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/branches.rs",
+          "bytes": 846,
+          "sha256": "3ca3535af9c08f413a078a414f6c939b89da5d99cb40128f20a4e27b7b2ac603"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/branches.py",
+          "bytes": 436,
+          "sha256": "9ba9d80ee757c6380b5008864a5d1238d5c31a8eda86fbb1585d9964384da783"
+        }
+      }
+    },
+    "gcd": {
+      "description": "Euclidean GCD",
+      "work_count": 578275,
+      "seed": 17,
+      "expected_stdout": "4418743\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 62141264,
+          "p10_ns": 61770808.2,
+          "p90_ns": 62526633.0,
+          "min_ns": 61277353,
+          "max_ns": 63047333,
+          "samples_ns": [
+            62269027,
+            62141264,
+            62396458,
+            63047333,
+            61894172,
+            61988132,
+            61926833,
+            62209426,
+            61277353
+          ]
+        },
+        "C": {
+          "median_ns": 39421177,
+          "p10_ns": 38772428.8,
+          "p90_ns": 40211353.0,
+          "min_ns": 38742960,
+          "max_ns": 40728741,
+          "samples_ns": [
+            39448304,
+            39203026,
+            40728741,
+            39421177,
+            38779796,
+            38742960,
+            39303856,
+            40082006,
+            39592363
+          ]
+        },
+        "Rust": {
+          "median_ns": 33235960,
+          "p10_ns": 32858244.8,
+          "p90_ns": 33988318.2,
+          "min_ns": 32847892,
+          "max_ns": 34047971,
+          "samples_ns": [
+            32847892,
+            32860833,
+            33973405,
+            34047971,
+            33235960,
+            32893453,
+            33026750,
+            33395443,
+            33735519
+          ]
+        },
+        "Python": {
+          "median_ns": 426748490,
+          "p10_ns": 424231800.0,
+          "p90_ns": 463588299.6,
+          "min_ns": 424151076,
+          "max_ns": 474089226,
+          "samples_ns": [
+            460963068,
+            424251981,
+            427211096,
+            474089226,
+            426748490,
+            424392256,
+            424623376,
+            429918076,
+            424151076
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "Ramos",
+          "Python",
+          "Rust",
+          "C"
+        ],
+        [
+          "Python",
+          "C",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Rust",
+          "C",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "Rust",
+          "Ramos",
+          "Python",
+          "C"
+        ],
+        [
+          "C",
+          "Ramos",
+          "Rust",
+          "Python"
+        ],
+        [
+          "Rust",
+          "Ramos",
+          "Python",
+          "C"
+        ],
+        [
+          "Python",
+          "Rust",
+          "C",
+          "Ramos"
+        ],
+        [
+          "Python",
+          "C",
+          "Ramos",
+          "Rust"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 7201432,
+          "p10_ns": 6671212.0,
+          "p90_ns": 7579356.8,
+          "min_ns": 6538657,
+          "max_ns": 7673838,
+          "samples_ns": [
+            6538657,
+            7673838,
+            7201432
+          ]
+        },
+        "C": {
+          "median_ns": 49886033,
+          "p10_ns": 48986173.8,
+          "p90_ns": 52455361.0,
+          "min_ns": 48761209,
+          "max_ns": 53097693,
+          "samples_ns": [
+            48761209,
+            53097693,
+            49886033
+          ]
+        },
+        "Rust": {
+          "median_ns": 158929234,
+          "p10_ns": 158308326.8,
+          "p90_ns": 164396978.8,
+          "min_ns": 158153100,
+          "max_ns": 165763915,
+          "samples_ns": [
+            158929234,
+            165763915,
+            158153100
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/gcd-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/gcd-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/gcd-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/gcd-ramos",
+          "578275",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/gcd-c",
+          "578275",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/gcd-rust",
+          "578275",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.py",
+          "578275",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 16088,
+        "Rust": 4505616
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/gcd.ramos",
+          "bytes": 678,
+          "sha256": "7da6f835bd3674721660f6e5e46c653eda502128ca6c6a9a588132a6aa924e0b"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/gcd.c",
+          "bytes": 1429,
+          "sha256": "f04b38b50801a09ddf0f073dc3b972a63ec061e7f533e233a603cce36b4c43d4"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/gcd.rs",
+          "bytes": 834,
+          "sha256": "5dfd7614105fe418638f5876b4ba1e15b21ea85cd7e5fe6075d0847dadae21f3"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/gcd.py",
+          "bytes": 398,
+          "sha256": "7a4a5541133c9bc31ddad561d3259a363e75cc9f0529feb5baa896ad05368f80"
+        }
+      }
+    },
+    "recursive_tree": {
+      "description": "Runtime-seeded recursive tree",
+      "work_count": 1331,
+      "seed": 17,
+      "expected_stdout": "261714787\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 171640922,
+          "p10_ns": 170484195.2,
+          "p90_ns": 181581095.0,
+          "min_ns": 170169956,
+          "max_ns": 195081047,
+          "samples_ns": [
+            172629041,
+            171640922,
+            178206107,
+            170654697,
+            195081047,
+            171601278,
+            175266090,
+            170562755,
+            170169956
+          ]
+        },
+        "C": {
+          "median_ns": 33848424,
+          "p10_ns": 32976259.8,
+          "p90_ns": 34240305.8,
+          "min_ns": 32842119,
+          "max_ns": 34291273,
+          "samples_ns": [
+            34291273,
+            33123579,
+            33051039,
+            34227564,
+            33927087,
+            33009795,
+            33848424,
+            33994481,
+            32842119
+          ]
+        },
+        "Rust": {
+          "median_ns": 45077647,
+          "p10_ns": 44083827.6,
+          "p90_ns": 46832745.4,
+          "min_ns": 43886782,
+          "max_ns": 46919775,
+          "samples_ns": [
+            46810988,
+            45077647,
+            45076702,
+            46014007,
+            44277901,
+            43886782,
+            46601386,
+            44133089,
+            46919775
+          ]
+        },
+        "Python": {
+          "median_ns": 1325870589,
+          "p10_ns": 1316597446.8,
+          "p90_ns": 1344558337.6,
+          "min_ns": 1304755382,
+          "max_ns": 1356845108,
+          "samples_ns": [
+            1322354771,
+            1341486645,
+            1319557963,
+            1327339363,
+            1304755382,
+            1325870589,
+            1356845108,
+            1339935172,
+            1322909689
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "C",
+          "Ramos",
+          "Python",
+          "Rust"
+        ],
+        [
+          "Python",
+          "Rust",
+          "C",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Ramos",
+          "Python",
+          "Rust"
+        ],
+        [
+          "C",
+          "Python",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Rust",
+          "Ramos",
+          "C",
+          "Python"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "Python",
+          "Rust",
+          "C",
+          "Ramos"
+        ],
+        [
+          "Rust",
+          "C",
+          "Ramos",
+          "Python"
+        ],
+        [
+          "C",
+          "Ramos",
+          "Rust",
+          "Python"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 7122656,
+          "p10_ns": 6979576.8,
+          "p90_ns": 7324493.6,
+          "min_ns": 6943807,
+          "max_ns": 7374953,
+          "samples_ns": [
+            6943807,
+            7122656,
+            7374953
+          ]
+        },
+        "C": {
+          "median_ns": 181707633,
+          "p10_ns": 178787885.8,
+          "p90_ns": 182617448.2,
+          "min_ns": 178057949,
+          "max_ns": 182844902,
+          "samples_ns": [
+            181707633,
+            178057949,
+            182844902
+          ]
+        },
+        "Rust": {
+          "median_ns": 162942387,
+          "p10_ns": 162632260.6,
+          "p90_ns": 164407335.8,
+          "min_ns": 162554729,
+          "max_ns": 164773573,
+          "samples_ns": [
+            162554729,
+            162942387,
+            164773573
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/recursive_tree-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/recursive_tree-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/recursive_tree-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/recursive_tree-ramos",
+          "1331",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/recursive_tree-c",
+          "1331",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/recursive_tree-rust",
+          "1331",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.py",
+          "1331",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 20256,
+        "Rust": 4506312
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/recursive_tree.ramos",
+          "bytes": 689,
+          "sha256": "289ca1ac26e9d3677ef3943507512b5aea0ee07d75454d062a4721e7fa00d504"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/recursive_tree.c",
+          "bytes": 1504,
+          "sha256": "d111bd4bc609df4e3bcb9b54cf35f314345c9245f5fae8044139e5263500c2de"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/recursive_tree.rs",
+          "bytes": 895,
+          "sha256": "b01f1df28cf7dc455a1ff6f3dbe0178b3a03b8c30fdb9843264c9b0a12e4493b"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/recursive_tree.py",
+          "bytes": 452,
+          "sha256": "3f68deb3006b81bebe8a6d8e5761a9676e93707e46a3c54ed75e346c3456568c"
+        }
+      }
+    },
+    "byte_hash": {
+      "description": "Rolling byte-buffer hash",
+      "work_count": 6756674,
+      "seed": 17,
+      "expected_stdout": "37022110\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 57240839,
+          "p10_ns": 56709596.0,
+          "p90_ns": 57704936.0,
+          "min_ns": 56387436,
+          "max_ns": 57732440,
+          "samples_ns": [
+            56387436,
+            56790136,
+            57497989,
+            57732440,
+            57194274,
+            57240839,
+            57698060,
+            57389579,
+            56940884
+          ]
+        },
+        "C": {
+          "median_ns": 30818130,
+          "p10_ns": 30568158.0,
+          "p90_ns": 32790946.8,
+          "min_ns": 30484598,
+          "max_ns": 37947182,
+          "samples_ns": [
+            31501888,
+            30784869,
+            30950075,
+            30795056,
+            37947182,
+            30818130,
+            30915051,
+            30589048,
+            30484598
+          ]
+        },
+        "Rust": {
+          "median_ns": 38119479,
+          "p10_ns": 37981033.8,
+          "p90_ns": 41700875.4,
+          "min_ns": 37856153,
+          "max_ns": 50301397,
+          "samples_ns": [
+            39290959,
+            38119479,
+            38019908,
+            38487336,
+            50301397,
+            39550745,
+            38024141,
+            38012254,
+            37856153
+          ]
+        },
+        "Python": {
+          "median_ns": 935094818,
+          "p10_ns": 920568486.4,
+          "p90_ns": 1180417354.4,
+          "min_ns": 911081828,
+          "max_ns": 1614783028,
+          "samples_ns": [
+            922940151,
+            932267757,
+            972613002,
+            1071825936,
+            1614783028,
+            938989565,
+            929630731,
+            935094818,
+            911081828
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "Ramos",
+          "Python",
+          "Rust",
+          "C"
+        ],
+        [
+          "Ramos",
+          "C",
+          "Rust",
+          "Python"
+        ],
+        [
+          "Python",
+          "C",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "C",
+          "Rust",
+          "Python"
+        ],
+        [
+          "Rust",
+          "C",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Rust",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "Rust",
+          "Python",
+          "C",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Python",
+          "Rust",
+          "Ramos"
+        ],
+        [
+          "Python",
+          "Ramos",
+          "Rust",
+          "C"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 7584368,
+          "p10_ns": 7212668.8,
+          "p90_ns": 7637821.6,
+          "min_ns": 7119744,
+          "max_ns": 7651185,
+          "samples_ns": [
+            7584368,
+            7119744,
+            7651185
+          ]
+        },
+        "C": {
+          "median_ns": 55210149,
+          "p10_ns": 53142945.0,
+          "p90_ns": 56486727.4,
+          "min_ns": 52626144,
+          "max_ns": 56805872,
+          "samples_ns": [
+            56805872,
+            55210149,
+            52626144
+          ]
+        },
+        "Rust": {
+          "median_ns": 174316866,
+          "p10_ns": 171025596.4,
+          "p90_ns": 175162108.4,
+          "min_ns": 170202779,
+          "max_ns": 175373419,
+          "samples_ns": [
+            175373419,
+            174316866,
+            170202779
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/byte_hash-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/byte_hash-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/byte_hash-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/byte_hash-ramos",
+          "6756674",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/byte_hash-c",
+          "6756674",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/byte_hash-rust",
+          "6756674",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.py",
+          "6756674",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 16176,
+        "Rust": 4506024
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/byte_hash.ramos",
+          "bytes": 576,
+          "sha256": "ba4f866c8288e8dd366b456208bf8f32347d1b315cca659c44c4a398d6984cce"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/byte_hash.c",
+          "bytes": 1350,
+          "sha256": "fb6c9af5a0690448c900aa26e2f1cae9206adc199bbeb09841c33f7191ca9590"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/byte_hash.rs",
+          "bytes": 745,
+          "sha256": "7d166fb257659d66caadf1d8c8fc228817490a285ac28e8a6038cb7d2efe4c82"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/byte_hash.py",
+          "bytes": 333,
+          "sha256": "2af2a0c59212675ff06b6d804f488ae78b1d546f2683a8e6c3f65800889e50e4"
+        }
+      }
+    },
+    "insertion_sort": {
+      "description": "Insertion sort of 128 bytes",
+      "work_count": 11314,
+      "seed": 17,
+      "expected_stdout": "842602619\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 240879405,
+          "p10_ns": 236778465.2,
+          "p90_ns": 269625251.8,
+          "min_ns": 236741922,
+          "max_ns": 356950099,
+          "samples_ns": [
+            236787601,
+            237632388,
+            240879405,
+            239083406,
+            244382617,
+            247794040,
+            356950099,
+            236741922,
+            241051278
+          ]
+        },
+        "C": {
+          "median_ns": 39619032,
+          "p10_ns": 38998173.6,
+          "p90_ns": 44289671.8,
+          "min_ns": 38938164,
+          "max_ns": 45953179,
+          "samples_ns": [
+            39619032,
+            39073995,
+            38938164,
+            39351328,
+            42664873,
+            43873795,
+            45953179,
+            39013176,
+            40036524
+          ]
+        },
+        "Rust": {
+          "median_ns": 36840134,
+          "p10_ns": 36617463.4,
+          "p90_ns": 40843379.2,
+          "min_ns": 36516837,
+          "max_ns": 41100520,
+          "samples_ns": [
+            36751687,
+            36807753,
+            41100520,
+            37960249,
+            36516837,
+            37428862,
+            40779094,
+            36840134,
+            36642620
+          ]
+        },
+        "Python": {
+          "median_ns": 3768157889,
+          "p10_ns": 3739660198.4,
+          "p90_ns": 3950379208.4,
+          "min_ns": 3738020360,
+          "max_ns": 3993401370,
+          "samples_ns": [
+            3738020360,
+            3750356504,
+            3740070158,
+            3764555073,
+            3768157889,
+            3773955144,
+            3770404165,
+            3993401370,
+            3939623668
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "C",
+          "Python",
+          "Rust",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Ramos",
+          "Rust",
+          "Python"
+        ],
+        [
+          "C",
+          "Ramos",
+          "Rust",
+          "Python"
+        ],
+        [
+          "Python",
+          "Rust",
+          "C",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Rust",
+          "Ramos",
+          "Python"
+        ],
+        [
+          "Rust",
+          "C",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "C",
+          "Python",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "Python",
+          "Ramos",
+          "C",
+          "Rust"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 7820023,
+          "p10_ns": 6874126.2,
+          "p90_ns": 8100136.6,
+          "min_ns": 6637652,
+          "max_ns": 8170165,
+          "samples_ns": [
+            8170165,
+            6637652,
+            7820023
+          ]
+        },
+        "C": {
+          "median_ns": 61185213,
+          "p10_ns": 59710244.2,
+          "p90_ns": 61209869.0,
+          "min_ns": 59341502,
+          "max_ns": 61216033,
+          "samples_ns": [
+            61216033,
+            61185213,
+            59341502
+          ]
+        },
+        "Rust": {
+          "median_ns": 173213594,
+          "p10_ns": 170912189.2,
+          "p90_ns": 175657833.2,
+          "min_ns": 170336838,
+          "max_ns": 176268893,
+          "samples_ns": [
+            170336838,
+            176268893,
+            173213594
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/insertion_sort-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/insertion_sort-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/insertion_sort-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/insertion_sort-ramos",
+          "11314",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/insertion_sort-c",
+          "11314",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/insertion_sort-rust",
+          "11314",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.py",
+          "11314",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 16184,
+        "Rust": 4506080
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/insertion_sort.ramos",
+          "bytes": 1065,
+          "sha256": "6434692fffcd51438430095971263f8ba79bf118579549c988ac2b3baacc2a93"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/insertion_sort.c",
+          "bytes": 1768,
+          "sha256": "e38fcbe6bfe0d40233b07c7c1e0827eaa14f9a2321a8ce6fad6734f0f2d3ffda"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/insertion_sort.rs",
+          "bytes": 1143,
+          "sha256": "6f5ea30525e4d7522b80c5807a67e4842b6b3cdad734efd8b88d8ebc5d714e5f"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/insertion_sort.py",
+          "bytes": 710,
+          "sha256": "f6f0e7ea6339af17104330f4900a6877c26a62c32a2160a17126b21c71edd685"
+        }
+      }
+    },
+    "matrix": {
+      "description": "16\u00d716 byte matrix multiplication",
+      "work_count": 25629,
+      "seed": 17,
+      "expected_stdout": "25908562\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 538548787,
+          "p10_ns": 535728570.8,
+          "p90_ns": 543864172.8,
+          "min_ns": 534314826,
+          "max_ns": 544442584,
+          "samples_ns": [
+            544442584,
+            539242613,
+            534314826,
+            538548787,
+            537214449,
+            536082007,
+            536257541,
+            543719570,
+            542571494
+          ]
+        },
+        "C": {
+          "median_ns": 192224190,
+          "p10_ns": 189840549.4,
+          "p90_ns": 197174100.6,
+          "min_ns": 187821019,
+          "max_ns": 198870147,
+          "samples_ns": [
+            187821019,
+            190345432,
+            196750089,
+            194047945,
+            191444766,
+            190424832,
+            198870147,
+            192224190,
+            195982746
+          ]
+        },
+        "Rust": {
+          "median_ns": 37478566,
+          "p10_ns": 36391644.2,
+          "p90_ns": 37891238.6,
+          "min_ns": 36003981,
+          "max_ns": 38382745,
+          "samples_ns": [
+            37674381,
+            37768362,
+            38382745,
+            37560176,
+            36939031,
+            36488560,
+            36003981,
+            37478566,
+            36990341
+          ]
+        },
+        "Python": {
+          "median_ns": 12506292466,
+          "p10_ns": 12371783524.4,
+          "p90_ns": 12782380376.2,
+          "min_ns": 12339295934,
+          "max_ns": 13020889157,
+          "samples_ns": [
+            12722753181,
+            12523349826,
+            12653939317,
+            12506292466,
+            12481606232,
+            13020889157,
+            12379905422,
+            12339295934,
+            12407317252
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "Python",
+          "C",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Python",
+          "Rust",
+          "C"
+        ],
+        [
+          "Python",
+          "Ramos",
+          "C",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Python",
+          "C",
+          "Rust"
+        ],
+        [
+          "C",
+          "Python",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "C",
+          "Python",
+          "Ramos",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "Rust",
+          "Python",
+          "Ramos",
+          "C"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 6986745,
+          "p10_ns": 6700121.0,
+          "p90_ns": 7735131.4,
+          "min_ns": 6628465,
+          "max_ns": 7922228,
+          "samples_ns": [
+            6986745,
+            7922228,
+            6628465
+          ]
+        },
+        "C": {
+          "median_ns": 73411034,
+          "p10_ns": 72849233.2,
+          "p90_ns": 73578390.0,
+          "min_ns": 72708783,
+          "max_ns": 73620229,
+          "samples_ns": [
+            73620229,
+            73411034,
+            72708783
+          ]
+        },
+        "Rust": {
+          "median_ns": 194181072,
+          "p10_ns": 192129686.4,
+          "p90_ns": 195243533.6,
+          "min_ns": 191616840,
+          "max_ns": 195509149,
+          "samples_ns": [
+            194181072,
+            195509149,
+            191616840
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/matrix-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/matrix-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/matrix-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/matrix-ramos",
+          "25629",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/matrix-c",
+          "25629",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/matrix-rust",
+          "25629",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.py",
+          "25629",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 16384,
+        "C": 16264,
+        "Rust": 4507776
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/matrix.ramos",
+          "bytes": 1302,
+          "sha256": "a3334ecc385dee0bcb3326f0cdc176db81bd3d03c3e1cdad1f676084c0b1b100"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/matrix.c",
+          "bytes": 2080,
+          "sha256": "10acbc532817950b72cc9d674046f2527d6793d559825c06f089780f9acc0eb2"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/matrix.rs",
+          "bytes": 1402,
+          "sha256": "0110fdb31b007e8b4619428ba2a478b1a2049935326937cd46f99db9d33f6817"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/matrix.py",
+          "bytes": 880,
+          "sha256": "335b39d3ad46423d253d2f93c7cbd261e8314ebdba95f2fe038b497e5ad4bc8e"
+        }
+      }
+    },
+    "text_scan": {
+      "description": "Scan 16 KiB ASCII text",
+      "work_count": 2196,
+      "seed": 17,
+      "expected_stdout": "24646318\n",
+      "timings": {
+        "Ramos": {
+          "median_ns": 144916907,
+          "p10_ns": 143031706.0,
+          "p90_ns": 148799820.4,
+          "min_ns": 141601422,
+          "max_ns": 150328550,
+          "samples_ns": [
+            148417638,
+            143389277,
+            147724631,
+            143396658,
+            144918784,
+            150328550,
+            141601422,
+            144916907,
+            143956151
+          ]
+        },
+        "C": {
+          "median_ns": 36873718,
+          "p10_ns": 36089383.4,
+          "p90_ns": 39573172.8,
+          "min_ns": 36071901,
+          "max_ns": 39780716,
+          "samples_ns": [
+            36443826,
+            39521287,
+            37606699,
+            36513590,
+            36093754,
+            36071901,
+            39780716,
+            36873718,
+            38039154
+          ]
+        },
+        "Rust": {
+          "median_ns": 34388160,
+          "p10_ns": 32985090.4,
+          "p90_ns": 35061054.4,
+          "min_ns": 32802756,
+          "max_ns": 36163732,
+          "samples_ns": [
+            34785385,
+            33178177,
+            36163732,
+            32802756,
+            33030674,
+            33346474,
+            34388160,
+            34625402,
+            34514285
+          ]
+        },
+        "Python": {
+          "median_ns": 3567756025,
+          "p10_ns": 3506126505.0,
+          "p90_ns": 3765961069.0,
+          "min_ns": 3464894525,
+          "max_ns": 4361055433,
+          "samples_ns": [
+            4361055433,
+            3570238115,
+            3522790030,
+            3464894525,
+            3516434500,
+            3519628275,
+            3567756025,
+            3617187478,
+            3615349823
+          ]
+        }
+      },
+      "calibration": [],
+      "measurement_orders": [
+        [
+          "Python",
+          "Ramos",
+          "C",
+          "Rust"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "Python",
+          "C"
+        ],
+        [
+          "Python",
+          "Ramos",
+          "Rust",
+          "C"
+        ],
+        [
+          "Python",
+          "Ramos",
+          "Rust",
+          "C"
+        ],
+        [
+          "Rust",
+          "Ramos",
+          "Python",
+          "C"
+        ],
+        [
+          "C",
+          "Rust",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "Rust",
+          "C",
+          "Python",
+          "Ramos"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "C",
+          "Python"
+        ],
+        [
+          "Ramos",
+          "Rust",
+          "C",
+          "Python"
+        ]
+      ],
+      "builds": {
+        "Ramos": {
+          "median_ns": 7099993,
+          "p10_ns": 6638920.2,
+          "p90_ns": 7675941.0,
+          "min_ns": 6523652,
+          "max_ns": 7819928,
+          "samples_ns": [
+            6523652,
+            7819928,
+            7099993
+          ]
+        },
+        "C": {
+          "median_ns": 58679688,
+          "p10_ns": 57419730.4,
+          "p90_ns": 61057071.2,
+          "min_ns": 57104741,
+          "max_ns": 61651417,
+          "samples_ns": [
+            61651417,
+            57104741,
+            58679688
+          ]
+        },
+        "Rust": {
+          "median_ns": 173283547,
+          "p10_ns": 171435721.4,
+          "p90_ns": 176571241.4,
+          "min_ns": 170973765,
+          "max_ns": 177393165,
+          "samples_ns": [
+            177393165,
+            173283547,
+            170973765
+          ]
+        }
+      },
+      "build_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/ramos",
+          "build",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.ramos",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/text_scan-ramos",
+          "--force"
+        ],
+        "C": [
+          "gcc",
+          "-O3",
+          "-std=c11",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/text_scan-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.c"
+        ],
+        "Rust": [
+          "rustc",
+          "--edition=2021",
+          "-C",
+          "opt-level=3",
+          "-C",
+          "overflow-checks=yes",
+          "-C",
+          "panic=abort",
+          "-o",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/text_scan-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.rs"
+        ]
+      },
+      "runtime_commands": {
+        "Ramos": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/text_scan-ramos",
+          "2196",
+          "17"
+        ],
+        "C": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/text_scan-c",
+          "2196",
+          "17"
+        ],
+        "Rust": [
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/syntax-0.14/benchmark-final/text_scan-rust",
+          "2196",
+          "17"
+        ],
+        "Python": [
+          "/usr/bin/python3",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.py",
+          "2196",
+          "17"
+        ]
+      },
+      "binary_bytes": {
+        "Ramos": 12288,
+        "C": 16176,
+        "Rust": 4506168
+      },
+      "sources": {
+        "Ramos": {
+          "path": "benchmarks/fixtures/text_scan.ramos",
+          "bytes": 969,
+          "sha256": "82d7c3cd58f9f2488eb91cc6ce0eb16feea7bb40ab5f68fd5447bd3db2d73bad"
+        },
+        "C": {
+          "path": "benchmarks/fixtures/text_scan.c",
+          "bytes": 1765,
+          "sha256": "5c3bed08e51e540c821c6646a41a3c2a9713f1d257997d79bdaf436771d36e16"
+        },
+        "Rust": {
+          "path": "benchmarks/fixtures/text_scan.rs",
+          "bytes": 1119,
+          "sha256": "2f30ca5e89869ccc323e22df4d9418d327db9d259f14b5df2d5d04a486187ced"
+        },
+        "Python": {
+          "path": "benchmarks/fixtures/text_scan.py",
+          "bytes": 676,
+          "sha256": "bb83d1bbfab96fd30db82c1cc0cf83c850f510e421dc503c1d003b6d44d0a5f7"
+        }
+      }
+    }
+  },
+  "startup": {
+    "Ramos": {
+      "median_ns": 1332520,
+      "p10_ns": 274336.0,
+      "p90_ns": 1476954.0,
+      "min_ns": 255073,
+      "max_ns": 1712583,
+      "samples_ns": [
+        1451863,
+        1377832,
+        1354018,
+        1320361,
+        281050,
+        1388144,
+        1523101,
+        1375569,
+        1410308,
+        1464046,
+        1354376,
+        259255,
+        1385381,
+        310034,
+        343384,
+        1388808,
+        282211,
+        525074,
+        471531,
+        298204,
+        1459244,
+        1332520,
+        274336,
+        1394627,
+        1342613,
+        1621572,
+        1364051,
+        477240,
+        335061,
+        320629,
+        1327605,
+        559835,
+        1336242,
+        1382579,
+        1554268,
+        305504,
+        294702,
+        1312943,
+        258695,
+        1549948,
+        308074,
+        1374332,
+        300066,
+        1476954,
+        256011,
+        1380608,
+        286550,
+        255073,
+        257915,
+        1347227,
+        1712583
+      ]
+    },
+    "C": {
+      "median_ns": 1066234,
+      "p10_ns": 610760.0,
+      "p90_ns": 1846448.0,
+      "min_ns": 568617,
+      "max_ns": 2117156,
+      "samples_ns": [
+        1833718,
+        1841703,
+        638056,
+        654022,
+        1667116,
+        573076,
+        802700,
+        633257,
+        1846448,
+        1719834,
+        683945,
+        598727,
+        1865294,
+        1676934,
+        1778387,
+        1828043,
+        586111,
+        1066234,
+        1743541,
+        1760268,
+        885516,
+        1856396,
+        935133,
+        936121,
+        1774951,
+        2049771,
+        1709943,
+        1066712,
+        1660160,
+        644527,
+        613873,
+        1742545,
+        2117156,
+        1769783,
+        647309,
+        665947,
+        623439,
+        630266,
+        623678,
+        1799356,
+        610760,
+        1710344,
+        782582,
+        609360,
+        1828153,
+        676472,
+        568617,
+        620858,
+        1643991,
+        1973515,
+        646356
+      ]
+    },
+    "Rust": {
+      "median_ns": 1332693,
+      "p10_ns": 777122.0,
+      "p90_ns": 2114672.0,
+      "min_ns": 737752,
+      "max_ns": 2397726,
+      "samples_ns": [
+        1938059,
+        929243,
+        921160,
+        2022598,
+        830649,
+        1787465,
+        782721,
+        2056357,
+        737752,
+        1237300,
+        2058224,
+        755998,
+        2397726,
+        802144,
+        783414,
+        1941185,
+        807762,
+        1920076,
+        1332693,
+        1831167,
+        2114672,
+        1914832,
+        1836465,
+        2121323,
+        1896339,
+        1144519,
+        1995500,
+        1325306,
+        740313,
+        777122,
+        829317,
+        934974,
+        1837948,
+        1941643,
+        1376664,
+        760129,
+        874031,
+        808584,
+        827213,
+        2374460,
+        1805878,
+        1927832,
+        2150800,
+        1967585,
+        808203,
+        2335800,
+        1801904,
+        842353,
+        817686,
+        742126,
+        839474
+      ]
+    },
+    "Python": {
+      "median_ns": 18167756,
+      "p10_ns": 17458311.0,
+      "p90_ns": 19879560.0,
+      "min_ns": 17289010,
+      "max_ns": 21526334,
+      "samples_ns": [
+        21412568,
+        18332244,
+        18480626,
+        18339799,
+        17458311,
+        17481448,
+        17301820,
+        19400128,
+        19879560,
+        19610450,
+        18563451,
+        19468253,
+        19954628,
+        18368054,
+        21477005,
+        17988689,
+        17802499,
+        17760476,
+        19167369,
+        18293588,
+        18015337,
+        20828635,
+        19349303,
+        19192143,
+        18742943,
+        17897691,
+        21526334,
+        18167756,
+        18597193,
+        17984692,
+        17485855,
+        17572123,
+        18770216,
+        18326905,
+        17801264,
+        17807524,
+        17681496,
+        17402779,
+        17289010,
+        18212203,
+        17813336,
+        17579284,
+        17426768,
+        19125668,
+        18184174,
+        17883935,
+        17764236,
+        17604077,
+        17376122,
+        17769887,
+        17477041
+      ]
+    }
+  },
+  "index": {
+    "Ramos": {
+      "score": 37.48028506451731,
+      "bootstrap_95pct": [
+        37.148625561449215,
+        38.040855928770675
+      ]
+    },
+    "C": {
+      "score": 100.0,
+      "bootstrap_95pct": [
+        100.0,
+        100.0
+      ]
+    },
+    "Rust": {
+      "score": 118.72576397441294,
+      "bootstrap_95pct": [
+        117.27903346826008,
+        120.64318857692817
+      ]
+    },
+    "Python": {
+      "score": 2.5181085848210865,
+      "bootstrap_95pct": [
+        2.4785092454334055,
+        2.5550033733420965
+      ]
+    }
+  }
+}

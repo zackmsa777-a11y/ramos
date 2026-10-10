@@ -1,4 +1,4 @@
-# Ramos 0.13 — self-hosted compiler for Linux and Windows
+# Ramos 0.14 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,14 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.14 adds **easier application syntax**: `else if`, end-exclusive
+`for i in 0..n`, and `+=`/`-=`. Bounds and destinations evaluate once; integer
+operations stay checked. The file-search example uses the new syntax while
+preserving output and exit behavior. See [the exact contracts](docs/syntax.md)
+and [the runnable example](examples/easier_syntax.ramos). Native validation passes
+**209 Linux tests and 155 Windows tests**, with both byte-identical compiler
+fixed points retained.
 
 Version 0.13 adds a **Windows desktop GUI library**: real windows, labels,
 buttons, Unicode text inputs/editors, colored panels and resize/input events.
@@ -78,7 +86,7 @@ working examples and release checks under those rules.
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
 [the prepared Linguist registration and remaining acceptance requirement](docs/github-language.md).
-A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.9.0)
+A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.14.0)
 provides highlighting for `.ramos` files in VS Code today.
 
 ## Try it
@@ -129,7 +137,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.13.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.14.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -170,7 +178,7 @@ and keep its folders together. See [contracts, examples and limits](docs/cli-tui
 ```
 
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.13.0/ramos-0.13.0-gui.zip)
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.14.0/ramos-0.14.0-syntax.zip)
 with both compilers, all nine libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
@@ -247,14 +255,19 @@ fn main() {
   combine pairwise comparisons with `&&`. Arithmetic requires integers; `+` also concatenates strings.
 - `if condition { ... } else { ... }` and `while condition { ... }` require
   a boolean condition. `else` is optional and may follow on a new line.
-  Branches use braces, including for a nested `if` in an `else` body.
+  Branches use braces; `else if` chains test later conditions only when prior arms fail.
 - `while` reevaluates its condition before every iteration. `break` exits the
   innermost loop; `continue` reevaluates its condition. Both require a loop.
   `while true` runs until a `break` or a runtime failure; there is no implicit
   iteration limit. Code in skipped branches is type-checked but not executed.
 - Bindings initialize whenever execution reaches their declaration. A shadowing
   initializer can refer to the outer binding. Blocks do not expose their locals.
-- `else if` and `for` are not implemented.
+- `for name in start..end { ... }` evaluates int64 bounds once, then counts
+  upward with an excluded end. The counter is immutable and local to the body;
+  empty/reversed ranges do not run. `break`/`continue` target the innermost loop.
+- `+=` accepts int64/string, `-=` accepts int64, and both are statements with
+  matching operand types. Destinations and indices evaluate once, before the RHS.
+  Bindings require `var`; fields/elements retain mutation through `let`.
   Separate statements with newlines, including after a compound statement.
 
 Run `make control-flow` for a native Fibonacci/loop example.
@@ -464,14 +477,14 @@ from signed overflow. See [the full contract](docs/input-text.md) and
 The self-hosted compiler accepts up to 64 regular source files totaling 1 MiB
 (with boundary separators), at most 50,000
 tokens including EOF, 4,096 total declarations including parameters and ended
-blocks, 256 functions and 16 parameters per function. Structs are limited to 64
+blocks and hidden range-bound slots, 256 functions and 16 parameters per function. Structs are limited to 64
 types with 16 fields each; array type nesting to 16. Expression and block
 depth remain bounded at 128; generated programs allow 64 active calls.
 Its output and decoded string-data arenas are each 1 MiB; labels and fixups each
 have a 40,000-entry bound. These are checked limits. The retained bootstrap has
 the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).
 
-The compiler is self-hosted; namespaces, more library types, floats, syntax conveniences, wrapping arithmetic,
+The compiler is self-hosted; namespaces, more library types, floats, wrapping arithmetic,
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
@@ -479,30 +492,31 @@ permissions. General canvas graphics, games, a Linux GUI backend and browser sup
 
 ## Benchmarks
 
-Ramos 0.7.1 has a reproducible eight-task comparison with optimized checked C,
-Rust and CPython. On the recorded Linux VM, the execution index is **Ramos 40.82,
-C 100, Rust 119.77 and Python 2.53** (higher is faster). Ramos is **16.16× faster
-than Python** across this suite and takes **2.45× C's time**. These are geometric
-means of per-task median ratios, not a general language ranking.
+Ramos 0.14 has a fresh eight-task comparison with optimized checked C, Rust
+and CPython on the recorded Linux VM. The execution index is **Ramos 37.48,
+C 100, Rust 118.73 and Python 2.52** (higher is faster).
+Across this suite Ramos is **14.88× faster than Python** and takes
+**2.67× C's time**. These geometric means describe this suite and shared
+machine, not all programs or a language-quality score. No Windows timing claim.
 
-The suite checks outputs against independent references, runs nine randomized
-samples per task, and records raw timings, build commands and source hashes.
-Startup and build times are reported separately. See the
-[full report and methodology](benchmarks/report.md), [raw samples](benchmarks/results.json)
-and [workload sources](benchmarks/fixtures/). The saved 0.7.0 baseline and
-[interleaved old/new comparison](benchmarks/optimization.md) show a **2.05× overall
-speedup**. Version 0.8 emits [identical benchmark executable bytes](docs/codegen-continuity.json)
-for both targets. Versions 0.9–0.11 expand the native runtime; the timings above
-remain the recorded 0.7.1 measurements, not a current-version performance claim.
+Every timed output is checked; the report includes nine randomized samples,
+source/compiler hashes, toolchain flags and separately reported startup/build
+costs. See [the current report](benchmarks/0.14.0/report.md),
+[raw samples](benchmarks/0.14.0/results.json) and
+[the fresh pre-change 0.13 baseline](benchmarks/baseline-0.13.0/report.md).
+The syntax milestone makes no general speedup claim: existing workload binaries
+remain [byte-identical on both targets](docs/syntax-codegen-continuity.json).
+A [targeted range/while comparison](benchmarks/0.14.0/range/results.json) measures
+one equivalent checked loop, not a general language ranking.
 
 ```sh
 make
-python3 benchmarks/run_suite.py                 # measure all eight tasks
-python3 benchmarks/run_suite.py --validate-only # output checks without timing
+python3 benchmarks/run_suite.py --output-dir work/benchmark-current
+python3 benchmarks/run_suite.py --validate-only
+python3 benchmarks/range_loop.py
 ```
 
-![Ramos 0.7.1 execution index](benchmarks/score.png)
-
-The [historical 0.2 comparison](benchmarks/report-0.2.md) used another machine
-and one unrolled workload; it is not directly comparable. Its legacy script
-still requires the 0.2 compiler and writes to `work/results-0.2` by default.
+The [0.7.1 report](benchmarks/report.md),
+[0.7.0/0.7.1 optimization comparison](benchmarks/optimization.md) and
+[historical 0.2 report](benchmarks/report-0.2.md) remain available for audit.
+Measurements from different machines or runs are not directly interchangeable.

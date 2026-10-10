@@ -5,8 +5,8 @@ applications on Windows x64 and Linux x64. A beginner should be able to build
 and run a small tool from a short example; larger tools should have the libraries,
 diagnostics and resource handling needed to keep working.
 
-This is a development plan starting from 0.13, not a claim that these features
-have shipped. Proposed version labels below describe order, not deadlines.
+This development plan starts from 0.13. The 0.14 syntax milestone is now
+implemented; all remaining milestones below are proposals. Proposed version labels below describe order, not deadlines.
 Keep each release small enough to implement and verify completely; split a
 milestone if necessary. Python-like ease and Rust/C-like native performance
 are design aims, not promises of ecosystem parity or benchmark superiority.
@@ -41,7 +41,7 @@ timings are historical; they are not a performance result for 0.13.
 
 | Proposed milestone | Work | Runnable acceptance example |
 | --- | --- | --- |
-| 0.14: easier code | `else if`, exclusive-range `for`, `+=` and `-=`; updated syntax documentation and highlighting | Simplify an existing search/viewer example while preserving its output and behavior on both OSes |
+| 0.14: easier code (implemented; see [contracts](syntax.md)) | `else if`, exclusive-range `for`, `+=` and `-=`; updated syntax documentation and highlighting | Simplify an existing search/viewer example while preserving its output and behavior on both OSes |
 | 0.15: useful OS libraries | Directory iteration, paths, environment access and direct child-process execution | Recursive file search and a copy/backup tool; a command runner that reports child exit status |
 | 0.16: easier development | Source-line/caret errors, a formatter and a compile-and-run command | A new user can run a file, correct a reported error and format it using the documented commands |
 | 0.17: data and math | `float64`, conversions and essential math; string builders and better collection growth; reviewed memory/recursion limits | A numerical renderer and a streaming text tool that builds output without repeated whole-string copies |

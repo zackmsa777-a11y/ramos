@@ -24,6 +24,10 @@ backend, Unicode controls, resize/events and a working Notes app. Linux GUI
 startup is explicitly unsupported until a display-server backend ships. See
 [gui.md](gui.md).
 
+Version **0.14** adds `else if`, range `for`, and `+=`/`-=` with checked
+semantics and an updated file-search tool. See [syntax.md](syntax.md). The next
+application milestone is directory, path, environment and process integration.
+
 The target is a useful native application language with simple APIs. See the
 [ordered application-language roadmap](roadmap-1.0.md) for the user's **simple**
 and **fast** rules, proposed milestones, runnable acceptance examples and
