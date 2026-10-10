@@ -1,0 +1,124 @@
+{
+  "compilers": {
+    "baseline": {
+      "sha256": "dc4270349d22a391978113121613de849d7076b40a091e29756bca4bb3a672c4",
+      "version": "Ramos 0.7.1 \u2014 compiler written in Ramos; Linux and Windows x64"
+    },
+    "current": {
+      "sha256": "4493d62976134986b0b3fda4a8192a240caa33e73c7072d8d575c0db11302ade",
+      "version": "Ramos 0.8.0 \u2014 compiler written in Ramos; Linux and Windows x64"
+    }
+  },
+  "programs": {
+    "branches/linux": {
+      "source_sha256": "db8c2e9a51a69421426ef5c12b7e4c31daf285a6ed1596f641a3ba6fe26304d9",
+      "binary_sha256": "6f40e1feb7df6d25ba01f5fa1ea10e13b279973dda0e089a70bfb7cffa616b54",
+      "bytes": 8192,
+      "identical": true
+    },
+    "branches/windows": {
+      "source_sha256": "db8c2e9a51a69421426ef5c12b7e4c31daf285a6ed1596f641a3ba6fe26304d9",
+      "binary_sha256": "61481cefe188ec02e7262c91d0d28f3e2889eae316a69b110c736b44e3fb4159",
+      "bytes": 24576,
+      "identical": true
+    },
+    "byte_hash/linux": {
+      "source_sha256": "ba4f866c8288e8dd366b456208bf8f32347d1b315cca659c44c4a398d6984cce",
+      "binary_sha256": "dbd7ec339d2fda3c169d01dd9a66d29fc6d2c355bbbb98e6ebd52871a28e637a",
+      "bytes": 8192,
+      "identical": true
+    },
+    "byte_hash/windows": {
+      "source_sha256": "ba4f866c8288e8dd366b456208bf8f32347d1b315cca659c44c4a398d6984cce",
+      "binary_sha256": "09e9236ec9c3ab9ba326f2c004dafb8f6e75f6da96975ffd4cb3f1723c0abd7d",
+      "bytes": 20480,
+      "identical": true
+    },
+    "gcd/linux": {
+      "source_sha256": "7da6f835bd3674721660f6e5e46c653eda502128ca6c6a9a588132a6aa924e0b",
+      "binary_sha256": "71846389a3132ea89a4fe6a9532be3c9a8fe50a6ec1a1965db807ec24f007e67",
+      "bytes": 8192,
+      "identical": true
+    },
+    "gcd/windows": {
+      "source_sha256": "7da6f835bd3674721660f6e5e46c653eda502128ca6c6a9a588132a6aa924e0b",
+      "binary_sha256": "2bfd3822af28ca34b86c5de502057ea7fba422dea587774f6c0283a06f397551",
+      "bytes": 20480,
+      "identical": true
+    },
+    "insertion_sort/linux": {
+      "source_sha256": "6434692fffcd51438430095971263f8ba79bf118579549c988ac2b3baacc2a93",
+      "binary_sha256": "38957e92e5d8ee3559a4ce4099d373b97011ea55056de434fbc823fc02729843",
+      "bytes": 8192,
+      "identical": true
+    },
+    "insertion_sort/windows": {
+      "source_sha256": "6434692fffcd51438430095971263f8ba79bf118579549c988ac2b3baacc2a93",
+      "binary_sha256": "4f01b74a522a39be3c2299eea8819ced57b7ad913a73a65e2cdc5fc4ac6de896",
+      "bytes": 24576,
+      "identical": true
+    },
+    "lcg/linux": {
+      "source_sha256": "dc0e70b67f86d1007d6eeccad2529e20311df529d60e800b9ccbb5da78f981f4",
+      "binary_sha256": "09a02f9ad5d5f36a3e76e8cbec1d1172f820f0526b3072417ffe41656f0bb023",
+      "bytes": 8192,
+      "identical": true
+    },
+    "lcg/windows": {
+      "source_sha256": "dc0e70b67f86d1007d6eeccad2529e20311df529d60e800b9ccbb5da78f981f4",
+      "binary_sha256": "ae1d13ed65e5696ab912f8b37edd2166553e8f0956f6bb297d398f06057309ea",
+      "bytes": 20480,
+      "identical": true
+    },
+    "matrix/linux": {
+      "source_sha256": "a3334ecc385dee0bcb3326f0cdc176db81bd3d03c3e1cdad1f676084c0b1b100",
+      "binary_sha256": "23ad45295ad0a42ba75dffa7b8923b452ba6e7de6b30f45afb45bb1caa480806",
+      "bytes": 8192,
+      "identical": true
+    },
+    "matrix/windows": {
+      "source_sha256": "a3334ecc385dee0bcb3326f0cdc176db81bd3d03c3e1cdad1f676084c0b1b100",
+      "binary_sha256": "d41f5e1dda7521f3ab5d1642b17f7621e86aca18d8a281d67028cb88b149a7d8",
+      "bytes": 24576,
+      "identical": true
+    },
+    "recursive_tree/linux": {
+      "source_sha256": "289ca1ac26e9d3677ef3943507512b5aea0ee07d75454d062a4721e7fa00d504",
+      "binary_sha256": "661cf7a147d9307ce33c16578bbeedfb7e437dcf05b75d23513d5d8fcf728512",
+      "bytes": 8192,
+      "identical": true
+    },
+    "recursive_tree/windows": {
+      "source_sha256": "289ca1ac26e9d3677ef3943507512b5aea0ee07d75454d062a4721e7fa00d504",
+      "binary_sha256": "85c4ae2efafcb351f4dc40464b3d405cf1e31a7fbf9c8acb2c93b8302124919c",
+      "bytes": 24576,
+      "identical": true
+    },
+    "startup/linux": {
+      "source_sha256": "7143107abf8f17fd8e6feba6d848348fe009a5f7582110f30e71ecdc0d413018",
+      "binary_sha256": "79312676219bc6845b2ba8c9f3a662f7c60b78d826b127b95d4029e707760876",
+      "bytes": 8192,
+      "identical": true
+    },
+    "startup/windows": {
+      "source_sha256": "7143107abf8f17fd8e6feba6d848348fe009a5f7582110f30e71ecdc0d413018",
+      "binary_sha256": "59518b9989ec88fd4964c38986799e0b66c3e8f53ec10bb29df48c484cc59992",
+      "bytes": 20480,
+      "identical": true
+    },
+    "text_scan/linux": {
+      "source_sha256": "82d7c3cd58f9f2488eb91cc6ce0eb16feea7bb40ab5f68fd5447bd3db2d73bad",
+      "binary_sha256": "17af88b34b8c77d9882b31d0818d59137ca3d7dcccb8f65d6e0c8c767845b162",
+      "bytes": 8192,
+      "identical": true
+    },
+    "text_scan/windows": {
+      "source_sha256": "82d7c3cd58f9f2488eb91cc6ce0eb16feea7bb40ab5f68fd5447bd3db2d73bad",
+      "binary_sha256": "377ff3fa277a45a48aa3790e5ac46ec6df234325f7c38ac11c874818cd80230a",
+      "bytes": 24576,
+      "identical": true
+    }
+  },
+  "all_identical": true,
+  "meaning": "Executable bytes for the old workloads are unchanged; no new timing claim."
+}

@@ -1,4 +1,4 @@
-# Ramos 0.7.1 — self-hosted compiler for Linux and Windows
+# Ramos 0.8 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -7,7 +7,8 @@ delegated compiler backend.
 
 **Self-hosting is verified:** the assembly bootstrap builds stage 1; stage 1
 compiles the Ramos compiler into stage 2; stage 2 recompiles it into a byte-for-byte
-identical stage 3. The complete test suite runs against stages 0, 2 and 3 in
+identical stage 3. The full test suite runs against self-hosted stages 2 and 3; the retained
+assembly seed runs its supported grammar subset in
 [CI](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml).
 
 ```sh
@@ -15,6 +16,9 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.8 adds line/block comments, short-circuit `&&`/`||` and more helpful
+diagnostics. See [the semantics and examples](docs/usability.md).
 
 Version 0.7.1 optimizes constant arithmetic, stack transfers and checked buffer
 accesses without changing language syntax. See [the emitter changes](docs/optimization.md)
@@ -84,7 +88,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.7.1/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.8.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -138,7 +142,8 @@ fn main() {
   reserved. String-valued bindings hold mutable byte buffers.
 - Separate statements with newlines; the final statement may directly precede
   `}`. Newlines after operators and opening parentheses are allowed. Semicolons
-  and comments are not implemented.
+  are not implemented. Comments use `//` or non-nesting `/* ... */`; newlines
+  in block comments retain their statement-separator meaning.
 - Input is UTF-8. String escapes are `\n`, `\t`, `\r`, `\"`, `\\`, and `\0`.
 - Empty bodies, empty strings, LF, and CRLF are supported.
 - Raw NUL source bytes, malformed UTF-8, unsupported escapes, and raw newlines inside
@@ -165,10 +170,12 @@ fn main() {
 - `true` and `false` are distinct boolean literals; `!` negates a boolean.
 - `<`, `<=`, `>`, and `>=` compare signed integers. `==` and `!=` compare
   two integers or two booleans. Mixing types is a compile-time error.
-- From lowest to highest precedence: equality, ordering, addition/subtraction,
+- `&&` and `||` require booleans and short-circuit left to right; skipped operands
+  still undergo type checking.
+- From lowest to highest precedence: `||`, `&&`, equality, ordering, addition/subtraction,
   multiplication/division/remainder, unary signs/`!`, and primary expressions.
   Operators at one level associate left to right. `1 < 2 < 3` is rejected;
-  compare each pair in separate conditions. Arithmetic requires integers.
+  combine pairwise comparisons with `&&`. Arithmetic requires integers.
 - `if condition { ... } else { ... }` and `while condition { ... }` require
   a boolean condition. `else` is optional and may follow on a new line.
   Branches use braces, including for a nested `if` in an `else` body.
@@ -355,7 +362,9 @@ samples per task, and records raw timings, build commands and source hashes.
 Startup and build times are reported separately. See the
 [full report and methodology](benchmarks/report.md), [raw samples](benchmarks/results.json)
 and [workload sources](benchmarks/fixtures/). The saved 0.7.0 baseline and
-[interleaved old/new comparison](benchmarks/optimization.md) document the optimizer gain.
+[interleaved old/new comparison](benchmarks/optimization.md) show a **2.05× overall
+speedup**. Version 0.8 emits [identical benchmark executable bytes](docs/codegen-continuity.json)
+for both targets; the timings above remain the recorded 0.7.1 measurements.
 
 ```sh
 make

@@ -92,7 +92,37 @@ fn fail(s: bytes, c: bytes, message: bytes) {
     exit(1)
 }
 fn limit(s: bytes, c: bytes) { fail(s, c, "compiler limit exceeded") }
-fn bad(s: bytes, c: bytes) { fail(s, c, "unexpected token or type mismatch") }
+fn bad(s: bytes, c: bytes) { fail(s, c, "unexpected token") }
+fn type_name(t: int64) -> bytes {
+    if t == 0 { return "int64" }
+    if t == 1 { return "bool" }
+    if t == 3 { return "bytes" }
+    return "void"
+}
+fn concat(a: bytes, b: bytes) -> bytes {
+    let n = buffer_len(a)
+    let out = buffer(n + buffer_len(b))
+    var i = 0
+    while i < n { buffer_set(out, i, buffer_get(a, i))
+        i = i + 1 }
+    i = 0
+    while i < buffer_len(b) { buffer_set(out, n + i, buffer_get(b, i))
+        i = i + 1 }
+    return out
+}
+fn type_error(s: bytes, c: bytes, expected: int64, actual: int64) {
+    fail(s, c, concat(concat(concat("expected ", type_name(expected)), ", found "), type_name(actual)))
+}
+fn expected(s: bytes, c: bytes, t: int64) {
+    if t == 2 { fail(s, c, "expected 'fn' at top level") }
+    if t == 5 { fail(s, c, "expected '('") }
+    if t == 6 { fail(s, c, "expected ')'") }
+    if t == 7 { fail(s, c, "expected '{'") }
+    if t == 8 { fail(s, c, "expected '}'") }
+    if t == 18 { fail(s, c, "expected '=' before initializer") }
+    if t == 35 { fail(s, c, "expected ':' before parameter type") }
+    bad(s, c)
+}
 fn tk(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12) }
 fn off(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12 + 4) }
 fn length(c: bytes) -> int64 { return get(c, 200000 + g(c, 0) * 12 + 8) }
@@ -100,7 +130,7 @@ fn next(c: bytes) { set(c, 0, g(c, 0) + 1) }
 fn skip(c: bytes) { while tk(c) == 1 { next(c) } }
 fn expect(s: bytes, c: bytes, t: int64) {
     skip(c)
-    if tk(c) != t { bad(s, c) }
+    if tk(c) != t { expected(s, c, t) }
     next(c)
 }
 fn letter(v: int64) -> bool {
@@ -126,24 +156,24 @@ fn utf8(s: bytes, c: bytes) {
     while i < buffer_len(s) {
         set(c, 15, i + 1)
         let v = buffer_get(s, i)
-        if v == 0 { bad(s, c) }
+        if v == 0 { fail(s, c, "NUL byte is not allowed in source") }
         if v >= 128 {
             var n = 2
-            if v < 194 { bad(s, c) }
+            if v < 194 { fail(s, c, "invalid UTF-8 encoding") }
             if v >= 224 { n = 3 }
             if v >= 240 { n = 4 }
-            if v > 244 { bad(s, c) }
-            if i + n > buffer_len(s) { bad(s, c) }
+            if v > 244 { fail(s, c, "invalid UTF-8 encoding") }
+            if i + n > buffer_len(s) { fail(s, c, "invalid UTF-8 encoding") }
             let w = buffer_get(s, i + 1)
-            if v == 224 { if w < 160 { bad(s, c) } }
-            if v == 237 { if w > 159 { bad(s, c) } }
-            if v == 240 { if w < 144 { bad(s, c) } }
-            if v == 244 { if w > 143 { bad(s, c) } }
+            if v == 224 { if w < 160 { fail(s, c, "invalid UTF-8 encoding") } }
+            if v == 237 { if w > 159 { fail(s, c, "invalid UTF-8 encoding") } }
+            if v == 240 { if w < 144 { fail(s, c, "invalid UTF-8 encoding") } }
+            if v == 244 { if w > 143 { fail(s, c, "invalid UTF-8 encoding") } }
             var j = 1
             while j < n {
                 let z = buffer_get(s, i + j)
-                if z < 128 { bad(s, c) }
-                if z > 191 { bad(s, c) }
+                if z < 128 { fail(s, c, "invalid UTF-8 encoding") }
+                if z > 191 { fail(s, c, "invalid UTF-8 encoding") }
                 j = j + 1
             }
             i = i + n
@@ -180,10 +210,50 @@ fn lex(s: bytes, c: bytes) {
         i = i + 1
         if v == 32 { continue }
         if v == 9 { continue }
+        if v == 47 { if i < buffer_len(s) {
+            let following = buffer_get(s, i)
+            if following == 47 {
+                i = i + 1
+                while i < buffer_len(s) {
+                    let w = buffer_get(s, i)
+                    if w == 10 { break }
+                    if w == 13 { break }
+                    i = i + 1
+                }
+                continue
+            }
+            if following == 42 {
+                i = i + 1
+                var closed = false
+                while i < buffer_len(s) {
+                    let w = buffer_get(s, i)
+                    if w == 42 { if i + 1 < buffer_len(s) {
+                        if buffer_get(s, i + 1) == 47 {
+                            i = i + 2
+                            closed = true
+                            break
+                        }
+                    } }
+                    if w == 10 { token(s, c, 1, i, 1) }
+                    if w == 13 {
+                        if i + 1 >= buffer_len(s) { set(c, 15, i + 1)
+                            fail(s, c, "bare carriage return; use LF or CRLF") }
+                        if buffer_get(s, i + 1) != 10 { set(c, 15, i + 1)
+                            fail(s, c, "bare carriage return; use LF or CRLF") }
+                        token(s, c, 1, i, 2)
+                        i = i + 1
+                    }
+                    i = i + 1
+                }
+                if !closed { set(c, 15, start + 1)
+                    fail(s, c, "unterminated block comment; expected '*/'") }
+                continue
+            }
+        } }
         if v == 10 { t = 1 }
         if v == 13 {
-            if i >= buffer_len(s) { bad(s, c) }
-            if buffer_get(s, i) != 10 { bad(s, c) }
+            if i >= buffer_len(s) { fail(s, c, "unterminated string literal") }
+            if buffer_get(s, i) != 10 { fail(s, c, "bare carriage return; use LF or CRLF") }
             i = i + 1
             t = 1
         }
@@ -227,16 +297,17 @@ fn lex(s: bytes, c: bytes) {
                         i = i + 1
                         if w == 34 { closed = true
                             break }
-                        if w == 10 { bad(s, c) }
-                        if w == 13 { bad(s, c) }
+                        if w == 10 { fail(s, c, "newline is not allowed inside a string literal") }
+                        if w == 13 { fail(s, c, "newline is not allowed inside a string literal") }
                         if w == 92 {
-                            if i >= buffer_len(s) { bad(s, c) }
+                            if i >= buffer_len(s) { fail(s, c, "unterminated string literal") }
                             let e = buffer_get(s, i)
-                            if e != 110 { if e != 116 { if e != 114 { if e != 48 { if e != 34 { if e != 92 { bad(s, c) } } } } } }
+                            if e != 110 { if e != 116 { if e != 114 { if e != 48 { if e != 34 { if e != 92 { set(c, 15, i + 1)
+                                fail(s, c, "unsupported string escape") } } } } } }
                             i = i + 1
                         }
                     }
-                    if !closed { bad(s, c) }
+                    if !closed { fail(s, c, "unterminated string literal") }
                 } else {
                     if v == 40 { t = 5 }
                     if v == 41 { t = 6 }
@@ -265,11 +336,20 @@ fn lex(s: bytes, c: bytes) {
                             if t == 33 { t = 34
                                 i = i + 1 }
                         }
+                        if v == 38 { if w == 38 { t = 43
+                            i = i + 1 } }
+                        if v == 124 { if w == 124 { t = 44
+                            i = i + 1 } }
                         if t == 14 { if w == 62 { t = 37
                                 i = i + 1 } }
                     }
                 }
             }
+        }
+        if t == 10 {
+            if v == 38 { fail(s, c, "use '&&' for boolean AND") }
+            if v == 124 { fail(s, c, "use '||' for boolean OR") }
+            fail(s, c, "unexpected character")
         }
         token(s, c, t, start, i - start)
     }
@@ -334,12 +414,14 @@ fn arg_type(c: bytes, f: int64, i: int64) -> int64 {
 fn type(s: bytes, c: bytes) -> int64 {
     skip(c)
     let t = tk(c)
+    let position = off(c)
     next(c)
     if t == 39 { return 0 }
     if t == 40 { return 1 }
     if t == 41 { return 2 }
     if t == 42 { return 3 }
-    bad(s, c)
+    set(c, 15, position + 1)
+    fail(s, c, "expected type: int64, bool, bytes or void")
     return 2
 }
 fn discover(s: bytes, c: bytes) {
@@ -352,7 +434,7 @@ fn discover(s: bytes, c: bytes) {
         if tk(c) != 11 { if tk(c) != 3 { bad(s, c) } }
         let a = off(c)
         let n = length(c)
-        if find(s, c, a, n) != -1 { bad(s, c) }
+        if find(s, c, a, n) != -1 { fail(s, c, "duplicate function name or reserved intrinsic") }
         let f = g(c, 2)
         if f >= 256 { limit(s, c) }
         fset(c, f, 0, a)
@@ -402,7 +484,7 @@ fn discover(s: bytes, c: bytes) {
         var depth = 1
         while depth > 0 {
             let t = tk(c)
-            if t == 0 { bad(s, c) }
+            if t == 0 { fail(s, c, "expected '}' to close function body") }
             if t == 7 { depth = depth + 1 }
             if t == 8 { depth = depth - 1 }
             next(c)
@@ -410,9 +492,9 @@ fn discover(s: bytes, c: bytes) {
         fset(c, f, 20, g(c, 0))
     }
     let entry = g(c, 3)
-    if entry < 0 { bad(s, c) }
-    if arity(c, entry) != 0 { bad(s, c) }
-    if result_type(c, entry) != 2 { bad(s, c) }
+    if entry < 0 { fail(s, c, "missing main function") }
+    if arity(c, entry) != 0 { fail(s, c, "main must not have parameters") }
+    if result_type(c, entry) != 2 { fail(s, c, "main must return void") }
 }
 fn emit(s: bytes, c: bytes, o: bytes, v: int64) {
     let p = g(c, 4)
@@ -500,7 +582,7 @@ fn symbol(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
 fn declare(s: bytes, c: bytes, a: int64, n: int64, t: int64, mutable: int64) -> int64 {
     let found = symbol(s, c, a, n)
     if found >= 0 {
-        if sym(c, found, 20) == g(c, 10) { bad(s, c) }
+        if sym(c, found, 20) == g(c, 10) { fail(s, c, "duplicate binding in this scope") }
     }
     let i = g(c, 7)
     if g(c, 8) >= 4096 { limit(s, c) }
@@ -530,15 +612,17 @@ fn pop_type(s: bytes, c: bytes) -> int64 {
     return get(c, 900000 + n * 4)
 }
 fn prec(t: int64) -> int64 {
-    if t >= 100 { return 6 }
-    if t == 15 { return 5 }
-    if t == 16 { return 5 }
-    if t == 17 { return 5 }
-    if t == 13 { return 4 }
-    if t == 14 { return 4 }
-    if t >= 31 { if t <= 34 { return 3 } }
-    if t == 29 { return 2 }
-    if t == 30 { return 2 }
+    if t >= 100 { return 8 }
+    if t == 15 { return 7 }
+    if t == 16 { return 7 }
+    if t == 17 { return 7 }
+    if t == 13 { return 6 }
+    if t == 14 { return 6 }
+    if t >= 31 { if t <= 34 { return 5 } }
+    if t == 29 { return 4 }
+    if t == 30 { return 4 }
+    if t == 43 { return 2 }
+    if t == 44 { return 1 }
     return 0
 }
 fn op(c: bytes, i: int64, p: int64) -> int64 { return get(c, 910000 + i * 24 + p) }
@@ -550,6 +634,7 @@ fn push_op(s: bytes, c: bytes, t: int64, fnid: int64) {
     op_set(c, n, 4, fnid)
     op_set(c, n, 8, 0)
     op_set(c, n, 12, g(c, 12))
+    op_set(c, n, 16, off(c))
     set(c, 11, n + 1)
     if t == 5 { set(c, 13, g(c, 13) + 1) }
     if t == 6 { set(c, 13, g(c, 13) + 1) }
@@ -633,7 +718,28 @@ fn constant_math(s: bytes, c: bytes, o: bytes, t: int64, value: int64) -> bool {
     value_push(s, c, o)
     return true
 }
-fn apply(s: bytes, c: bytes, o: bytes) {
+fn operator_error(s: bytes, c: bytes, n: int64, message: bytes) {
+    set(c, 15, op(c, n, 16) + 1)
+    fail(s, c, message)
+}
+fn logic_start(s: bytes, c: bytes, o: bytes, f: bytes, t: int64) {
+    let n = g(c, 11) - 1
+    if g(c, 12) == 0 { operator_error(s, c, n, "boolean operators require bool operands") }
+    if get(c, 900000 + (g(c, 12) - 1) * 4) != 1 {
+        operator_error(s, c, n, "boolean operators require bool operands")
+    }
+    let short = label(s, c)
+    let end = label(s, c)
+    op_set(c, n, 4, short)
+    op_set(c, n, 8, end)
+    consume(s, c, o, 0)
+    hex(s, c, o, "4885c00f")
+    if t == 43 { emit(s, c, o, 132) }
+    else { emit(s, c, o, 133) }
+    fix(s, c, o, f, 2, short)
+    set(c, 17, 0)
+}
+fn apply(s: bytes, c: bytes, o: bytes, f: bytes) {
     var constant = -1
     if g(c, 17) == g(c, 4) { constant = g(c, 18) }
     set(c, 17, 0)
@@ -644,12 +750,12 @@ fn apply(s: bytes, c: bytes, o: bytes) {
     if t >= 100 {
         set(c, 13, g(c, 13) - 1)
         if t == 128 {
-            if right != 1 { bad(s, c) }
+            if right != 1 { operator_error(s, c, n, "logical negation requires a bool operand") }
             consume(s, c, o, 0)
             hex(s, c, o, "4885c00f94c0480fb6c0")
             value_push(s, c, o)
         } else {
-            if right != 0 { bad(s, c) }
+            if right != 0 { operator_error(s, c, n, "unary signs require an int64 operand") }
             if t == 114 {
                 consume(s, c, o, 0)
                 hex(s, c, o, "48f7d80f80")
@@ -661,20 +767,40 @@ fn apply(s: bytes, c: bytes, o: bytes) {
         return
     }
     let left = pop_type(s, c)
-    if left != right { bad(s, c) }
-    if t == 29 { if left != 0 { if left != 1 { bad(s, c) } }
+    if t == 43 { if right != 1 { operator_error(s, c, n, "boolean operators require bool operands") } }
+    if t == 44 { if right != 1 { operator_error(s, c, n, "boolean operators require bool operands") } }
+    if t == 43 { if left != 1 { operator_error(s, c, n, "boolean operators require bool operands") } }
+    if t == 44 { if left != 1 { operator_error(s, c, n, "boolean operators require bool operands") } }
+    if t == 43 { consume(s, c, o, 0)
+        jump(s, c, o, f, op(c, n, 8))
+        mark(c, f, op(c, n, 4))
+        hex(s, c, o, "31c0")
+        mark(c, f, op(c, n, 8))
+        value_push(s, c, o)
+        typed(s, c, 1)
+        return }
+    if t == 44 { consume(s, c, o, 0)
+        jump(s, c, o, f, op(c, n, 8))
+        mark(c, f, op(c, n, 4))
+        hex(s, c, o, "b801000000")
+        mark(c, f, op(c, n, 8))
+        value_push(s, c, o)
+        typed(s, c, 1)
+        return }
+    if left != right { operator_error(s, c, n, "operands must have matching types") }
+    if t == 29 { if left != 0 { if left != 1 { operator_error(s, c, n, "equality requires int64 or bool operands") } }
         compare_emit(s, c, o, constant)
         hex(s, c, o, "0f94c0480fb6c0")
         value_push(s, c, o)
         typed(s, c, 1)
         return }
-    if t == 30 { if left != 0 { if left != 1 { bad(s, c) } }
+    if t == 30 { if left != 0 { if left != 1 { operator_error(s, c, n, "equality requires int64 or bool operands") } }
         compare_emit(s, c, o, constant)
         hex(s, c, o, "0f95c0480fb6c0")
         value_push(s, c, o)
         typed(s, c, 1)
         return }
-    if left != 0 { bad(s, c) }
+    if left != 0 { operator_error(s, c, n, "arithmetic and ordering require int64 operands") }
     if t >= 31 {
         compare_emit(s, c, o, constant)
         hex(s, c, o, "0f")
@@ -811,10 +937,10 @@ fn call_emit(s: bytes, c: bytes, o: bytes, f: bytes, fnid: int64) {
 fn argument(s: bytes, c: bytes, n: int64) {
     let f = op(c, n, 4)
     let i = op(c, n, 8)
-    if i >= arity(c, f) { bad(s, c) }
+    if i >= arity(c, f) { fail(s, c, "too many function arguments") }
     if g(c, 12) != op(c, n, 12) + 1 { bad(s, c) }
     let t = pop_type(s, c)
-    if t != arg_type(c, f, i) { bad(s, c) }
+    if t != arg_type(c, f, i) { type_error(s, c, arg_type(c, f, i), t) }
     op_set(c, n, 8, i + 1)
 }
 fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
@@ -876,14 +1002,14 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                                 let id = find(s, c, a, n)
                                 next(c)
                                 if tk(c) == 5 {
-                                    if sy >= 0 { bad(s, c) }
+                                    if sy >= 0 { fail(s, c, "a variable cannot be called as a function") }
                                     if id < 0 { next_back(c)
-                                        bad(s, c) }
+                                        fail(s, c, "unknown function") }
                                     push_op(s, c, 6, id)
                                     next(c)
                                     skip(c)
                                     if tk(c) == 6 {
-                                        if arity(c, id) != 0 { bad(s, c) }
+                                        if arity(c, id) != 0 { fail(s, c, "too few function arguments") }
                                         set(c, 11, g(c, 11) - 1)
                                         set(c, 13, g(c, 13) - 1)
                                         call_emit(s, c, o, f, id)
@@ -891,11 +1017,11 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                                     } else { continue }
                                 } else {
                                     if sy < 0 { next_back(c)
-                                        bad(s, c) }
+                                        fail(s, c, "unknown variable") }
                                     load(s, c, o, sym(c, sy, 16))
                                     typed(s, c, sym(c, sy, 8))
                                 }
-                            } else { bad(s, c) }
+                            } else { fail(s, c, "expected expression") }
                         }
                     }
                 }
@@ -905,15 +1031,17 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
         }
         while g(c, 11) > 0 {
             if op(c, g(c, 11) - 1, 0) < 100 { break }
-            apply(s, c, o)
+            apply(s, c, o, f)
         }
         if prec(t) > 0 {
             while g(c, 11) > 0 {
                 let top = op(c, g(c, 11) - 1, 0)
                 if prec(top) < prec(t) { break }
-                apply(s, c, o)
+                apply(s, c, o, f)
             }
             push_op(s, c, t, 0)
+            if t == 43 { logic_start(s, c, o, f, t) }
+            if t == 44 { logic_start(s, c, o, f, t) }
             next(c)
             skip(c)
             wanted = true
@@ -924,14 +1052,14 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                 let top = op(c, g(c, 11) - 1, 0)
                 if top == 5 { break }
                 if top == 6 { break }
-                apply(s, c, o)
+                apply(s, c, o, f)
             }
             if g(c, 11) == 0 { break }
             let top = g(c, 11) - 1
             if op(c, top, 0) == 6 {
                 argument(s, c, top)
                 let id = op(c, top, 4)
-                if op(c, top, 8) != arity(c, id) { bad(s, c) }
+                if op(c, top, 8) != arity(c, id) { fail(s, c, "too few function arguments") }
                 set(c, 11, top)
                 call_emit(s, c, o, f, id)
             } else {
@@ -947,7 +1075,7 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                 let top = op(c, g(c, 11) - 1, 0)
                 if top == 5 { break }
                 if top == 6 { break }
-                apply(s, c, o)
+                apply(s, c, o, f)
             }
             if g(c, 11) == 0 { break }
             let top = g(c, 11) - 1
@@ -964,12 +1092,12 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
         }
         break
     }
-    if wanted { bad(s, c) }
+    if wanted { fail(s, c, "expected expression after operator") }
     while g(c, 11) > 0 {
         let t = op(c, g(c, 11) - 1, 0)
-        if t == 5 { bad(s, c) }
-        if t == 6 { bad(s, c) }
-        apply(s, c, o)
+        if t == 5 { fail(s, c, "expected ')' to close expression") }
+        if t == 6 { fail(s, c, "expected ')' to close function call") }
+        apply(s, c, o, f)
     }
     if g(c, 12) != 1 { bad(s, c) }
     return pop_type(s, c)
@@ -1029,7 +1157,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
         while g(c, 10) > 0 {
             skip(c)
             let t = tk(c)
-            if t == 0 { bad(s, c) }
+            if t == 0 { fail(s, c, "expected '}' to close function body") }
             let top = g(c, 10) - 1
             if t == 8 {
                 let kind = block(c, top, 0)
@@ -1077,7 +1205,8 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
             }
             if t == 23 {
                 next(c)
-                if expression(s, c, o, d, f) != 1 { bad(s, c) }
+                let condition_type = expression(s, c, o, d, f)
+                if condition_type != 1 { type_error(s, c, 1, condition_type) }
                 let no = label(s, c)
                 let end = label(s, c)
                 consume(s, c, o, 0)
@@ -1092,7 +1221,8 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 let end = label(s, c)
                 mark(c, f, start)
                 next(c)
-                if expression(s, c, o, d, f) != 1 { bad(s, c) }
+                let condition_type = expression(s, c, o, d, f)
+                if condition_type != 1 { type_error(s, c, 1, condition_type) }
                 consume(s, c, o, 0)
                 hex(s, c, o, "4885c00f84")
                 fix(s, c, o, f, 2, end)
@@ -1106,7 +1236,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     if block(c, level, 0) == 3 { break }
                     level = level - 1
                 }
-                if level < 0 { bad(s, c) }
+                if level < 0 { fail(s, c, "break and continue require an enclosing while loop") }
                 jump(s, c, o, f, block(c, level, 12))
                 next(c)
                 separator(s, c)
@@ -1118,7 +1248,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     if block(c, level, 0) == 3 { break }
                     level = level - 1
                 }
-                if level < 0 { bad(s, c) }
+                if level < 0 { fail(s, c, "break and continue require an enclosing while loop") }
                 jump(s, c, o, f, block(c, level, 8))
                 next(c)
                 separator(s, c)
@@ -1131,7 +1261,8 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     if tk(c) != 1 { if tk(c) != 8 { bad(s, c) } }
                     epilogue(s, c, o, false)
                 } else {
-                    if expression(s, c, o, d, f) != rt { bad(s, c) }
+                    let returned_type = expression(s, c, o, d, f)
+                    if returned_type != rt { type_error(s, c, rt, returned_type) }
                     epilogue(s, c, o, true)
                 }
                 bset(c, top, 16, 1)
@@ -1149,7 +1280,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 else {
                     if pt == 1 { relative(s, c, o, native_address(c, 4)) }
                     else {
-                        if pt != 3 { bad(s, c) }
+                        if pt != 3 { fail(s, c, "print requires int64, bool or bytes; a void call has no value") }
                         relative(s, c, o, native_address(c, 5))
                     }
                 }
@@ -1164,7 +1295,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 next(c)
                 expect(s, c, 18)
                 let dt = expression(s, c, o, d, f)
-                if dt == 2 { bad(s, c) }
+                if dt == 2 { fail(s, c, "a void call cannot initialize a binding") }
                 let slot = declare(s, c, a, n, dt, 0)
                 store(s, c, o, slot)
                 separator(s, c)
@@ -1178,7 +1309,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 next(c)
                 expect(s, c, 18)
                 let dt = expression(s, c, o, d, f)
-                if dt == 2 { bad(s, c) }
+                if dt == 2 { fail(s, c, "a void call cannot initialize a binding") }
                 let slot = declare(s, c, a, n, dt, 1)
                 store(s, c, o, slot)
                 separator(s, c)
@@ -1190,10 +1321,11 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 next(c)
                 if tk(c) == 18 {
                     if found < 0 { set(c, 0, saved)
-                        bad(s, c) }
-                    if sym(c, found, 12) == 0 { bad(s, c) }
+                        fail(s, c, "unknown variable") }
+                    if sym(c, found, 12) == 0 { fail(s, c, "cannot assign to an immutable let binding") }
                     next(c)
-                    if expression(s, c, o, d, f) != sym(c, found, 8) { bad(s, c) }
+                    let assigned_type = expression(s, c, o, d, f)
+                    if assigned_type != sym(c, found, 8) { type_error(s, c, sym(c, found, 8), assigned_type) }
                     store(s, c, o, sym(c, found, 16))
                 } else {
                     if tk(c) != 5 { set(c, 0, saved)
@@ -1202,7 +1334,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     var nesting = 1
                     while nesting > 0 {
                         let token_kind = get(c, 200000 + end * 12)
-                        if token_kind == 0 { bad(s, c) }
+                        if token_kind == 0 { fail(s, c, "expected closing parenthesis for function call") }
                         if token_kind == 5 { nesting = nesting + 1 }
                         if token_kind == 6 { nesting = nesting - 1 }
                         end = end + 1
@@ -1367,7 +1499,7 @@ fn main() {
     let argc = arg_count()
     if argc == 2 {
         let option = arg(1)
-        if equal(option, "--version") { print("Ramos 0.7.1 — compiler written in Ramos; Linux and Windows x64")
+        if equal(option, "--version") { print("Ramos 0.8.0 — compiler written in Ramos; Linux and Windows x64")
             return }
         if equal(option, "--help") { print("Usage: ramos build SOURCE.ramos -o PROGRAM [--force] [--target linux|windows]")
             return }

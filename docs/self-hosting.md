@@ -1,4 +1,4 @@
-# Ramos 0.7: self-hosting proved
+# Ramos 0.8: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -32,7 +32,7 @@ differ in instruction selection from stage 2; the required fixed point is
 **stage 2 = stage 3**. `make all` copies stage 2 to the normal `ramos` executable.
 
 The proof harness additionally runs stage 2 with `PATH=/nonexistent`, verifies
-that its output still matches stage 3, and runs the complete language/I/O corpus
+that its output still matches stage 3, and runs the language/I/O corpus (the retained seed skips post-0.7 grammar tests)
 with stages 0, 2 and 3 (the Linux-only assembly bootstrap skips target selection).
 It writes hashes and checks to `build/bootstrap-proof.json`.
 The GitHub Actions workflow rebuilds this chain and preserves the report and
@@ -79,3 +79,9 @@ The same Ramos source builds the Windows compiler. `make windows` produces
 requires identical seed/stage-2/stage-3 PE binaries. The CI Windows job runs
 shared language tests and records the native Windows proof. See
 [Windows bootstrap instructions](windows.md).
+
+The retained assembly seed implements the 0.7 grammar. The compiler source uses
+compatible surface syntax while implementing the full 0.8 grammar itself. Tests
+for comments and short-circuit booleans run on stages 2/3 and native Windows;
+the seed explicitly skips them. The proof JSON records both discovered counts
+and these skips. No source preprocessing or external backend is required.

@@ -90,3 +90,13 @@ backend used to compile Ramos programs. After changing an OS boundary, run
 Version 0.7.1 specializes positive constant division/remainder and immediate
 arithmetic, removes local stack transfers and inlines checked buffer accesses.
 See [the transformations and correctness argument](../docs/optimization.md).
+
+## Comments, diagnostics and boolean branches
+
+Version 0.8 recognizes line and non-nesting block comments while retaining their
+newlines. Logical operators use token kinds 43/44. In operator records, field 16
+holds the source byte offset for diagnostics; logical records use fields 4/8
+for the short-circuit and merge labels (call records retain their own ID/count
+meanings). The left value is consumed before the RHS is emitted; both paths
+merge with one bool value. All label marks clear the removable-push record.
+See [semantics and proof](../docs/usability.md).

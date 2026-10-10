@@ -189,13 +189,13 @@ print(io_error())
             self.assertFalse(self.output.exists())
 
     def test_examples(self):
-        for name in ('hello', 'calculator', 'control_flow', 'functions', 'buffers'):
+        for name in ('hello', 'calculator', 'control_flow', 'functions', 'buffers', 'usability'):
             with self.subTest(example=name):
                 checked(compile_source(ROOT / f'examples/{name}.ramos', self.output, '--force'))
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.7', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.8', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -229,6 +229,12 @@ for name in dir(test_optimization.OptimizationTests):
         setattr(WindowsTests, name, getattr(test_optimization.OptimizationTests, name))
 
 
+import test_usability
+for name in dir(test_usability.UsabilityTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_usability.UsabilityTests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')
@@ -247,7 +253,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.7.1', 'target': 'x86_64-windows',
+        'version': '0.8.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

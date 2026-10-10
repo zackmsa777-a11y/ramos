@@ -206,7 +206,9 @@ def report_markdown(data):
               f"- Work counts calibrated until both C and Rust took at least about "
               f"{data['settings']['target_native_ms']:g} ms in the calibration probes. "
               'The same count is then held fixed for all languages.',
-              '- This 0.7.1 run reuses the recorded 0.7.0 work counts; it does not recalibrate for the optimizer.',
+              ('- Work counts are reused from the supplied baseline without recalibration.'
+               if data['settings'].get('fixed_baseline_work_counts') else
+               '- Work counts were calibrated for this run.'),
               f"- Pinned to logical CPU {data['environment']['pinned_cpu']}; Python `perf_counter_ns` wall clock.",
               '- Shared virtual machine; CPU frequency, other tenants and background activity are '
               'not controlled. Warm filesystem caches; no Windows performance claim.',
@@ -214,7 +216,7 @@ def report_markdown(data):
               'C/Rust/Ramos binaries are built before execution timing.',
               '- GCC: `-O3 -std=c11`, with checked add/subtract/multiply builtins and explicit byte bounds.',
               '- Rust: `-C opt-level=3 -C overflow-checks=yes -C panic=abort`; safe byte indexing/conversion.',
-              '- Ramos: default 0.7.1 native backend with local instruction selection optimizations; arithmetic, buffer and call-depth checks '
+              '- Ramos: default native backend (release instruction selection described in the repository); arithmetic, buffer and call-depth checks '
               'retained. Python integers stay within signed 64-bit range for these inputs. '
               'C/Rust can eliminate provably redundant checks; Python has no Ramos-style call-depth '
               'or byte arena limit. Limits are not reached by the suite.', '',
@@ -288,8 +290,8 @@ def main():
         parser.error('use at least five samples and a positive calibration target')
     compiler, work, output = args.compiler.resolve(), args.work_dir.resolve(), args.output_dir.resolve()
     version = run([compiler, '--version'])[1].stdout.decode().strip()
-    if not version.startswith('Ramos 0.7.'):
-        parser.error('these sources and bounds target Ramos 0.7')
+    if not version.startswith(('Ramos 0.7.', 'Ramos 0.8.')):
+        parser.error('these sources and bounds target Ramos 0.7/0.8')
     cpu = min(os.sched_getaffinity(0))
     os.sched_setaffinity(0, {cpu})
     work.mkdir(parents=True, exist_ok=True)

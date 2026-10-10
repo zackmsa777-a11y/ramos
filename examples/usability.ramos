@@ -1,0 +1,13 @@
+// Comments and boolean guards work on Linux and Windows.
+fn main() {
+    let text = "Ramos"
+    var position = 0
+    /* The second operand runs only when the index is in bounds. */
+    while position < buffer_len(text) && buffer_get(text, position) != 0 {
+        position = position + 1
+    }
+    if position == 5 || position == 0 {
+        print("Scanned safely")
+    }
+    print(position)
+}

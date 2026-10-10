@@ -72,7 +72,7 @@ def main():
     if hashes['stage2'] != hashes['stage3'] or digest(ROOT / 'build/stage3-isolated') != hashes['stage3']:
         raise SystemExit('Self-hosting fixed point failed')
     report = {
-        'version': '0.7.1', 'target': 'x86_64-linux',
+        'version': '0.8.0', 'target': 'x86_64-linux',
         'compiler_source': 'compiler/ramos.ramos',
         'source_sha256': digest(ROOT / 'compiler/ramos.ramos'),
         'executables': hashes, 'stage2_equals_stage3': True,
@@ -83,6 +83,9 @@ def main():
         run(sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', env=env)
     report['tests_discovered_per_stage'] = unittest.TestLoader().discover(str(ROOT / 'tests')).countTestCases()
     report['bootstrap_skips_linux_only_target_selection_tests'] = 4
+    sys.path.insert(0, str(ROOT / 'tests'))
+    from test_usability import UsabilityTests
+    report['bootstrap_skips_post_0_7_grammar_tests'] = unittest.TestLoader().loadTestsFromTestCase(UsabilityTests).countTestCases()
     report['corpus_passed_with'] = ['stage0', 'stage2', 'stage3']
     (ROOT / 'build/bootstrap-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

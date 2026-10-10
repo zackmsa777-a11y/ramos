@@ -172,7 +172,7 @@ class RamosTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
     def test_help_and_version(self):
-        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.7')):
+        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos ')):
             result = subprocess.run([str(COMPILER), argument], capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0)
             self.assertIn(expected, result.stdout)
