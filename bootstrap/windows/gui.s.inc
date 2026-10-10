@@ -772,6 +772,12 @@ runtime_gui_poll_more:
     GUI DispatchMessageW
     jmp runtime_gui_poll_more
 runtime_gui_poll_wait:
+    # PeekMessage dispatches sent messages even when it returns FALSE. A
+    # callback may just have filled our ring: drain it before any OS wait.
+    cmp QWORD PTR [rbx + 40], 0
+    jne runtime_gui_poll_more
+    cmp QWORD PTR [rbx + 32], 0
+    jne runtime_gui_poll_more
     mov r8, [rbp]
     cmp r8, -1
     je runtime_gui_poll_wait_ready

@@ -116,7 +116,7 @@ collect()
 gui_set(1,s"Ready after GC")
 var running = true
 while running {
-let e = gui_event(100)
+let e = gui_event(-1)
 if e.kind == 1 { running = false }
 if e.kind == 3 { gui_move(3,20,60,e.width - 40,28) }
 if e.kind == 2 && e.id == 2 { print(gui_text(3))
