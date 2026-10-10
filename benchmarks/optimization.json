@@ -1,0 +1,731 @@
+{
+  "measured_at_utc": "2026-10-10T06:49:25.667580+00:00",
+  "compilers": {
+    "old": {
+      "version": "Ramos 0.7.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "sha256": "ce7d20bda76c4f006f5ec57924169c8941de33a13ca598560d7624933d075a12"
+    },
+    "new": {
+      "version": "Ramos 0.7.1 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "sha256": "dc4270349d22a391978113121613de849d7076b40a091e29756bca4bb3a672c4"
+    }
+  },
+  "settings": {
+    "samples": 9,
+    "warmups": 2,
+    "pinned_cpu": 0,
+    "random_seed": 70101,
+    "equal_task_weights": true
+  },
+  "tasks": {
+    "lcg": {
+      "description": "Serial integer arithmetic / modulo",
+      "work_count": 6640450,
+      "seed": 17,
+      "source_sha256": "dc0e70b67f86d1007d6eeccad2529e20311df529d60e800b9ccbb5da78f981f4",
+      "expected_stdout": "1332656518\n",
+      "timings": {
+        "old": {
+          "median_ns": 82328077,
+          "p10_ns": 81511109.4,
+          "p90_ns": 83933066.0,
+          "min_ns": 81413811,
+          "max_ns": 85679726,
+          "samples_ns": [
+            85679726,
+            82166068,
+            83496401,
+            82328077,
+            81535434,
+            81926035,
+            82765888,
+            81413811,
+            82670391
+          ]
+        },
+        "new": {
+          "median_ns": 45902406,
+          "p10_ns": 45223033.2,
+          "p90_ns": 46162994.4,
+          "min_ns": 45175046,
+          "max_ns": 46533516,
+          "samples_ns": [
+            45902406,
+            45480900,
+            46533516,
+            45640711,
+            45959430,
+            45175046,
+            46070364,
+            45235030,
+            45994717
+          ]
+        }
+      },
+      "orders": [
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ]
+      ],
+      "speedup": 1.7935460071526534,
+      "binary_sha256": {
+        "old": "a85fa96f09b23d4b75ace5e6413fd1750c3d3aacc4fdc73bf7b6db5fdd885b5b",
+        "new": "09a02f9ad5d5f36a3e76e8cbec1d1172f820f0526b3072417ffe41656f0bb023"
+      }
+    },
+    "branches": {
+      "description": "Data-dependent branches",
+      "work_count": 2766668,
+      "seed": 17,
+      "source_sha256": "db8c2e9a51a69421426ef5c12b7e4c31daf285a6ed1596f641a3ba6fe26304d9",
+      "expected_stdout": "91560642\n",
+      "timings": {
+        "old": {
+          "median_ns": 102194815,
+          "p10_ns": 101618786.6,
+          "p90_ns": 103060951.4,
+          "min_ns": 101152665,
+          "max_ns": 103178949,
+          "samples_ns": [
+            102123785,
+            102825265,
+            102325596,
+            101152665,
+            103031452,
+            101975259,
+            103178949,
+            101735317,
+            102194815
+          ]
+        },
+        "new": {
+          "median_ns": 56225710,
+          "p10_ns": 55709362.0,
+          "p90_ns": 57156403.4,
+          "min_ns": 55471042,
+          "max_ns": 57614253,
+          "samples_ns": [
+            56969316,
+            55471042,
+            56565089,
+            55771986,
+            57041941,
+            55768942,
+            55774004,
+            57614253,
+            56225710
+          ]
+        }
+      },
+      "orders": [
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ]
+      ],
+      "speedup": 1.8175815832294515,
+      "binary_sha256": {
+        "old": "6c80bd4054e0a355582c8285a2449df73807b82154b199daf3b5edfe7cd6e4e8",
+        "new": "6f40e1feb7df6d25ba01f5fa1ea10e13b279973dda0e089a70bfb7cffa616b54"
+      }
+    },
+    "gcd": {
+      "description": "Euclidean GCD",
+      "work_count": 577528,
+      "seed": 17,
+      "source_sha256": "7da6f835bd3674721660f6e5e46c653eda502128ca6c6a9a588132a6aa924e0b",
+      "expected_stdout": "4413409\n",
+      "timings": {
+        "old": {
+          "median_ns": 106644941,
+          "p10_ns": 106367754.4,
+          "p90_ns": 106863574.6,
+          "min_ns": 106134800,
+          "max_ns": 107080549,
+          "samples_ns": [
+            106695292,
+            106644941,
+            106597038,
+            106612355,
+            106425993,
+            106134800,
+            107080549,
+            106809331,
+            106765213
+          ]
+        },
+        "new": {
+          "median_ns": 65388482,
+          "p10_ns": 65100598.4,
+          "p90_ns": 66458597.0,
+          "min_ns": 64952992,
+          "max_ns": 67522689,
+          "samples_ns": [
+            65586707,
+            65209751,
+            65304911,
+            67522689,
+            64952992,
+            65137500,
+            65388482,
+            66089072,
+            66192574
+          ]
+        }
+      },
+      "orders": [
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ]
+      ],
+      "speedup": 1.6309438258560582,
+      "binary_sha256": {
+        "old": "352a0054418390db3aebbf69bf5326ac14d0ede02f0dcafe2b2f7482ca049bc0",
+        "new": "71846389a3132ea89a4fe6a9532be3c9a8fe50a6ec1a1965db807ec24f007e67"
+      }
+    },
+    "recursive_tree": {
+      "description": "Runtime-seeded recursive tree",
+      "work_count": 1402,
+      "seed": 17,
+      "source_sha256": "289ca1ac26e9d3677ef3943507512b5aea0ee07d75454d062a4721e7fa00d504",
+      "expected_stdout": "275684983\n",
+      "timings": {
+        "old": {
+          "median_ns": 144257847,
+          "p10_ns": 140981110.4,
+          "p90_ns": 146187879.6,
+          "min_ns": 140038600,
+          "max_ns": 147824382,
+          "samples_ns": [
+            142550336,
+            142613956,
+            145079319,
+            140038600,
+            145691777,
+            147824382,
+            144257847,
+            141216738,
+            145778754
+          ]
+        },
+        "new": {
+          "median_ns": 84578612,
+          "p10_ns": 83137777.4,
+          "p90_ns": 87364747.2,
+          "min_ns": 82978991,
+          "max_ns": 89832120,
+          "samples_ns": [
+            83177474,
+            83322098,
+            89832120,
+            85288215,
+            84833922,
+            86747904,
+            84578612,
+            84096266,
+            82978991
+          ]
+        }
+      },
+      "orders": [
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ]
+      ],
+      "speedup": 1.7056066964068883,
+      "binary_sha256": {
+        "old": "87ae3f9c9f50c1d69fdd3a75278b4f6eea4d171bb34ce54f1ef77321f76e68f6",
+        "new": "661cf7a147d9307ce33c16578bbeedfb7e437dcf05b75d23513d5d8fcf728512"
+      }
+    },
+    "byte_hash": {
+      "description": "Rolling byte-buffer hash",
+      "work_count": 7151162,
+      "seed": 17,
+      "source_sha256": "ba4f866c8288e8dd366b456208bf8f32347d1b315cca659c44c4a398d6984cce",
+      "expected_stdout": "813227837\n",
+      "timings": {
+        "old": {
+          "median_ns": 108727387,
+          "p10_ns": 88607095.0,
+          "p90_ns": 110371373.0,
+          "min_ns": 87598191,
+          "max_ns": 111560037,
+          "samples_ns": [
+            88859321,
+            109564163,
+            108727387,
+            87598191,
+            110074207,
+            89373524,
+            109832672,
+            108673164,
+            111560037
+          ]
+        },
+        "new": {
+          "median_ns": 60181204,
+          "p10_ns": 60008376.6,
+          "p90_ns": 60912710.8,
+          "min_ns": 59730111,
+          "max_ns": 61365558,
+          "samples_ns": [
+            61365558,
+            60651995,
+            60077943,
+            60799499,
+            60098216,
+            60181204,
+            60220906,
+            59730111,
+            60085088
+          ]
+        }
+      },
+      "orders": [
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ]
+      ],
+      "speedup": 1.806666862298069,
+      "binary_sha256": {
+        "old": "b4790ea064b5b054a87eeb35f174480e664b836e758e207d53e6131c710cb0a1",
+        "new": "dbd7ec339d2fda3c169d01dd9a66d29fc6d2c355bbbb98e6ebd52871a28e637a"
+      }
+    },
+    "insertion_sort": {
+      "description": "Insertion sort of 128 bytes",
+      "work_count": 10991,
+      "seed": 17,
+      "source_sha256": "6434692fffcd51438430095971263f8ba79bf118579549c988ac2b3baacc2a93",
+      "expected_stdout": "391073493\n",
+      "timings": {
+        "old": {
+          "median_ns": 560437184,
+          "p10_ns": 554744096.6,
+          "p90_ns": 565609580.4,
+          "min_ns": 552052947,
+          "max_ns": 566208246,
+          "samples_ns": [
+            555998686,
+            562207664,
+            552052947,
+            560437184,
+            558520902,
+            565459914,
+            563254068,
+            555416884,
+            566208246
+          ]
+        },
+        "new": {
+          "median_ns": 232730132,
+          "p10_ns": 230797432.8,
+          "p90_ns": 243239776.8,
+          "min_ns": 230725500,
+          "max_ns": 259412512,
+          "samples_ns": [
+            232730132,
+            234687342,
+            230815416,
+            234591119,
+            230725500,
+            239196593,
+            231154126,
+            231507599,
+            259412512
+          ]
+        }
+      },
+      "orders": [
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "old",
+          "new"
+        ]
+      ],
+      "speedup": 2.4080989392469387,
+      "binary_sha256": {
+        "old": "42776e34fd67edcb0a4b068af516232696e527db096cedd14412e2a63d78dabc",
+        "new": "38957e92e5d8ee3559a4ce4099d373b97011ea55056de434fbc823fc02729843"
+      }
+    },
+    "matrix": {
+      "description": "16\u00d716 byte matrix multiplication",
+      "work_count": 22503,
+      "seed": 17,
+      "source_sha256": "a3334ecc385dee0bcb3326f0cdc176db81bd3d03c3e1cdad1f676084c0b1b100",
+      "expected_stdout": "70084006\n",
+      "timings": {
+        "old": {
+          "median_ns": 1188954304,
+          "p10_ns": 1186929833.4,
+          "p90_ns": 1196877746.8,
+          "min_ns": 1186762063,
+          "max_ns": 1210717434,
+          "samples_ns": [
+            1188954304,
+            1188765266,
+            1187443508,
+            1186971776,
+            1193417825,
+            1192485905,
+            1186762063,
+            1210717434,
+            1192461011
+          ]
+        },
+        "new": {
+          "median_ns": 474919862,
+          "p10_ns": 470039071.4,
+          "p90_ns": 479346354.0,
+          "min_ns": 469061677,
+          "max_ns": 481127182,
+          "samples_ns": [
+            473242489,
+            475537165,
+            478901147,
+            474919862,
+            472901358,
+            469061677,
+            470283420,
+            478776315,
+            481127182
+          ]
+        }
+      },
+      "orders": [
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ]
+      ],
+      "speedup": 2.5034840593801064,
+      "binary_sha256": {
+        "old": "eda65ba6c0544f5ebfc9b109dfd060a5243f8c34c14c3b4a097828fdba8270ad",
+        "new": "23ad45295ad0a42ba75dffa7b8923b452ba6e7de6b30f45afb45bb1caa480806"
+      }
+    },
+    "text_scan": {
+      "description": "Scan 16 KiB ASCII text",
+      "work_count": 2242,
+      "seed": 17,
+      "source_sha256": "82d7c3cd58f9f2488eb91cc6ce0eb16feea7bb40ab5f68fd5447bd3db2d73bad",
+      "expected_stdout": "25162827\n",
+      "timings": {
+        "old": {
+          "median_ns": 464898428,
+          "p10_ns": 463555650.6,
+          "p90_ns": 488090929.0,
+          "min_ns": 462676989,
+          "max_ns": 513491773,
+          "samples_ns": [
+            464178100,
+            463775316,
+            464140582,
+            513491773,
+            478252919,
+            481740718,
+            464898428,
+            462676989,
+            464966807
+          ]
+        },
+        "new": {
+          "median_ns": 145520965,
+          "p10_ns": 142811771.0,
+          "p90_ns": 147323690.2,
+          "min_ns": 142149775,
+          "max_ns": 148944911,
+          "samples_ns": [
+            144820570,
+            145520965,
+            142977270,
+            146301415,
+            146877053,
+            146918385,
+            142149775,
+            148944911,
+            144858704
+          ]
+        }
+      },
+      "orders": [
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "old",
+          "new"
+        ],
+        [
+          "new",
+          "old"
+        ],
+        [
+          "new",
+          "old"
+        ]
+      ],
+      "speedup": 3.194717874500076,
+      "binary_sha256": {
+        "old": "7af3810dddfd48f88e192e6c2c2f8794346ecf43258d8820a760e6eaac796a73",
+        "new": "17af88b34b8c77d9882b31d0818d59137ca3d7dcccb8f65d6e0c8c767845b162"
+      }
+    }
+  },
+  "geomean_speedup": 2.0529660133148435,
+  "bootstrap_95pct": [
+    1.9971863094894278,
+    2.066658723528114
+  ]
+}

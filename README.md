@@ -84,7 +84,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.7.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.7.1/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -344,17 +344,18 @@ permissions. Games and browser support need further platform work.
 
 ## Benchmarks
 
-The Ramos 0.7.0 baseline has a reproducible eight-task comparison with optimized checked C,
-Rust and CPython. On the recorded Linux VM, the execution index is **Ramos 19.93,
-C 100, Rust 119.04 and Python 2.53** (higher is faster). Ramos is **7.89× faster
-than Python** across this suite and takes **5.02× C's time**. These are geometric
+Ramos 0.7.1 has a reproducible eight-task comparison with optimized checked C,
+Rust and CPython. On the recorded Linux VM, the execution index is **Ramos 40.82,
+C 100, Rust 119.77 and Python 2.53** (higher is faster). Ramos is **16.16× faster
+than Python** across this suite and takes **2.45× C's time**. These are geometric
 means of per-task median ratios, not a general language ranking.
 
 The suite checks outputs against independent references, runs nine randomized
 samples per task, and records raw timings, build commands and source hashes.
 Startup and build times are reported separately. See the
 [full report and methodology](benchmarks/report.md), [raw samples](benchmarks/results.json)
-and [workload sources](benchmarks/fixtures/).
+and [workload sources](benchmarks/fixtures/). The saved 0.7.0 baseline and
+[interleaved old/new comparison](benchmarks/optimization.md) document the optimizer gain.
 
 ```sh
 make
@@ -362,7 +363,7 @@ python3 benchmarks/run_suite.py                 # measure all eight tasks
 python3 benchmarks/run_suite.py --validate-only # output checks without timing
 ```
 
-![Ramos 0.7 execution index](benchmarks/score.png)
+![Ramos 0.7.1 execution index](benchmarks/score.png)
 
 The [historical 0.2 comparison](benchmarks/report-0.2.md) used another machine
 and one unrolled workload; it is not directly comparable. Its legacy script

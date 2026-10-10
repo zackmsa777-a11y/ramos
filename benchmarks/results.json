@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "suite": "ramos-eight-task-cli-v1",
-  "measured_at_utc": "2026-10-10T06:24:57.693306+00:00",
-  "ramos_version": "Ramos 0.7.0 \u2014 compiler written in Ramos; Linux and Windows x64",
-  "compiler_sha256": "ce7d20bda76c4f006f5ec57924169c8941de33a13ca598560d7624933d075a12",
+  "measured_at_utc": "2026-10-10T06:48:13.205823+00:00",
+  "ramos_version": "Ramos 0.7.1 \u2014 compiler written in Ramos; Linux and Windows x64",
+  "compiler_sha256": "dc4270349d22a391978113121613de849d7076b40a091e29756bca4bb3a672c4",
   "environment": {
     "cpu_model": "Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz",
     "platform": "Linux-6.17.0-1020-oracle-x86_64-with-glibc2.39",
     "pinned_cpu": 0,
     "logical_cpus": 2,
     "versions": {
-      "ramos": "Ramos 0.7.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "ramos": "Ramos 0.7.1 \u2014 compiler written in Ramos; Linux and Windows x64",
       "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
       "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
       "python": "Python 3.12.3"
@@ -23,7 +23,8 @@
     "random_seed": 7012026,
     "index_reference": "C=100",
     "equal_task_weights": true,
-    "startup_in_index": false
+    "startup_in_index": false,
+    "fixed_baseline_work_counts": true
   },
   "tasks": {
     "lcg": {
@@ -33,119 +34,79 @@
       "expected_stdout": "1332656518\n",
       "timings": {
         "Ramos": {
-          "median_ns": 82997002,
-          "p10_ns": 82348251.4,
-          "p90_ns": 84494237.4,
-          "min_ns": 82130237,
-          "max_ns": 86594147,
+          "median_ns": 46072948,
+          "p10_ns": 45472633.4,
+          "p90_ns": 46657785.6,
+          "min_ns": 45427507,
+          "max_ns": 46990964,
           "samples_ns": [
-            82130237,
-            82997002,
-            83352822,
-            82785719,
-            82402755,
-            83393914,
-            83969260,
-            82726311,
-            86594147
+            45824837,
+            45427507,
+            46493852,
+            45768999,
+            46546124,
+            46072948,
+            46990964,
+            45483915,
+            46574491
           ]
         },
         "C": {
-          "median_ns": 30884286,
-          "p10_ns": 30718078.6,
-          "p90_ns": 32671498.0,
-          "min_ns": 30621577,
-          "max_ns": 33834238,
+          "median_ns": 30886560,
+          "p10_ns": 30672247.8,
+          "p90_ns": 32002836.4,
+          "min_ns": 30583871,
+          "max_ns": 32158214,
           "samples_ns": [
-            33834238,
-            31880167,
-            30884286,
-            30742204,
-            30841305,
-            32380813,
-            30621577,
-            31963048,
-            30842571
+            31963992,
+            30788969,
+            31131231,
+            32158214,
+            30886560,
+            30861423,
+            30694342,
+            31712640,
+            30583871
           ]
         },
         "Rust": {
-          "median_ns": 33085080,
-          "p10_ns": 32936561.4,
-          "p90_ns": 34261035.8,
-          "min_ns": 32855143,
-          "max_ns": 34267031,
+          "median_ns": 33259989,
+          "p10_ns": 33012614.6,
+          "p90_ns": 33944189.0,
+          "min_ns": 32998309,
+          "max_ns": 33957041,
           "samples_ns": [
-            33246572,
-            33947346,
-            33071055,
-            33085080,
-            32956916,
-            34259537,
-            32855143,
-            33076206,
-            34267031
+            33016191,
+            33024636,
+            33798720,
+            33128850,
+            33957041,
+            33465720,
+            33940976,
+            32998309,
+            33259989
           ]
         },
         "Python": {
-          "median_ns": 1076428819,
-          "p10_ns": 1067326124.8,
-          "p90_ns": 1084887249.0,
-          "min_ns": 1056029492,
-          "max_ns": 1089495501,
+          "median_ns": 1069989118,
+          "p10_ns": 1061859068.6,
+          "p90_ns": 1074848069.8,
+          "min_ns": 1055910043,
+          "max_ns": 1077926249,
           "samples_ns": [
-            1083735186,
-            1078470738,
-            1056029492,
-            1076428819,
-            1077088431,
-            1089495501,
-            1070150283,
-            1073957904,
-            1073330651
+            1072186824,
+            1069679994,
+            1063346325,
+            1073533818,
+            1077926249,
+            1069989118,
+            1074078525,
+            1055910043,
+            1065262563
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 100000,
-          "probes_ns": {
-            "C": [
-              1483610,
-              1113939
-            ],
-            "Rust": [
-              1247148,
-              1221745
-            ]
-          }
-        },
-        {
-          "work_count": 1600000,
-          "probes_ns": {
-            "C": [
-              7744837,
-              8880543
-            ],
-            "Rust": [
-              8439480,
-              9545396
-            ]
-          }
-        },
-        {
-          "work_count": 6640450,
-          "probes_ns": {
-            "C": [
-              30673540,
-              30725259
-            ],
-            "Rust": [
-              34855293,
-              32998331
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "Ramos",
@@ -204,39 +165,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 1298085,
-          "p10_ns": 1257690.6,
-          "p90_ns": 2517823.4000000004,
-          "min_ns": 1247592,
-          "max_ns": 2822758,
+          "median_ns": 849391,
+          "p10_ns": 785587.0,
+          "p90_ns": 1927464.6,
+          "min_ns": 769636,
+          "max_ns": 2196983,
           "samples_ns": [
-            2822758,
-            1298085,
-            1247592
+            769636,
+            2196983,
+            849391
           ]
         },
         "C": {
-          "median_ns": 45365140,
-          "p10_ns": 44020237.6,
-          "p90_ns": 46121690.4,
-          "min_ns": 43684012,
-          "max_ns": 46310828,
+          "median_ns": 45725374,
+          "p10_ns": 45257194.8,
+          "p90_ns": 47776956.4,
+          "min_ns": 45140150,
+          "max_ns": 48289852,
           "samples_ns": [
-            46310828,
-            43684012,
-            45365140
+            48289852,
+            45140150,
+            45725374
           ]
         },
         "Rust": {
-          "median_ns": 156884054,
-          "p10_ns": 156096956.4,
-          "p90_ns": 160061372.4,
-          "min_ns": 155900182,
-          "max_ns": 160855702,
+          "median_ns": 163624047,
+          "p10_ns": 159401445.4,
+          "p90_ns": 164423543.8,
+          "min_ns": 158345795,
+          "max_ns": 164623418,
           "samples_ns": [
-            156884054,
-            155900182,
-            160855702
+            158345795,
+            163624047,
+            164623418
           ]
         }
       },
@@ -246,7 +207,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/lcg-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/lcg-ramos",
           "--force"
         ],
         "C": [
@@ -254,7 +215,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/lcg-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/lcg-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.c"
         ],
         "Rust": [
@@ -267,23 +228,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/lcg-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/lcg-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/lcg.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/lcg-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/lcg-ramos",
           "6640450",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/lcg-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/lcg-c",
           "6640450",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/lcg-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/lcg-rust",
           "6640450",
           "17"
         ],
@@ -329,119 +290,79 @@
       "expected_stdout": "91560642\n",
       "timings": {
         "Ramos": {
-          "median_ns": 101765252,
-          "p10_ns": 101585889.8,
-          "p90_ns": 102091430.2,
-          "min_ns": 101476249,
-          "max_ns": 102191111,
+          "median_ns": 56933974,
+          "p10_ns": 55625776.4,
+          "p90_ns": 57999549.6,
+          "min_ns": 55556874,
+          "max_ns": 58904312,
           "samples_ns": [
-            101476249,
-            101831350,
-            102066510,
-            101765252,
-            102191111,
-            101972258,
-            101743438,
-            101691877,
-            101613300
+            57773359,
+            55829435,
+            58904312,
+            56809891,
+            56933974,
+            57478256,
+            55556874,
+            57262157,
+            55643002
           ]
         },
         "C": {
-          "median_ns": 30295648,
-          "p10_ns": 30138167.4,
-          "p90_ns": 32108039.2,
-          "min_ns": 30125621,
-          "max_ns": 34053256,
+          "median_ns": 31103355,
+          "p10_ns": 29870744.8,
+          "p90_ns": 32321877.8,
+          "min_ns": 29714376,
+          "max_ns": 32782493,
           "samples_ns": [
-            30864819,
-            30238844,
-            31621735,
-            30141304,
-            30386114,
-            30165476,
-            34053256,
-            30295648,
-            30125621
+            29714376,
+            30956176,
+            32206724,
+            31557619,
+            32782493,
+            30143898,
+            29909837,
+            31103355,
+            31475244
           ]
         },
         "Rust": {
-          "median_ns": 30783135,
-          "p10_ns": 30468333.0,
-          "p90_ns": 31831729.2,
-          "min_ns": 30073029,
-          "max_ns": 32399858,
+          "median_ns": 31164546,
+          "p10_ns": 30504203.8,
+          "p90_ns": 32092354.2,
+          "min_ns": 30360859,
+          "max_ns": 32589243,
           "samples_ns": [
-            31125741,
-            30567159,
-            31532743,
-            30568579,
-            30589421,
-            30073029,
-            30783135,
-            31689697,
-            32399858
+            31164546,
+            30654694,
+            31636312,
+            30552735,
+            30540040,
+            31968132,
+            30360859,
+            31257285,
+            32589243
           ]
         },
         "Python": {
-          "median_ns": 728550071,
-          "p10_ns": 721645535.8,
-          "p90_ns": 753597057.4,
-          "min_ns": 719771739,
-          "max_ns": 769753807,
+          "median_ns": 730314773,
+          "p10_ns": 715783524.2,
+          "p90_ns": 734424607.0,
+          "min_ns": 710060325,
+          "max_ns": 734851175,
           "samples_ns": [
-            728550071,
-            769753807,
-            722978527,
-            739312146,
-            730371870,
-            719771739,
-            727025155,
-            749557870,
-            722113985
+            717214324,
+            710060325,
+            723726423,
+            730314773,
+            730557299,
+            734317965,
+            734851175,
+            731948197,
+            723298837
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 50000,
-          "probes_ns": {
-            "C": [
-              1196544,
-              2213405
-            ],
-            "Rust": [
-              1299921,
-              2355735
-            ]
-          }
-        },
-        {
-          "work_count": 800000,
-          "probes_ns": {
-            "C": [
-              10623712,
-              10321998
-            ],
-            "Rust": [
-              9237659,
-              10714139
-            ]
-          }
-        },
-        {
-          "work_count": 2766668,
-          "probes_ns": {
-            "C": [
-              31223342,
-              29865789
-            ],
-            "Rust": [
-              30633636,
-              30669911
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "C",
@@ -500,39 +421,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 3366491,
-          "p10_ns": 2135855.0,
-          "p90_ns": 3438642.2,
-          "min_ns": 1828196,
-          "max_ns": 3456680,
+          "median_ns": 2107804,
+          "p10_ns": 1237667.2,
+          "p90_ns": 2155002.4,
+          "min_ns": 1020133,
+          "max_ns": 2166802,
           "samples_ns": [
-            3456680,
-            1828196,
-            3366491
+            2166802,
+            2107804,
+            1020133
           ]
         },
         "C": {
-          "median_ns": 49554900,
-          "p10_ns": 49349525.6,
-          "p90_ns": 50776547.2,
-          "min_ns": 49298182,
-          "max_ns": 51081959,
+          "median_ns": 51264003,
+          "p10_ns": 48791532.6,
+          "p90_ns": 51902825.4,
+          "min_ns": 48173415,
+          "max_ns": 52062531,
           "samples_ns": [
-            49554900,
-            49298182,
-            51081959
+            48173415,
+            51264003,
+            52062531
           ]
         },
         "Rust": {
-          "median_ns": 160678958,
-          "p10_ns": 158402637.2,
-          "p90_ns": 161074660.4,
-          "min_ns": 157833557,
-          "max_ns": 161173586,
+          "median_ns": 159447048,
+          "p10_ns": 159140907.2,
+          "p90_ns": 163272175.2,
+          "min_ns": 159064372,
+          "max_ns": 164228457,
           "samples_ns": [
-            157833557,
-            160678958,
-            161173586
+            159447048,
+            164228457,
+            159064372
           ]
         }
       },
@@ -542,7 +463,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/branches-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/branches-ramos",
           "--force"
         ],
         "C": [
@@ -550,7 +471,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/branches-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/branches-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.c"
         ],
         "Rust": [
@@ -563,23 +484,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/branches-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/branches-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/branches.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/branches-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/branches-ramos",
           "2766668",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/branches-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/branches-c",
           "2766668",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/branches-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/branches-rust",
           "2766668",
           "17"
         ],
@@ -625,119 +546,79 @@
       "expected_stdout": "4413409\n",
       "timings": {
         "Ramos": {
-          "median_ns": 106477504,
-          "p10_ns": 105983344.8,
-          "p90_ns": 106809544.0,
-          "min_ns": 105972264,
-          "max_ns": 107331408,
+          "median_ns": 65536584,
+          "p10_ns": 65463098.2,
+          "p90_ns": 70288346.4,
+          "min_ns": 65416935,
+          "max_ns": 81586388,
           "samples_ns": [
-            106172916,
-            106671711,
-            106513721,
-            106679078,
-            105986115,
-            105972264,
-            106232936,
-            106477504,
-            107331408
+            65493940,
+            65416935,
+            65642941,
+            65474639,
+            65536584,
+            65994273,
+            65512525,
+            67463836,
+            81586388
           ]
         },
         "C": {
-          "median_ns": 39523147,
-          "p10_ns": 38868942.6,
-          "p90_ns": 40099162.8,
-          "min_ns": 38776737,
-          "max_ns": 40633162,
+          "median_ns": 39233618,
+          "p10_ns": 38703785.6,
+          "p90_ns": 42886518.800000004,
+          "min_ns": 38583736,
+          "max_ns": 54130250,
           "samples_ns": [
-            39743986,
-            39312935,
-            40633162,
-            39644791,
-            38945453,
-            39523147,
-            39965663,
-            38891994,
-            38776737
+            38583736,
+            38910100,
+            39117947,
+            38733798,
+            54130250,
+            40075586,
+            39722754,
+            39243743,
+            39233618
           ]
         },
         "Rust": {
-          "median_ns": 33021400,
-          "p10_ns": 32665069.4,
-          "p90_ns": 33343711.8,
-          "min_ns": 32651327,
-          "max_ns": 34374699,
+          "median_ns": 33115751,
+          "p10_ns": 32833586.4,
+          "p90_ns": 33715147.0,
+          "min_ns": 32833532,
+          "max_ns": 33784507,
           "samples_ns": [
-            32651327,
-            32764669,
-            32709274,
-            33021400,
-            34374699,
-            32668505,
-            33044505,
-            33085965,
-            33052135
+            33784507,
+            33604871,
+            32833532,
+            33608144,
+            32833600,
+            32887910,
+            32956716,
+            33697807,
+            33115751
           ]
         },
         "Python": {
-          "median_ns": 423260828,
-          "p10_ns": 419729492.8,
-          "p90_ns": 428621111.6,
-          "min_ns": 416468132,
-          "max_ns": 432281990,
+          "median_ns": 427031712,
+          "p10_ns": 425484268.4,
+          "p90_ns": 485550517.0,
+          "min_ns": 425303062,
+          "max_ns": 601443537,
           "samples_ns": [
-            427705892,
-            423260828,
-            424019651,
-            416468132,
-            422612085,
-            422414949,
-            420544833,
-            427626275,
-            432281990
+            456577262,
+            435432048,
+            425529570,
+            427031712,
+            601443537,
+            426815449,
+            426131400,
+            425303062,
+            431269656
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 20000,
-          "probes_ns": {
-            "C": [
-              1798252,
-              1748534
-            ],
-            "Rust": [
-              2910031,
-              1949215
-            ]
-          }
-        },
-        {
-          "work_count": 320000,
-          "probes_ns": {
-            "C": [
-              22623134,
-              21607361
-            ],
-            "Rust": [
-              18462071,
-              19769861
-            ]
-          }
-        },
-        {
-          "work_count": 577528,
-          "probes_ns": {
-            "C": [
-              39786710,
-              38928722
-            ],
-            "Rust": [
-              32793968,
-              32714606
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "Ramos",
@@ -796,39 +677,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 2798230,
-          "p10_ns": 1807426.0,
-          "p90_ns": 2835401.2,
-          "min_ns": 1559725,
-          "max_ns": 2844694,
+          "median_ns": 1165059,
+          "p10_ns": 1070913.4,
+          "p90_ns": 3923135.0,
+          "min_ns": 1047377,
+          "max_ns": 4612654,
           "samples_ns": [
-            2844694,
-            1559725,
-            2798230
+            4612654,
+            1047377,
+            1165059
           ]
         },
         "C": {
-          "median_ns": 48467658,
-          "p10_ns": 47754086.0,
-          "p90_ns": 49796232.4,
-          "min_ns": 47575693,
-          "max_ns": 50128376,
+          "median_ns": 48385699,
+          "p10_ns": 47935635.0,
+          "p90_ns": 48973906.2,
+          "min_ns": 47823119,
+          "max_ns": 49120958,
           "samples_ns": [
-            48467658,
-            50128376,
-            47575693
+            47823119,
+            49120958,
+            48385699
           ]
         },
         "Rust": {
-          "median_ns": 165300280,
-          "p10_ns": 163258817.6,
-          "p90_ns": 166773151.2,
-          "min_ns": 162748452,
-          "max_ns": 167141369,
+          "median_ns": 160640956,
+          "p10_ns": 157947562.4,
+          "p90_ns": 161790973.6,
+          "min_ns": 157274214,
+          "max_ns": 162078478,
           "samples_ns": [
-            167141369,
-            165300280,
-            162748452
+            162078478,
+            157274214,
+            160640956
           ]
         }
       },
@@ -838,7 +719,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/gcd-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/gcd-ramos",
           "--force"
         ],
         "C": [
@@ -846,7 +727,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/gcd-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/gcd-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.c"
         ],
         "Rust": [
@@ -859,23 +740,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/gcd-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/gcd-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/gcd.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/gcd-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/gcd-ramos",
           "577528",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/gcd-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/gcd-c",
           "577528",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/gcd-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/gcd-rust",
           "577528",
           "17"
         ],
@@ -921,132 +802,79 @@
       "expected_stdout": "275684983\n",
       "timings": {
         "Ramos": {
-          "median_ns": 143703222,
-          "p10_ns": 140255955.8,
-          "p90_ns": 145468254.8,
-          "min_ns": 140068675,
-          "max_ns": 147605798,
+          "median_ns": 85071153,
+          "p10_ns": 83592887.8,
+          "p90_ns": 87441540.2,
+          "min_ns": 83569723,
+          "max_ns": 87713917,
           "samples_ns": [
-            141367048,
-            144933869,
-            141958198,
-            140068675,
-            147605798,
-            140302776,
-            144009514,
-            143703222,
-            143830517
+            87172613,
+            83569723,
+            83598679,
+            84178356,
+            85071153,
+            87373446,
+            84023825,
+            87713917,
+            86448152
           ]
         },
         "C": {
-          "median_ns": 35650713,
-          "p10_ns": 34415335.4,
-          "p90_ns": 36370027.8,
-          "min_ns": 34375537,
-          "max_ns": 37843715,
+          "median_ns": 35740560,
+          "p10_ns": 34575592.6,
+          "p90_ns": 36284294.2,
+          "min_ns": 34546879,
+          "max_ns": 36555871,
           "samples_ns": [
-            34375537,
-            37843715,
-            34781044,
-            35650713,
-            35663880,
-            36001606,
-            34452084,
-            34425285,
-            35938022
+            36216400,
+            35632252,
+            34627091,
+            36118991,
+            36027382,
+            34546879,
+            34582771,
+            36555871,
+            35740560
           ]
         },
         "Rust": {
-          "median_ns": 48738565,
-          "p10_ns": 47355307.4,
-          "p90_ns": 49944362.0,
-          "min_ns": 46952509,
-          "max_ns": 51228146,
+          "median_ns": 47662885,
+          "p10_ns": 46866205.6,
+          "p90_ns": 50081558.6,
+          "min_ns": 46581940,
+          "max_ns": 50499225,
           "samples_ns": [
-            47456007,
-            48738565,
-            46952509,
-            48876063,
-            51228146,
-            47470829,
-            49101844,
-            47667911,
-            49623416
+            46937272,
+            50499225,
+            48234022,
+            47350303,
+            49977142,
+            47937490,
+            47238671,
+            46581940,
+            47662885
           ]
         },
         "Python": {
-          "median_ns": 1397787978,
-          "p10_ns": 1388402353.8,
-          "p90_ns": 1427893846.8,
-          "min_ns": 1382179989,
-          "max_ns": 1442411050,
+          "median_ns": 1398672431,
+          "p10_ns": 1390805389.6,
+          "p90_ns": 1404817420.4,
+          "min_ns": 1382366996,
+          "max_ns": 1405187162,
           "samples_ns": [
-            1392548116,
-            1382179989,
-            1397585437,
-            1424264546,
-            1389957945,
-            1401319688,
-            1442411050,
-            1397787978,
-            1413245869
+            1399422429,
+            1396700285,
+            1398672431,
+            1395863185,
+            1399206736,
+            1392914988,
+            1382366996,
+            1404724985,
+            1405187162
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 10,
-          "probes_ns": {
-            "C": [
-              906095,
-              838912
-            ],
-            "Rust": [
-              2157618,
-              1067922
-            ]
-          }
-        },
-        {
-          "work_count": 160,
-          "probes_ns": {
-            "C": [
-              5675015,
-              4569135
-            ],
-            "Rust": [
-              6781347,
-              7686271
-            ]
-          }
-        },
-        {
-          "work_count": 1078,
-          "probes_ns": {
-            "C": [
-              27218663,
-              27789591
-            ],
-            "Rust": [
-              36953091,
-              41744123
-            ]
-          }
-        },
-        {
-          "work_count": 1402,
-          "probes_ns": {
-            "C": [
-              36095327,
-              34556927
-            ],
-            "Rust": [
-              47319319,
-              47235569
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "C",
@@ -1105,39 +933,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 2607827,
-          "p10_ns": 2362687.0,
-          "p90_ns": 2609078.2,
-          "min_ns": 2301402,
-          "max_ns": 2609391,
+          "median_ns": 1062082,
+          "p10_ns": 1045286.0,
+          "p90_ns": 1920502.8,
+          "min_ns": 1041087,
+          "max_ns": 2135108,
           "samples_ns": [
-            2301402,
-            2607827,
-            2609391
+            1041087,
+            1062082,
+            2135108
           ]
         },
         "C": {
-          "median_ns": 176108535,
-          "p10_ns": 175092985.4,
-          "p90_ns": 177023590.2,
-          "min_ns": 174839098,
-          "max_ns": 177252354,
+          "median_ns": 188724570,
+          "p10_ns": 180787454.8,
+          "p90_ns": 189627466.0,
+          "min_ns": 178803176,
+          "max_ns": 189853190,
           "samples_ns": [
-            177252354,
-            174839098,
-            176108535
+            188724570,
+            189853190,
+            178803176
           ]
         },
         "Rust": {
-          "median_ns": 159738401,
-          "p10_ns": 159142050.6,
-          "p90_ns": 163020946.6,
-          "min_ns": 158992963,
-          "max_ns": 163841583,
+          "median_ns": 161796481,
+          "p10_ns": 160854053.0,
+          "p90_ns": 164075246.6,
+          "min_ns": 160618446,
+          "max_ns": 164644938,
           "samples_ns": [
-            158992963,
-            163841583,
-            159738401
+            161796481,
+            164644938,
+            160618446
           ]
         }
       },
@@ -1147,7 +975,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/recursive_tree-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/recursive_tree-ramos",
           "--force"
         ],
         "C": [
@@ -1155,7 +983,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/recursive_tree-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/recursive_tree-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.c"
         ],
         "Rust": [
@@ -1168,23 +996,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/recursive_tree-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/recursive_tree-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/recursive_tree.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/recursive_tree-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/recursive_tree-ramos",
           "1402",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/recursive_tree-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/recursive_tree-c",
           "1402",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/recursive_tree-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/recursive_tree-rust",
           "1402",
           "17"
         ],
@@ -1230,119 +1058,79 @@
       "expected_stdout": "813227837\n",
       "timings": {
         "Ramos": {
-          "median_ns": 108530697,
-          "p10_ns": 89125253.8,
-          "p90_ns": 110303140.6,
-          "min_ns": 89109741,
-          "max_ns": 111076831,
+          "median_ns": 60880318,
+          "p10_ns": 59530873.0,
+          "p90_ns": 61937126.2,
+          "min_ns": 59407521,
+          "max_ns": 62382283,
           "samples_ns": [
-            108530697,
-            89129132,
-            111076831,
-            110015583,
-            109051997,
-            90623846,
-            110109718,
-            89109741,
-            92408046
+            61786574,
+            61825837,
+            59561711,
+            59924048,
+            60880318,
+            61141184,
+            62382283,
+            59407521,
+            60053264
           ]
         },
         "C": {
-          "median_ns": 32220977,
-          "p10_ns": 32169560.8,
-          "p90_ns": 32778477.8,
-          "min_ns": 32105648,
-          "max_ns": 32841249,
+          "median_ns": 32443011,
+          "p10_ns": 32270431.6,
+          "p90_ns": 33536136.0,
+          "min_ns": 32189826,
+          "max_ns": 33791224,
           "samples_ns": [
-            32220977,
-            32187779,
-            32213843,
-            32313682,
-            32185539,
-            32841249,
-            32306783,
-            32762785,
-            32105648
+            32443011,
+            33472364,
+            32290583,
+            32189826,
+            33791224,
+            32783045,
+            32436539,
+            32404862,
+            32461729
           ]
         },
         "Rust": {
-          "median_ns": 40125241,
-          "p10_ns": 39867391.8,
-          "p90_ns": 41132117.2,
-          "min_ns": 39863315,
-          "max_ns": 41251418,
+          "median_ns": 40615746,
+          "p10_ns": 40038377.4,
+          "p90_ns": 41896613.0,
+          "min_ns": 39932999,
+          "max_ns": 44220073,
           "samples_ns": [
-            39868411,
-            39924238,
-            41056636,
-            39863315,
-            41251418,
-            40749942,
-            40125241,
-            41102292,
-            39884094
+            40251042,
+            40250262,
+            41315748,
+            39932999,
+            41067290,
+            40615746,
+            44220073,
+            40064722,
+            41312798
           ]
         },
         "Python": {
-          "median_ns": 973571029,
-          "p10_ns": 968418821.8,
-          "p90_ns": 1049336037.0,
-          "min_ns": 957852389,
-          "max_ns": 1062993949,
+          "median_ns": 1004183122,
+          "p10_ns": 969365404.2,
+          "p90_ns": 1187425241.2,
+          "min_ns": 968303773,
+          "max_ns": 1291239022,
           "samples_ns": [
-            973490736,
-            997655674,
-            973571029,
-            1062993949,
-            1045921559,
-            971060430,
-            971328056,
-            1001588954,
-            957852389
+            1061963085,
+            1003886787,
+            1017357280,
+            976470469,
+            969630812,
+            1004183122,
+            1291239022,
+            1161471796,
+            968303773
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 100000,
-          "probes_ns": {
-            "C": [
-              2266952,
-              2187132
-            ],
-            "Rust": [
-              1360506,
-              2349792
-            ]
-          }
-        },
-        {
-          "work_count": 1600000,
-          "probes_ns": {
-            "C": [
-              7833224,
-              7604828
-            ],
-            "Rust": [
-              9570583,
-              9568834
-            ]
-          }
-        },
-        {
-          "work_count": 7151162,
-          "probes_ns": {
-            "C": [
-              33457341,
-              33523496
-            ],
-            "Rust": [
-              40420322,
-              40332421
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "Ramos",
@@ -1401,39 +1189,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 1471764,
-          "p10_ns": 1427612.8,
-          "p90_ns": 1538281.6,
-          "min_ns": 1416575,
-          "max_ns": 1554911,
+          "median_ns": 983483,
+          "p10_ns": 951111.8,
+          "p90_ns": 1004280.6,
+          "min_ns": 943019,
+          "max_ns": 1009480,
           "samples_ns": [
-            1554911,
-            1471764,
-            1416575
+            943019,
+            983483,
+            1009480
           ]
         },
         "C": {
-          "median_ns": 52714062,
-          "p10_ns": 51897558.8,
-          "p90_ns": 52854513.2,
-          "min_ns": 51693433,
-          "max_ns": 52889626,
+          "median_ns": 53978728,
+          "p10_ns": 52086942.4,
+          "p90_ns": 54200582.4,
+          "min_ns": 51613996,
+          "max_ns": 54256046,
           "samples_ns": [
-            51693433,
-            52889626,
-            52714062
+            54256046,
+            51613996,
+            53978728
           ]
         },
         "Rust": {
-          "median_ns": 166443879,
-          "p10_ns": 164864909.4,
-          "p90_ns": 168141269.4,
-          "min_ns": 164470167,
-          "max_ns": 168565617,
+          "median_ns": 165206943,
+          "p10_ns": 164861078.2,
+          "p90_ns": 170585592.6,
+          "min_ns": 164774612,
+          "max_ns": 171930255,
           "samples_ns": [
-            168565617,
-            164470167,
-            166443879
+            164774612,
+            165206943,
+            171930255
           ]
         }
       },
@@ -1443,7 +1231,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/byte_hash-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/byte_hash-ramos",
           "--force"
         ],
         "C": [
@@ -1451,7 +1239,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/byte_hash-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/byte_hash-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.c"
         ],
         "Rust": [
@@ -1464,23 +1252,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/byte_hash-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/byte_hash-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/byte_hash.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/byte_hash-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/byte_hash-ramos",
           "7151162",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/byte_hash-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/byte_hash-c",
           "7151162",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/byte_hash-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/byte_hash-rust",
           "7151162",
           "17"
         ],
@@ -1526,132 +1314,79 @@
       "expected_stdout": "391073493\n",
       "timings": {
         "Ramos": {
-          "median_ns": 555740801,
-          "p10_ns": 549871280.6,
-          "p90_ns": 561192979.2,
-          "min_ns": 548390659,
-          "max_ns": 562214144,
+          "median_ns": 232404401,
+          "p10_ns": 230006580.4,
+          "p90_ns": 244126266.2,
+          "min_ns": 229527862,
+          "max_ns": 248578631,
           "samples_ns": [
-            559182644,
-            555365338,
-            548390659,
-            550801942,
-            555740801,
-            562214144,
-            550241436,
-            560937688,
-            556882480
+            230126260,
+            239037682,
+            243013175,
+            235508023,
+            248578631,
+            229527862,
+            230287572,
+            232404401,
+            232006290
           ]
         },
         "C": {
-          "median_ns": 38510447,
-          "p10_ns": 37714700.4,
-          "p90_ns": 39646573.2,
-          "min_ns": 37672570,
-          "max_ns": 42097910,
+          "median_ns": 39367164,
+          "p10_ns": 38355339.8,
+          "p90_ns": 46077785.2,
+          "min_ns": 38283547,
+          "max_ns": 69111654,
           "samples_ns": [
-            37672570,
-            38195900,
-            38940057,
-            37725233,
-            39033739,
-            42097910,
-            38271894,
-            38962793,
-            38510447
+            38373288,
+            38910121,
+            39017472,
+            40319318,
+            69111654,
+            39969467,
+            39367164,
+            39845614,
+            38283547
           ]
         },
         "Rust": {
-          "median_ns": 36717954,
-          "p10_ns": 35373415.8,
-          "p90_ns": 37435185.8,
-          "min_ns": 35306215,
-          "max_ns": 37961633,
+          "median_ns": 36405128,
+          "p10_ns": 35543300.6,
+          "p90_ns": 37553027.0,
+          "min_ns": 35407731,
+          "max_ns": 39848015,
           "samples_ns": [
-            37961633,
-            35501882,
-            36565631,
-            37303574,
-            35390216,
-            36717954,
-            35306215,
-            36919924,
-            37185982
+            35407731,
+            39848015,
+            36638786,
+            36979280,
+            36405128,
+            36551043,
+            35577193,
+            35791068,
+            35900092
           ]
         },
         "Python": {
-          "median_ns": 3642678486,
-          "p10_ns": 3620043436.6,
-          "p90_ns": 3675732979.4,
-          "min_ns": 3612804287,
-          "max_ns": 3699450589,
+          "median_ns": 3667839872,
+          "p10_ns": 3622040766.0,
+          "p90_ns": 3815312851.8,
+          "min_ns": 3615522146,
+          "max_ns": 3906752583,
           "samples_ns": [
-            3632870385,
-            3612804287,
-            3650010394,
-            3621853224,
-            3642678486,
-            3699450589,
-            3669803577,
-            3652189629,
-            3631979174
+            3615522146,
+            3655473587,
+            3667839872,
+            3700396197,
+            3627740738,
+            3792452919,
+            3623670421,
+            3906752583,
+            3705927630
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 50,
-          "probes_ns": {
-            "C": [
-              864292,
-              769341
-            ],
-            "Rust": [
-              1999940,
-              1975341
-            ]
-          }
-        },
-        {
-          "work_count": 800,
-          "probes_ns": {
-            "C": [
-              4277820,
-              5451370
-            ],
-            "Rust": [
-              3248059,
-              3281911
-            ]
-          }
-        },
-        {
-          "work_count": 8454,
-          "probes_ns": {
-            "C": [
-              32459866,
-              30918622
-            ],
-            "Rust": [
-              28792747,
-              27131203
-            ]
-          }
-        },
-        {
-          "work_count": 10991,
-          "probes_ns": {
-            "C": [
-              40570089,
-              37700903
-            ],
-            "Rust": [
-              35679430,
-              36062662
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "C",
@@ -1710,39 +1445,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 2804284,
-          "p10_ns": 2468101.6,
-          "p90_ns": 3028428.0,
-          "min_ns": 2384056,
-          "max_ns": 3084464,
+          "median_ns": 2283104,
+          "p10_ns": 1352297.6,
+          "p90_ns": 2374892.8,
+          "min_ns": 1119596,
+          "max_ns": 2397840,
           "samples_ns": [
-            3084464,
-            2384056,
-            2804284
+            2397840,
+            1119596,
+            2283104
           ]
         },
         "C": {
-          "median_ns": 59354283,
-          "p10_ns": 59094454.2,
-          "p90_ns": 61287607.8,
-          "min_ns": 59029497,
-          "max_ns": 61770939,
+          "median_ns": 60801980,
+          "p10_ns": 60349219.2,
+          "p90_ns": 61915881.6,
+          "min_ns": 60236029,
+          "max_ns": 62194357,
           "samples_ns": [
-            59354283,
-            61770939,
-            59029497
+            60801980,
+            60236029,
+            62194357
           ]
         },
         "Rust": {
-          "median_ns": 173173388,
-          "p10_ns": 170906477.6,
-          "p90_ns": 174565924.0,
-          "min_ns": 170339750,
-          "max_ns": 174914058,
+          "median_ns": 177039931,
+          "p10_ns": 175370011.8,
+          "p90_ns": 177286952.6,
+          "min_ns": 174952532,
+          "max_ns": 177348708,
           "samples_ns": [
-            173173388,
-            174914058,
-            170339750
+            177348708,
+            174952532,
+            177039931
           ]
         }
       },
@@ -1752,7 +1487,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/insertion_sort-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/insertion_sort-ramos",
           "--force"
         ],
         "C": [
@@ -1760,7 +1495,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/insertion_sort-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/insertion_sort-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.c"
         ],
         "Rust": [
@@ -1773,23 +1508,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/insertion_sort-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/insertion_sort-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/insertion_sort.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/insertion_sort-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/insertion_sort-ramos",
           "10991",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/insertion_sort-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/insertion_sort-c",
           "10991",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/insertion_sort-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/insertion_sort-rust",
           "10991",
           "17"
         ],
@@ -1835,132 +1570,79 @@
       "expected_stdout": "70084006\n",
       "timings": {
         "Ramos": {
-          "median_ns": 1188317056,
-          "p10_ns": 1183380021.4,
-          "p90_ns": 1252524481.4,
-          "min_ns": 1180701531,
-          "max_ns": 1256828475,
+          "median_ns": 474845608,
+          "p10_ns": 467946686.0,
+          "p90_ns": 488430412.8,
+          "min_ns": 467673562,
+          "max_ns": 493232084,
           "samples_ns": [
-            1190652458,
-            1256828475,
-            1221243807,
-            1251448483,
-            1184527074,
-            1188317056,
-            1184049644,
-            1188069909,
-            1180701531
+            474845608,
+            481295745,
+            467673562,
+            471811975,
+            487229995,
+            474149479,
+            479143127,
+            468014967,
+            493232084
           ]
         },
         "C": {
-          "median_ns": 171012204,
-          "p10_ns": 165285401.0,
-          "p90_ns": 172648941.0,
-          "min_ns": 165108453,
-          "max_ns": 175785857,
+          "median_ns": 166924555,
+          "p10_ns": 165433355.0,
+          "p90_ns": 170417181.4,
+          "min_ns": 164986655,
+          "max_ns": 170640259,
           "samples_ns": [
-            171170126,
-            175785857,
-            171012204,
-            165329638,
-            167092841,
-            171864712,
-            165108453,
-            165654666,
-            171103853
+            170640259,
+            166924555,
+            170361412,
+            167702483,
+            168948106,
+            165545030,
+            166328936,
+            164986655,
+            166800601
           ]
         },
         "Rust": {
-          "median_ns": 31840299,
-          "p10_ns": 31646526.0,
-          "p90_ns": 33521558.6,
-          "min_ns": 31632506,
-          "max_ns": 33732221,
+          "median_ns": 31890756,
+          "p10_ns": 31759328.4,
+          "p90_ns": 32479161.8,
+          "min_ns": 31752402,
+          "max_ns": 33936401,
           "samples_ns": [
-            32384656,
-            33732221,
-            31925209,
-            31765999,
-            31650031,
-            31807891,
-            31840299,
-            31632506,
-            33468893
+            32008221,
+            31752402,
+            31770667,
+            31761060,
+            32114852,
+            31907100,
+            31876543,
+            31890756,
+            33936401
           ]
         },
         "Python": {
-          "median_ns": 10883309829,
-          "p10_ns": 10792511947.0,
-          "p90_ns": 11095393048.0,
-          "min_ns": 10760613387,
-          "max_ns": 11316146368,
+          "median_ns": 10952677800,
+          "p10_ns": 10867712499.4,
+          "p90_ns": 11121322044.0,
+          "min_ns": 10811385825,
+          "max_ns": 11143492456,
           "samples_ns": [
-            10883309829,
-            11316146368,
-            10800486587,
-            11040204718,
-            10760613387,
-            10841447239,
-            10862316055,
-            10997610446,
-            10905467681
+            10952677800,
+            11143492456,
+            11043757396,
+            10949192385,
+            11115779441,
+            10881794168,
+            10960724508,
+            10895543235,
+            10811385825
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 25,
-          "probes_ns": {
-            "C": [
-              2102921,
-              1932494
-            ],
-            "Rust": [
-              850417,
-              1846313
-            ]
-          }
-        },
-        {
-          "work_count": 400,
-          "probes_ns": {
-            "C": [
-              4385270,
-              4658711
-            ],
-            "Rust": [
-              2834999,
-              1287383
-            ]
-          }
-        },
-        {
-          "work_count": 6400,
-          "probes_ns": {
-            "C": [
-              48315034,
-              48597968
-            ],
-            "Rust": [
-              9734700,
-              9889808
-            ]
-          }
-        },
-        {
-          "work_count": 22503,
-          "probes_ns": {
-            "C": [
-              164944587,
-              165769964
-            ],
-            "Rust": [
-              32338183,
-              33375488
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "Python",
@@ -2019,39 +1701,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 1992507,
-          "p10_ns": 1943886.2,
-          "p90_ns": 2087642.2,
-          "min_ns": 1931731,
-          "max_ns": 2111426,
+          "median_ns": 1310279,
+          "p10_ns": 1242003.0,
+          "p90_ns": 2088147.8,
+          "min_ns": 1224934,
+          "max_ns": 2282615,
           "samples_ns": [
-            2111426,
-            1931731,
-            1992507
+            2282615,
+            1224934,
+            1310279
           ]
         },
         "C": {
-          "median_ns": 73073940,
-          "p10_ns": 72241923.2,
-          "p90_ns": 74310766.4,
-          "min_ns": 72033919,
-          "max_ns": 74619973,
+          "median_ns": 75232870,
+          "p10_ns": 73926651.6,
+          "p90_ns": 75600251.6,
+          "min_ns": 73600097,
+          "max_ns": 75692097,
           "samples_ns": [
-            74619973,
-            72033919,
-            73073940
+            75232870,
+            75692097,
+            73600097
           ]
         },
         "Rust": {
-          "median_ns": 191853710,
-          "p10_ns": 190921854.8,
-          "p90_ns": 196927601.2,
-          "min_ns": 190688891,
-          "max_ns": 198196074,
+          "median_ns": 192845943,
+          "p10_ns": 190199310.2,
+          "p90_ns": 193315822.2,
+          "min_ns": 189537652,
+          "max_ns": 193433292,
           "samples_ns": [
-            190688891,
-            198196074,
-            191853710
+            193433292,
+            192845943,
+            189537652
           ]
         }
       },
@@ -2061,7 +1743,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/matrix-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/matrix-ramos",
           "--force"
         ],
         "C": [
@@ -2069,7 +1751,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/matrix-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/matrix-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.c"
         ],
         "Rust": [
@@ -2082,23 +1764,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/matrix-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/matrix-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/matrix.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/matrix-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/matrix-ramos",
           "22503",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/matrix-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/matrix-c",
           "22503",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/matrix-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/matrix-rust",
           "22503",
           "17"
         ],
@@ -2110,7 +1792,7 @@
         ]
       },
       "binary_bytes": {
-        "Ramos": 12288,
+        "Ramos": 8192,
         "C": 16264,
         "Rust": 4507776
       },
@@ -2144,132 +1826,79 @@
       "expected_stdout": "25162827\n",
       "timings": {
         "Ramos": {
-          "median_ns": 463550644,
-          "p10_ns": 463197802.4,
-          "p90_ns": 471108017.0,
-          "min_ns": 463039068,
-          "max_ns": 485656761,
+          "median_ns": 146947968,
+          "p10_ns": 144105919.2,
+          "p90_ns": 148922168.0,
+          "min_ns": 143891156,
+          "max_ns": 151739040,
           "samples_ns": [
-            463748023,
-            463550644,
-            463304110,
-            463237486,
-            467470831,
-            467043315,
-            463507795,
-            485656761,
-            463039068
+            147610885,
+            148217950,
+            151739040,
+            146543507,
+            145484145,
+            144159610,
+            147249721,
+            143891156,
+            146947968
           ]
         },
         "C": {
-          "median_ns": 38263607,
-          "p10_ns": 36839166.8,
-          "p90_ns": 43680456.8,
-          "min_ns": 36581178,
-          "max_ns": 44835172,
+          "median_ns": 38740509,
+          "p10_ns": 36840442.4,
+          "p90_ns": 42157813.4,
+          "min_ns": 36743572,
+          "max_ns": 47684027,
           "samples_ns": [
-            37799879,
-            37157973,
-            43391778,
-            36903664,
-            38434734,
-            44835172,
-            38372642,
-            36581178,
-            38263607
+            38740509,
+            40776260,
+            36743572,
+            39654393,
+            47684027,
+            39539582,
+            36864660,
+            37328760,
+            37325308
           ]
         },
         "Rust": {
-          "median_ns": 34536299,
-          "p10_ns": 33617637.6,
-          "p90_ns": 35330398.6,
-          "min_ns": 33565716,
-          "max_ns": 36029585,
+          "median_ns": 34066404,
+          "p10_ns": 33638389.4,
+          "p90_ns": 35166587.0,
+          "min_ns": 33628095,
+          "max_ns": 36688231,
           "samples_ns": [
-            36029585,
-            34415117,
-            34906420,
-            33630618,
-            34883375,
-            34536299,
-            35155602,
-            34090604,
-            33565716
+            34786176,
+            34527034,
+            33640963,
+            36688231,
+            33951955,
+            34066404,
+            34149499,
+            33911082,
+            33628095
           ]
         },
         "Python": {
-          "median_ns": 3591434293,
-          "p10_ns": 3554972367.6,
-          "p90_ns": 3657189599.0,
-          "min_ns": 3542582638,
-          "max_ns": 3690979895,
+          "median_ns": 3572910665,
+          "p10_ns": 3547313192.4,
+          "p90_ns": 3622723178.0,
+          "min_ns": 3539196958,
+          "max_ns": 3706815706,
           "samples_ns": [
-            3591434293,
-            3611923759,
-            3558069800,
-            3690979895,
-            3648742025,
-            3597939833,
-            3570872554,
-            3542582638,
-            3566279201
+            3598414182,
+            3601700046,
+            3572910665,
+            3706815706,
+            3576008775,
+            3557890184,
+            3561919294,
+            3549342251,
+            3539196958
           ]
         }
       },
-      "calibration": [
-        {
-          "work_count": 25,
-          "probes_ns": {
-            "C": [
-              2243750,
-              2142097
-            ],
-            "Rust": [
-              2785659,
-              1203143
-            ]
-          }
-        },
-        {
-          "work_count": 400,
-          "probes_ns": {
-            "C": [
-              8250512,
-              9088202
-            ],
-            "Rust": [
-              7548807,
-              8464458
-            ]
-          }
-        },
-        {
-          "work_count": 1724,
-          "probes_ns": {
-            "C": [
-              29187407,
-              30555604
-            ],
-            "Rust": [
-              27214148,
-              26155576
-            ]
-          }
-        },
-        {
-          "work_count": 2242,
-          "probes_ns": {
-            "C": [
-              39256128,
-              37685619
-            ],
-            "Rust": [
-              33490984,
-              35067395
-            ]
-          }
-        }
-      ],
+      "calibration": [],
       "measurement_orders": [
         [
           "Python",
@@ -2328,39 +1957,39 @@
       ],
       "builds": {
         "Ramos": {
-          "median_ns": 1686841,
-          "p10_ns": 1679810.6,
-          "p90_ns": 2569052.2,
-          "min_ns": 1678053,
-          "max_ns": 2789605,
+          "median_ns": 2135018,
+          "p10_ns": 1329027.6,
+          "p90_ns": 2230596.4,
+          "min_ns": 1127530,
+          "max_ns": 2254491,
           "samples_ns": [
-            1678053,
-            1686841,
-            2789605
+            2135018,
+            1127530,
+            2254491
           ]
         },
         "C": {
-          "median_ns": 58984570,
-          "p10_ns": 58021135.6,
-          "p90_ns": 59299236.4,
-          "min_ns": 57780277,
-          "max_ns": 59377903,
+          "median_ns": 59089800,
+          "p10_ns": 56669593.6,
+          "p90_ns": 60124282.4,
+          "min_ns": 56064542,
+          "max_ns": 60382903,
           "samples_ns": [
-            58984570,
-            57780277,
-            59377903
+            59089800,
+            56064542,
+            60382903
           ]
         },
         "Rust": {
-          "median_ns": 172071279,
-          "p10_ns": 171786886.2,
-          "p90_ns": 174613725.4,
-          "min_ns": 171715788,
-          "max_ns": 175249337,
+          "median_ns": 176236988,
+          "p10_ns": 173115726.4,
+          "p90_ns": 176654190.4,
+          "min_ns": 172335411,
+          "max_ns": 176758491,
           "samples_ns": [
-            171715788,
-            172071279,
-            175249337
+            176236988,
+            176758491,
+            172335411
           ]
         }
       },
@@ -2370,7 +1999,7 @@
           "build",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.ramos",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/text_scan-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/text_scan-ramos",
           "--force"
         ],
         "C": [
@@ -2378,7 +2007,7 @@
           "-O3",
           "-std=c11",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/text_scan-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/text_scan-c",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.c"
         ],
         "Rust": [
@@ -2391,23 +2020,23 @@
           "-C",
           "panic=abort",
           "-o",
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/text_scan-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/text_scan-rust",
           "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/benchmarks/fixtures/text_scan.rs"
         ]
       },
       "runtime_commands": {
         "Ramos": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/text_scan-ramos",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/text_scan-ramos",
           "2242",
           "17"
         ],
         "C": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/text_scan-c",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/text_scan-c",
           "2242",
           "17"
         ],
         "Rust": [
-          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7/text_scan-rust",
+          "/home/ubuntu/Documents/Codex/2026-10-10/files-mentioned-by-the-user-ramos/work/ramos/work/benchmark-0.7.1/text_scan-rust",
           "2242",
           "17"
         ],
@@ -2449,252 +2078,252 @@
   },
   "startup": {
     "Ramos": {
-      "median_ns": 308705,
-      "p10_ns": 250323.0,
-      "p90_ns": 1410943.0,
-      "min_ns": 242512,
-      "max_ns": 2215680,
+      "median_ns": 394115,
+      "p10_ns": 254227.0,
+      "p90_ns": 1416984.0,
+      "min_ns": 234480,
+      "max_ns": 1794861,
       "samples_ns": [
-        278874,
-        1782928,
-        281678,
-        2215680,
-        247102,
-        1357418,
-        274719,
-        1515669,
-        295747,
-        1432888,
-        750137,
-        254476,
-        308705,
-        1298252,
-        1296406,
-        1380640,
-        395413,
-        1401414,
-        477900,
-        1322817,
-        252899,
-        252966,
-        256827,
-        1388029,
-        1319915,
-        252739,
-        242512,
-        254893,
-        1359929,
-        376704,
-        253514,
-        316660,
-        262702,
-        250323,
-        1364832,
-        301537,
-        359933,
-        273007,
-        1339930,
-        1410943,
-        282899,
-        258300,
-        258363,
-        1429929,
-        1320349,
-        284001,
-        247941,
-        247154,
-        248994,
-        266123,
-        337488
+        1409564,
+        1348503,
+        1393691,
+        282880,
+        254227,
+        1365208,
+        287179,
+        531043,
+        1327278,
+        1383083,
+        1338249,
+        356796,
+        1328311,
+        1363357,
+        1335267,
+        258649,
+        254033,
+        1405696,
+        1390229,
+        270459,
+        320653,
+        262714,
+        257218,
+        1324008,
+        244621,
+        277181,
+        267550,
+        250529,
+        234480,
+        351954,
+        1491302,
+        1662939,
+        253172,
+        254341,
+        285915,
+        1637225,
+        268184,
+        268077,
+        1327972,
+        1375624,
+        1398015,
+        357736,
+        1794861,
+        1416984,
+        267396,
+        1520892,
+        1362426,
+        394115,
+        279591,
+        327485,
+        1357575
       ]
     },
     "C": {
-      "median_ns": 667300,
-      "p10_ns": 586480.0,
-      "p90_ns": 1954375.0,
-      "min_ns": 576645,
-      "max_ns": 2152696,
+      "median_ns": 647718,
+      "p10_ns": 594731.0,
+      "p90_ns": 1843043.0,
+      "min_ns": 559166,
+      "max_ns": 2297760,
       "samples_ns": [
-        1757630,
-        662516,
-        590569,
-        597789,
-        586480,
-        595143,
-        693856,
-        875652,
-        665783,
-        589762,
-        633533,
-        585169,
-        2152696,
-        581700,
-        651097,
-        1806118,
-        2033770,
-        1702453,
-        1649146,
-        667300,
-        641262,
-        713610,
-        2045211,
-        987263,
-        1753745,
-        607831,
-        597428,
-        876112,
-        1993720,
-        681799,
-        616874,
-        1954375,
-        1685476,
-        620091,
-        1704408,
-        659926,
-        588969,
-        1771962,
-        2077008,
-        596941,
-        1643292,
-        576645,
-        1013775,
-        964355,
-        1843841,
-        603216,
-        1826297,
-        616508,
-        579652,
-        607029,
-        581956
+        1800794,
+        2297760,
+        1795560,
+        626474,
+        624222,
+        574326,
+        1710709,
+        587580,
+        677350,
+        603528,
+        610547,
+        1677215,
+        641921,
+        1740915,
+        630364,
+        630957,
+        616010,
+        631069,
+        1651494,
+        644360,
+        1085980,
+        647718,
+        623426,
+        594731,
+        622382,
+        2129409,
+        1844111,
+        617336,
+        559166,
+        1744364,
+        1707650,
+        1769702,
+        573435,
+        620555,
+        595901,
+        1843043,
+        1717323,
+        1696813,
+        1973803,
+        607585,
+        588312,
+        1935738,
+        1699213,
+        611969,
+        865650,
+        1732687,
+        603126,
+        1189565,
+        1826209,
+        817594,
+        640134
       ]
     },
     "Rust": {
-      "median_ns": 842689,
-      "p10_ns": 750494.0,
-      "p90_ns": 2069359.0,
-      "min_ns": 729460,
-      "max_ns": 2239370,
+      "median_ns": 825011,
+      "p10_ns": 742852.0,
+      "p90_ns": 2022211.0,
+      "min_ns": 719831,
+      "max_ns": 2503480,
       "samples_ns": [
-        757884,
-        1963749,
-        1870683,
-        842689,
-        803145,
-        1776225,
-        1833088,
-        988220,
-        795509,
-        792935,
-        824365,
-        1793549,
-        1879444,
-        750494,
-        746480,
-        1116972,
-        2222468,
-        875804,
-        798705,
-        775795,
-        1951574,
-        796938,
-        729460,
-        2111683,
-        798698,
-        820362,
-        794802,
-        2161316,
-        1805616,
-        1863174,
-        775607,
-        822577,
-        731513,
-        755347,
-        1966140,
-        906639,
-        785422,
-        2077395,
-        1425261,
-        852437,
+        819069,
+        1906395,
+        1928857,
+        2503480,
+        812556,
+        729637,
+        1858306,
+        2157024,
+        749975,
+        743347,
+        1887305,
+        962867,
+        783086,
         742852,
-        777226,
-        2069359,
-        1912072,
-        1824671,
-        825352,
-        2239370,
-        768142,
-        764249,
-        746329,
-        1905547
+        773980,
+        1344351,
+        1862289,
+        772883,
+        771363,
+        745513,
+        1267065,
+        779477,
+        739344,
+        1865337,
+        1804554,
+        1126980,
+        1061719,
+        782559,
+        719831,
+        806453,
+        798658,
+        780376,
+        727283,
+        745257,
+        795316,
+        775075,
+        2022211,
+        1963816,
+        1095330,
+        825011,
+        722597,
+        2137860,
+        959212,
+        1902969,
+        778888,
+        2001045,
+        767425,
+        2333543,
+        868057,
+        2084993,
+        1006973
       ]
     },
     "Python": {
-      "median_ns": 17584994,
-      "p10_ns": 17009636.0,
-      "p90_ns": 19061027.0,
-      "min_ns": 16721201,
-      "max_ns": 20603660,
+      "median_ns": 17638459,
+      "p10_ns": 17021530.0,
+      "p90_ns": 18926486.0,
+      "min_ns": 16825637,
+      "max_ns": 21234654,
       "samples_ns": [
-        16951215,
-        16812169,
-        16721201,
-        18202962,
-        19179071,
-        18130888,
-        18254795,
-        17466662,
-        17580194,
-        17584994,
-        17351935,
-        17468212,
-        17424396,
-        17363598,
-        17516562,
-        18113578,
-        19049714,
-        18960812,
-        19061027,
-        17578613,
-        17596453,
-        17634037,
-        17678395,
-        18611368,
-        17970588,
-        17699100,
-        17202621,
-        16884036,
-        17108805,
-        17852164,
-        17555714,
-        17415238,
-        17168402,
-        17009636,
-        17646078,
-        17592082,
-        19685936,
-        19567794,
-        20603660,
-        18125749,
-        17673331,
-        17170336,
-        17215607,
-        18524365,
-        17700305,
-        17405087,
-        19112714,
-        17098256,
-        16948266,
-        17093708,
-        17043295
+        18222077,
+        21234654,
+        18824736,
+        18926486,
+        17521424,
+        17877561,
+        17526018,
+        17092384,
+        17437081,
+        17711028,
+        17610796,
+        19626408,
+        17388954,
+        17638459,
+        17014907,
+        17265693,
+        17167625,
+        17457622,
+        17573963,
+        17481742,
+        17503921,
+        17570202,
+        17329731,
+        17113483,
+        18125105,
+        16825637,
+        17540915,
+        16997210,
+        17021530,
+        18523576,
+        17682042,
+        17436544,
+        17059007,
+        17034310,
+        16948195,
+        16859535,
+        17707772,
+        17829849,
+        18044583,
+        17997518,
+        20397347,
+        17976213,
+        18707984,
+        17861560,
+        17896325,
+        19409472,
+        18351191,
+        18834515,
+        17758838,
+        19856798,
+        17976025
       ]
     }
   },
   "index": {
     "Ramos": {
-      "score": 19.933836566074117,
+      "score": 40.8180312764517,
       "bootstrap_95pct": [
-        19.731885292422476,
-        20.494183348233967
+        40.28161161154393,
+        41.253455792930765
       ]
     },
     "C": {
@@ -2705,17 +2334,17 @@
       ]
     },
     "Rust": {
-      "score": 119.03527746599786,
+      "score": 119.76679349311186,
       "bootstrap_95pct": [
-        117.53776687107631,
-        120.5651240600422
+        118.35308095380799,
+        121.1607130303546
       ]
     },
     "Python": {
-      "score": 2.527301415617434,
+      "score": 2.525301563086647,
       "bootstrap_95pct": [
-        2.4949750330709684,
-        2.5587699298736344
+        2.483069620100078,
+        2.552125953074512
       ]
     }
   }

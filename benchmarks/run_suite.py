@@ -206,6 +206,7 @@ def report_markdown(data):
               f"- Work counts calibrated until both C and Rust took at least about "
               f"{data['settings']['target_native_ms']:g} ms in the calibration probes. "
               'The same count is then held fixed for all languages.',
+              '- This 0.7.1 run reuses the recorded 0.7.0 work counts; it does not recalibrate for the optimizer.',
               f"- Pinned to logical CPU {data['environment']['pinned_cpu']}; Python `perf_counter_ns` wall clock.",
               '- Shared virtual machine; CPU frequency, other tenants and background activity are '
               'not controlled. Warm filesystem caches; no Windows performance claim.',
@@ -213,7 +214,7 @@ def report_markdown(data):
               'C/Rust/Ramos binaries are built before execution timing.',
               '- GCC: `-O3 -std=c11`, with checked add/subtract/multiply builtins and explicit byte bounds.',
               '- Rust: `-C opt-level=3 -C overflow-checks=yes -C panic=abort`; safe byte indexing/conversion.',
-              '- Ramos: default unoptimized 0.7 native backend; arithmetic, buffer and call-depth checks '
+              '- Ramos: default 0.7.1 native backend with local instruction selection optimizations; arithmetic, buffer and call-depth checks '
               'retained. Python integers stay within signed 64-bit range for these inputs. '
               'C/Rust can eliminate provably redundant checks; Python has no Ramos-style call-depth '
               'or byte arena limit. Limits are not reached by the suite.', '',
@@ -226,7 +227,7 @@ def report_markdown(data):
               '## Builds and output size (excluded from index)', '',
               'Median of three builds per task, including compiler startup and linking/publication. '
               'The table shows geometric means across tasks. It is not a general compiler throughput '
-              'ranking: source sizes differ and C/Rust enable optimization while Ramos does not. '
+              'ranking: source sizes differ, and C/Rust use broader optimizers than the local Ramos emitter. '
               'Python is run as source and has no native binary in this experiment. Sizes are '
               'unstripped compiler outputs with different standard-library/linkage choices.', '',
               '| Language | Build time | Native binary size | Source size |', '|---|---:|---:|---:|']
@@ -244,10 +245,11 @@ def report_markdown(data):
     lines += ['', '## Next work for Ramos', '',
               '1. Profile the largest native gaps before adding an optimization pass: ' +
               ', '.join(f"{t['description']} ({t['timings']['Ramos']['median_ns'] / t['timings']['C']['median_ns']:.1f}× C time)"
-                        for t in slowest) + '. Investigate buffer-access calls, stack temporaries and '
-              'constant arithmetic. Preserve overflow/bounds diagnostics; remove checks only when proven redundant.',
+                        for t in slowest) + '. Version 0.7.1 already reduces buffer-call and stack traffic '
+              'and specializes constant arithmetic. Further changes need their own measurements.',
               '2. Compare each optimizer change against these exact work counts and compiler hashes, '
-              'with fresh samples, language correctness tests and both self-hosting proofs.',
+              'with fresh samples, language correctness tests and both self-hosting proofs. '
+              'See [the paired 0.7.0/0.7.1 comparison](optimization.md).',
               '3. Measure native Windows separately, then extend the suite with real file-processing '
               'programs. Keep syntax small while improving generated code.', '',
               '![Overall index and task ratios](score.png)', '',
@@ -382,7 +384,8 @@ def main():
             'compiler_sha256': hashlib.sha256(compiler.read_bytes()).hexdigest(), 'environment': environment,
             'settings': {'samples': args.samples, 'target_native_ms': args.target_native_ms,
                          'warmups': 2, 'random_seed': 7012026, 'index_reference': 'C=100',
-                         'equal_task_weights': True, 'startup_in_index': False},
+                         'equal_task_weights': True, 'startup_in_index': False,
+                         'fixed_baseline_work_counts': bool(args.work_counts)},
             'tasks': task_results, 'startup': startup, 'index': scores(task_results)}
     (output / 'results.json').write_text(json.dumps(data, indent=2) + '\n')
     (output / 'report.md').write_text(report_markdown(data))
