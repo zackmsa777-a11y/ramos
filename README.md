@@ -69,6 +69,8 @@ and recovery. Python is only a test/proof harness.
 
 The language keeps its core rules: **simple syntax and fast native execution**.
 New performance claims require measurements; native output alone is not a benchmark.
+The [application-language roadmap](docs/roadmap-1.0.md) sets the next milestones,
+working examples and release checks under those rules.
 
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
