@@ -1,0 +1,22 @@
+{
+  "version": "0.10.0",
+  "source_sha256": "144ae1e3da2cf7727d7e52ffcd1f2842f96b25dece97f048e3e999e57d4497ad",
+  "linux_test_count": 144,
+  "new_value_test_count": 23,
+  "benchmark_correctness": {
+    "programs": 36,
+    "input_cases_per_program": 9,
+    "timings_updated": false
+  },
+  "streaming_probe": {
+    "lines": 100000,
+    "characters": 25600000,
+    "longest": 256
+  },
+  "upgrade_from_0_9": {
+    "old_compiler_sha256": "248f90d4918470c78eb708e44cf13d51b0b99416d1802509ce53bb8fe6042b6e",
+    "old_compiler_builds_new_source": true,
+    "upgraded_compiler_rebuild_matches_stage2": true
+  },
+  "rollback": "Use the v0.9.0 tag or its native release binary; no persistent format migration is introduced."
+}

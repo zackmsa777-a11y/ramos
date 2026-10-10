@@ -14,7 +14,9 @@ KERNEL = ['GetStdHandle', 'WriteFile', 'ExitProcess', 'VirtualAlloc',
           'MoveFileExW', 'DeleteFileW', 'GetCommandLineW', 'SetConsoleOutputCP']
 BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'arg', 'read_file', 'write_file', 'io_error', 'stderr', 'process_exit', 'platform',
-            'read_line', 'stdin_eof', 'int_to_text', 'text_to_int', 'parse_error']
+            'read_line', 'stdin_eof', 'int_to_text', 'text_to_int', 'parse_error', 'collect', 'memory_used', 'string_from_bytes', 'string_to_bytes', 'string_len', 'string_slice',
+            'array_new', 'array_len', 'array_get', 'array_set', 'array_resize',
+            'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty']
 ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print']
 
 

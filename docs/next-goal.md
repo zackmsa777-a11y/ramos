@@ -9,11 +9,16 @@ The next approved slice shipped as **0.9**: buffered fallible stdin input,
 EOF checks and signed integer/text conversion with independent parse status.
 See [the semantics and example](input-text.md).
 
-Remaining candidates for a new goal:
+The first three developer-feedback priorities ship as **0.10**: immutable UTF-8
+strings, automatic reclamation, structs and typed arrays. See [values.md](values.md).
 
-1. Imports and a small reusable standard library to reduce manual buffer code.
-2. Evaluate else-if, a for form, checked shifts, floats and larger limits against
-   real programs before adding syntax or implementation cost.
+Remaining priorities, in the feedback's order:
+
+1. Syntax conveniences: else-if, range for, assignment shortcuts and a reviewed call-depth limit.
+2. Imports and a small standard library written in Ramos.
+3. Floats for graphics and numerical programs.
+4. Source-line/caret diagnostics, formatting and assembly output tooling.
+5. Further optimization only after useful programs identify measured costs.
 
 The benchmark index measures execution speed, not language quality. The user's
 8/10 project and roughly 4/10 practical-language assessment is useful feedback,

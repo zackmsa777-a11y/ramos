@@ -1,4 +1,4 @@
-# Ramos 0.9 — self-hosted compiler for Linux and Windows
+# Ramos 0.10 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,12 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.10 adds immutable UTF-8 `string` values, automatic reclamation of
+unused memory, mutable structs and typed arrays on both native targets. Old byte
+literals and APIs stay compatible. The native corpus passes 144 Linux tests and
+94 Windows tests. See [the value and memory contracts](docs/values.md) and
+[the streaming text tool](examples/line_stats.ramos).
 
 Version 0.9 adds buffered stdin line input and signed integer/text conversion,
 with separate EOF, I/O and parse status checks. The native validation corpus
@@ -95,7 +101,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.9.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.10.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -128,7 +134,7 @@ fn main() {
 ```
 
 - Exactly one parameterless `main` returning void is required. Other top-level
-  functions may appear before or after it.
+  functions and structs may appear before or after it.
 - `print` accepts a string literal, buffer, integer expression, or boolean expression
   and adds a newline. Booleans print as `true` or `false`.
 - Integer expressions support `+`, `-`, `*`, `/`, `%`, unary `+`/`-`, and
@@ -139,14 +145,14 @@ fn main() {
   `-9223372036854775808` is accepted as a directly negated literal; its positive
   magnitude cannot be used as an ordinary positive literal.
 - `let` declares an immutable binding; `var` declares a mutable
-  binding. Every binding must have an initializer. `int64`, `bool`, and `bytes` types
+  binding. Every binding must have an initializer. `int64`, `bool`, `bytes`, `string`, struct and array types
   are inferred and fixed for the lifetime of the binding.
-- Assignment is supported only for `var`. Names must be declared before use;
+- Binding reassignment is supported only for `var`; fields and array elements can be mutated through `let`. Names must be declared before use;
   duplicate declarations in the same block are errors. Inner blocks may
   shadow outer names, and their bindings are invisible after the block ends.
   Identifiers use ASCII letters,
   underscores, and digits, with a letter or underscore first. Keywords are
-  reserved. String-valued bindings hold mutable byte buffers.
+  reserved. `"..."` produces bytes; `s"..."` produces immutable UTF-8 strings.
 - Separate statements with newlines; the final statement may directly precede
   `}`. Newlines after operators and opening parentheses are allowed. Semicolons
   are not implemented. Comments use `//` or non-nesting `/* ... */`; newlines
@@ -176,13 +182,13 @@ fn main() {
 
 - `true` and `false` are distinct boolean literals; `!` negates a boolean.
 - `<`, `<=`, `>`, and `>=` compare signed integers. `==` and `!=` compare
-  two integers or two booleans. Mixing types is a compile-time error.
+  two integers, two booleans or two strings. Mixing types is a compile-time error.
 - `&&` and `||` require booleans and short-circuit left to right; skipped operands
   still undergo type checking.
 - From lowest to highest precedence: `||`, `&&`, equality, ordering, addition/subtraction,
   multiplication/division/remainder, unary signs/`!`, and primary expressions.
   Operators at one level associate left to right. `1 < 2 < 3` is rejected;
-  combine pairwise comparisons with `&&`. Arithmetic requires integers.
+  combine pairwise comparisons with `&&`. Arithmetic requires integers; `+` also concatenates strings.
 - `if condition { ... } else { ... }` and `while condition { ... }` require
   a boolean condition. `else` is optional and may follow on a new line.
   Branches use braces, including for a nested `if` in an `else` body.
@@ -192,7 +198,7 @@ fn main() {
   iteration limit. Code in skipped branches is type-checked but not executed.
 - Bindings initialize whenever execution reaches their declaration. A shadowing
   initializer can refer to the outer binding. Blocks do not expose their locals.
-- `&&`, `||`, `else if`, and `for` are not implemented.
+- `else if` and `for` are not implemented.
   Separate statements with newlines, including after a compound statement.
 
 Run `make control-flow` for a native Fibonacci/loop example.
@@ -218,8 +224,8 @@ fn announce() {
 }
 ```
 
-Parameters require `int64`, `bool`, or `bytes` annotations and are immutable. A result
-annotation is `-> int64`, `-> bool`, `-> bytes`, or `-> void`; omitting it means void.
+Parameters require non-void type annotations and their bindings are immutable.
+Results can declare any value type or `void`; omitting the result means void.
 Calls evaluate arguments left to right and require exactly matching types and
 argument counts. Functions may call later definitions, themselves or each other.
 A lexical binding can shadow a function name; that name then cannot be called.
@@ -259,12 +265,33 @@ bytes; reads return 0..255 and writes accept only that range. String literals
 in expressions allocate fresh buffers. Bindings and function values alias their
 buffer; `let` protects the binding while allowing content changes.
 
-Buffers live until process exit in a bounded 16 MiB arena, with at most 1 MiB
-payload per buffer. Descriptors and alignment count toward the arena limit.
-Invalid sizes, indices, byte values or failed allocation report a runtime error
-and exit 1. There is no freeing or resizing in this milestone. Direct string
-literal printing avoids allocation. Run `make buffers` to scan stored source
-text and return a buffer from a function. See [buffer semantics](docs/buffers.md).
+Buffers share the reclaiming heap with strings, structs and arrays: 16 MiB of
+allocated blocks plus an 8 MiB ownership map, and at most 1 MiB per payload.
+Metadata and alignment count toward the heap limit. Invalid sizes, indices,
+byte values or allocation failures report a runtime error and exit 1.
+Unreachable allocations can be collected automatically or with `collect()`.
+See [buffer semantics](docs/buffers.md).
+
+## Strings, structs and arrays
+
+```ramos
+struct Point { x: int64, y: int64 }
+fn main() {
+    let title = s"Hello, " + s"🌍"
+    print(title)
+    print(slice(title, 7, 8))
+    let points = array(Point, 2, Point(0, 0))
+    points[1] = Point(3, 4)
+    print(points[1].x)
+}
+```
+
+Strings support concatenation, content equality, Unicode scalar length and
+slicing. `string(bytes)` validates/copies UTF-8; `to_bytes(string)` makes a mutable
+copy. Structs and arrays are typed mutable references; assigning them aliases
+their contents. `array_resize` returns a fresh resized array. The runtime reclaims
+unreachable values, including cycles, while keeping active values valid.
+See [the complete contracts and limits](docs/values.md).
 
 ## Arithmetic behavior
 
@@ -362,13 +389,14 @@ from signed overflow. See [the full contract](docs/input-text.md) and
 
 The self-hosted compiler accepts regular source files up to 1 MiB, at most 50,000
 tokens including EOF, 4,096 total declarations including parameters and ended
-blocks, 256 functions and 16 parameters per function. Expression and block
+blocks, 256 functions and 16 parameters per function. Structs are limited to 64
+types with 16 fields each; array type nesting to 16. Expression and block
 depth remain bounded at 128; generated programs allow 64 active calls.
 Its output and decoded string-data arenas are each 1 MiB; labels and fixups each
 have a 40,000-entry bound. These are checked limits. The retained bootstrap has
 the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).
 
-The compiler is self-hosted; imports, richer collections, wrapping arithmetic,
+The compiler is self-hosted; imports, a standard library, floats, syntax conveniences, wrapping arithmetic,
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
@@ -389,8 +417,8 @@ Startup and build times are reported separately. See the
 and [workload sources](benchmarks/fixtures/). The saved 0.7.0 baseline and
 [interleaved old/new comparison](benchmarks/optimization.md) show a **2.05× overall
 speedup**. Version 0.8 emits [identical benchmark executable bytes](docs/codegen-continuity.json)
-for both targets. Version 0.9 expands the native runtime; the timings above
-remain the recorded 0.7.1 measurements, not a new 0.9 performance claim.
+for both targets. Versions 0.9 and 0.10 expand the native runtime; the timings above
+remain the recorded 0.7.1 measurements, not a current-version performance claim.
 
 ```sh
 make

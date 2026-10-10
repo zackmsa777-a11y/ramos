@@ -79,6 +79,9 @@ fn type_name(t: int64) -> bytes {
     if t == 0 { return "int64" }
     if t == 1 { return "bool" }
     if t == 3 { return "bytes" }
+    if t == 4 { return "string" }
+    if t >= 100000 { return "array" }
+    if t >= 1000 { return "struct" }
     return "void"
 }
 fn concat(a: bytes, b: bytes) -> bytes {
@@ -164,8 +167,8 @@ fn utf8(s: bytes, c: bytes) {
     set(c, 15, 0)
 }
 fn lex(s: bytes, c: bytes) {
-    let words = "fn main print let var true false if else while break continue return int64 bool void bytes "
-    let kinds = buffer(17)
+    let words = "fn main print let var true false if else while break continue return int64 bool void bytes string struct "
+    let kinds = buffer(19)
     buffer_set(kinds, 0, 2)
     buffer_set(kinds, 1, 3)
     buffer_set(kinds, 2, 4)
@@ -183,11 +186,13 @@ fn lex(s: bytes, c: bytes) {
     buffer_set(kinds, 14, 40)
     buffer_set(kinds, 15, 41)
     buffer_set(kinds, 16, 42)
+    buffer_set(kinds, 17, 45)
+    buffer_set(kinds, 18, 46)
     var i = 0
     while i < buffer_len(s) {
         let start = i
         set(c, 15, start + 1)
-        let v = buffer_get(s, i)
+        var v = buffer_get(s, i)
         var t = 10
         i = i + 1
         if v == 32 { continue }
@@ -239,6 +244,11 @@ fn lex(s: bytes, c: bytes) {
             i = i + 1
             t = 1
         }
+        if v == 115 { if i < buffer_len(s) { if buffer_get(s, i) == 34 {
+            v = 34
+            i = i + 1
+            t = 50
+        } } }
         if letter(v) {
             while i < buffer_len(s) {
                 let w = buffer_get(s, i)
@@ -272,7 +282,7 @@ fn lex(s: bytes, c: bytes) {
                 }
             } else {
                 if v == 34 {
-                    t = 9
+                    if t != 50 { t = 9 }
                     var closed = false
                     while i < buffer_len(s) {
                         let w = buffer_get(s, i)
@@ -306,6 +316,9 @@ fn lex(s: bytes, c: bytes) {
                     if v == 62 { t = 33 }
                     if v == 58 { t = 35 }
                     if v == 44 { t = 36 }
+                    if v == 46 { t = 47 }
+                    if v == 91 { t = 48 }
+                    if v == 93 { t = 49 }
                     if i < buffer_len(s) {
                         let w = buffer_get(s, i)
                         if w == 61 {
@@ -340,6 +353,101 @@ fn lex(s: bytes, c: bytes) {
 }
 fn field(c: bytes, n: int64, p: int64) -> int64 { return get(c, 256 + n * 256 + p) }
 fn fset(c: bytes, n: int64, p: int64, v: int64) { put(c, 256 + n * 256 + p, v) }
+fn record(c: bytes, n: int64, p: int64) -> int64 { return get(c, 857000 + n * 512 + p) }
+fn rset(c: bytes, n: int64, p: int64, value: int64) { put(c, 857000 + n * 512 + p, value) }
+fn record_find(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
+    var i = 0
+    while i < g(c, 20) {
+        if same(s, a, n, record(c, i, 0), record(c, i, 4)) { return i }
+        i = i + 1
+    }
+    return -1
+}
+fn record_field(s: bytes, c: bytes, t: int64) -> int64 {
+    if t < 1000 { fail(s, c, "field access requires a struct") }
+    if t >= 100000 { fail(s, c, "field access requires a struct") }
+    if tk(c) != 11 { fail(s, c, "expected struct field name") }
+    var i = 0
+    while i < record(c, t - 1000, 8) {
+        if same(s, off(c), length(c), record(c, t - 1000, 32 + i * 20), record(c, t - 1000, 36 + i * 20)) { return i }
+        i = i + 1
+    }
+    fail(s, c, "unknown struct field")
+    return 0
+}
+fn records(s: bytes, c: bytes) {
+    while true {
+        skip(c)
+        if tk(c) == 0 { break }
+        if tk(c) == 46 {
+            let start = g(c, 0)
+            next(c)
+            skip(c)
+            if tk(c) != 11 { fail(s, c, "expected struct name") }
+            let a = off(c)
+            let n = length(c)
+            if record_find(s, c, a, n) >= 0 { fail(s, c, "duplicate struct name") }
+            if builtin(s, a, n) >= 0 { fail(s, c, "reserved intrinsic name") }
+            let id = g(c, 20)
+            if id >= 64 { limit(s, c) }
+            rset(c, id, 0, a)
+            rset(c, id, 4, n)
+            rset(c, id, 12, start)
+            set(c, 20, id + 1)
+            next(c)
+            expect(s, c, 7)
+            rset(c, id, 20, g(c, 0))
+            while tk(c) != 8 {
+                if tk(c) == 0 { fail(s, c, "expected '}' to close struct") }
+                next(c)
+            }
+            next(c)
+            rset(c, id, 16, g(c, 0))
+        } else {
+            expect(s, c, 2)
+            while tk(c) != 7 {
+                if tk(c) == 0 { fail(s, c, "expected function body") }
+                next(c)
+            }
+            var depth = 1
+            next(c)
+            while depth > 0 {
+                if tk(c) == 0 { fail(s, c, "expected '}' to close function body") }
+                if tk(c) == 7 { depth = depth + 1 }
+                if tk(c) == 8 { depth = depth - 1 }
+                next(c)
+            }
+        }
+    }
+    var id = 0
+    while id < g(c, 20) {
+        set(c, 0, record(c, id, 20))
+        skip(c)
+        var i = 0
+        while tk(c) != 8 {
+            if tk(c) != 11 { fail(s, c, "expected field name") }
+            if i >= 16 { limit(s, c) }
+            var j = 0
+            while j < i {
+                if same(s, off(c), length(c), record(c, id, 32 + j * 20), record(c, id, 36 + j * 20)) { fail(s, c, "duplicate struct field") }
+                j = j + 1
+            }
+            rset(c, id, 32 + i * 20, off(c))
+            rset(c, id, 36 + i * 20, length(c))
+            next(c)
+            expect(s, c, 35)
+            let ft = type(s, c)
+            if ft == 2 { fail(s, c, "struct field cannot have type void") }
+            rset(c, id, 40 + i * 20, ft)
+            i = i + 1
+            if tk(c) != 8 { if tk(c) != 1 { expect(s, c, 36) } }
+            skip(c)
+        }
+        rset(c, id, 8, i)
+        id = id + 1
+    }
+    set(c, 0, 0)
+}
 fn builtin(s: bytes, a: int64, n: int64) -> int64 {
     if matches(s, a, n, "buffer") { return 256 }
     if matches(s, a, n, "buffer_len") { return 257 }
@@ -358,6 +466,18 @@ fn builtin(s: bytes, a: int64, n: int64) -> int64 {
     if matches(s, a, n, "int_to_text") { return 270 }
     if matches(s, a, n, "text_to_int") { return 271 }
     if matches(s, a, n, "parse_error") { return 272 }
+    if matches(s, a, n, "collect") { return 273 }
+    if matches(s, a, n, "memory_used") { return 274 }
+    if matches(s, a, n, "string") { return 275 }
+    if matches(s, a, n, "to_bytes") { return 276 }
+    if matches(s, a, n, "len") { return 277 }
+    if matches(s, a, n, "slice") { return 278 }
+    if matches(s, a, n, "array") { return 279 }
+    if matches(s, a, n, "array_len") { return 280 }
+    if matches(s, a, n, "array_get") { return 281 }
+    if matches(s, a, n, "array_set") { return 282 }
+    if matches(s, a, n, "array_resize") { return 283 }
+    if matches(s, a, n, "array_empty") { return 289 }
     return -1
 }
 fn find(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
@@ -366,9 +486,12 @@ fn find(s: bytes, c: bytes, a: int64, n: int64) -> int64 {
         if same(s, a, n, field(c, i, 0), field(c, i, 4)) { return i }
         i = i + 1
     }
+    let r = record_find(s, c, a, n)
+    if r >= 0 { return 512 + r }
     return builtin(s, a, n)
 }
 fn arity(c: bytes, f: int64) -> int64 {
+    if f >= 512 { return record(c, f - 512, 8) }
     if f < 256 { return field(c, f, 8) }
     if f == 260 { return 0 }
     if f == 264 { return 0 }
@@ -376,12 +499,20 @@ fn arity(c: bytes, f: int64) -> int64 {
     if f == 268 { return 0 }
     if f == 269 { return 0 }
     if f == 272 { return 0 }
+    if f == 273 { return 0 }
+    if f == 274 { return 0 }
     if f == 258 { return 2 }
     if f == 259 { return 3 }
     if f == 263 { return 3 }
+    if f == 278 { return 3 }
+    if f == 279 { return 3 }
+    if f == 281 { return 2 }
+    if f == 282 { return 3 }
+    if f == 283 { return 3 }
     return 1
 }
 fn result_type(c: bytes, f: int64) -> int64 {
+    if f >= 512 { return 1000 + f - 512 }
     if f < 256 { return field(c, f, 12) }
     if f == 256 { return 3 }
     if f == 261 { return 3 }
@@ -392,14 +523,24 @@ fn result_type(c: bytes, f: int64) -> int64 {
     if f == 259 { return 2 }
     if f == 265 { return 2 }
     if f == 266 { return 2 }
+    if f == 273 { return 2 }
+    if f == 275 { return 4 }
+    if f == 276 { return 3 }
+    if f == 278 { return 4 }
+    if f == 282 { return 2 }
     return 0
 }
 fn arg_type(c: bytes, f: int64, i: int64) -> int64 {
+    if f >= 512 { return record(c, f - 512, 40 + i * 20) }
     if f < 256 { return field(c, f, 64 + i * 12 + 8) }
     if f == 256 { return 0 }
     if f == 261 { return 0 }
     if f == 266 { return 0 }
     if f == 270 { return 0 }
+    if f == 276 { return 4 }
+    if f == 277 { return 4 }
+    if f == 278 { if i == 0 { return 4 }
+        return 0 }
     if f == 263 { if i == 2 { return 0 }
         return 3 }
     if i == 0 { return 3 }
@@ -407,22 +548,46 @@ fn arg_type(c: bytes, f: int64, i: int64) -> int64 {
 }
 fn type(s: bytes, c: bytes) -> int64 {
     skip(c)
-    let t = tk(c)
-    let position = off(c)
+    var depth = 0
+    while tk(c) == 48 {
+        depth = depth + 1
+        if depth > 16 { limit(s, c) }
+        next(c)
+        skip(c)
+    }
+    let token_kind = tk(c)
+    var t = -1
+    if token_kind == 39 { t = 0 }
+    if token_kind == 40 { t = 1 }
+    if token_kind == 41 { t = 2 }
+    if token_kind == 42 { t = 3 }
+    if token_kind == 45 { t = 4 }
+    if token_kind == 11 {
+        let r = record_find(s, c, off(c), length(c))
+        if r >= 0 { t = 1000 + r }
+    }
+    if t < 0 { fail(s, c, "expected type: int64, bool, bytes, string, struct, array or void") }
     next(c)
-    if t == 39 { return 0 }
-    if t == 40 { return 1 }
-    if t == 41 { return 2 }
-    if t == 42 { return 3 }
-    set(c, 15, position + 1)
-    fail(s, c, "expected type: int64, bool, bytes or void")
-    return 2
+    while depth > 0 {
+        if t == 2 { fail(s, c, "array element cannot have type void") }
+        expect(s, c, 49)
+        t = t + 100000
+        depth = depth - 1
+    }
+    return t
 }
 fn discover(s: bytes, c: bytes) {
     set(c, 3, -1)
     while true {
         skip(c)
         if tk(c) == 0 { break }
+        if tk(c) == 46 {
+            next(c)
+            skip(c)
+            let r = record_find(s, c, off(c), length(c))
+            set(c, 0, record(c, r, 16))
+            continue
+        }
         expect(s, c, 2)
         skip(c)
         if tk(c) != 11 { if tk(c) != 3 { bad(s, c) } }
@@ -629,9 +794,11 @@ fn push_op(s: bytes, c: bytes, t: int64, fnid: int64) {
     op_set(c, n, 8, 0)
     op_set(c, n, 12, g(c, 12))
     op_set(c, n, 16, off(c))
+    op_set(c, n, 20, 0)
     set(c, 11, n + 1)
     if t == 5 { set(c, 13, g(c, 13) + 1) }
     if t == 6 { set(c, 13, g(c, 13) + 1) }
+    if t == 48 { set(c, 13, g(c, 13) + 1) }
     if t >= 100 { set(c, 13, g(c, 13) + 1) }
     if g(c, 13) >= 128 { limit(s, c) }
 }
@@ -782,6 +949,19 @@ fn apply(s: bytes, c: bytes, o: bytes, f: bytes) {
         typed(s, c, 1)
         return }
     if left != right { operator_error(s, c, n, "operands must have matching types") }
+    if left == 4 {
+        if t != 13 { if t != 29 { if t != 30 { operator_error(s, c, n, "strings support +, == and !=") } } }
+        consume(s, c, o, 1)
+        consume(s, c, o, 0)
+        emit(s, c, o, 232)
+        if t == 13 { relative(s, c, o, native_builtin(c, 28)) }
+        else { relative(s, c, o, native_builtin(c, 29)) }
+        if t == 30 { hex(s, c, o, "4883f001") }
+        value_push(s, c, o)
+        if t == 13 { typed(s, c, 4) }
+        else { typed(s, c, 1) }
+        return
+    }
     if t == 29 { if left != 0 { if left != 1 { operator_error(s, c, n, "equality requires int64 or bool operands") } }
         compare_emit(s, c, o, constant)
         hex(s, c, o, "0f94c0480fb6c0")
@@ -862,10 +1042,16 @@ fn literal(s: bytes, c: bytes, o: bytes) {
     typed(s, c, 0)
     next(c)
 }
-fn string(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
+fn byte_literal(t: int64) -> bool { if t == 9 { return true }
+    return t == 50 }
+fn callable(t: int64) -> bool { if t == 11 { return true }
+    return t == 45 }
+fn string_literal(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
     let start = g(c, 14)
+    let kind = tk(c)
     var p = off(c) + 1
     let end = p + length(c) - 2
+    if kind == 50 { p = p + 1 }
     while p < end {
         var v = buffer_get(s, p)
         p = p + 1
@@ -889,12 +1075,20 @@ fn string(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
     emit(s, c, o, 232)
     relative(s, c, o, native_address(c, 2))
     value_push(s, c, o)
-    typed(s, c, 3)
+    if kind == 50 { typed(s, c, 4) }
+    else { typed(s, c, 3) }
     next(c)
 }
 fn call_emit(s: bytes, c: bytes, o: bytes, f: bytes, fnid: int64) {
     let n = arity(c, fnid)
-    if fnid >= 256 {
+    if fnid >= 512 {
+        hex(s, c, o, "4889e648b8")
+        number(s, c, o, n, 8)
+        emit(s, c, o, 232)
+        relative(s, c, o, native_builtin(c, 30))
+        if n > 0 { hex(s, c, o, "4881c4")
+            number(s, c, o, n * 8, 4) }
+    } else { if fnid >= 256 {
         if n == 3 { consume(s, c, o, 2) }
         if n >= 2 { consume(s, c, o, 1) }
         if n >= 1 { consume(s, c, o, 0) }
@@ -925,16 +1119,35 @@ fn call_emit(s: bytes, c: bytes, o: bytes, f: bytes, fnid: int64) {
             number(s, c, o, n * 8, 4)
         }
     }
+    }
     value_push(s, c, o)
     typed(s, c, result_type(c, fnid))
 }
+fn type_argument(f: int64) -> bool { if f == 279 { return true }
+    return f == 289 }
 fn argument(s: bytes, c: bytes, n: int64) {
     let f = op(c, n, 4)
     let i = op(c, n, 8)
     if i >= arity(c, f) { fail(s, c, "too many function arguments") }
     if g(c, 12) != op(c, n, 12) + 1 { bad(s, c) }
     let t = pop_type(s, c)
-    if t != arg_type(c, f, i) { type_error(s, c, arg_type(c, f, i), t) }
+    var expected_type = arg_type(c, f, i)
+    if f == 289 { expected_type = -3 }
+    if f == 279 {
+        if i == 0 { expected_type = -3 }
+        if i == 1 { expected_type = 0 }
+        if i == 2 { expected_type = op(c, n, 20) - 100000 }
+    }
+    if f >= 280 { if f <= 283 {
+        if i == 0 {
+            if t < 100000 { fail(s, c, "expected typed array") }
+            op_set(c, n, 20, t)
+            expected_type = t
+        }
+        if i == 1 { expected_type = 0 }
+        if i == 2 { expected_type = op(c, n, 20) - 100000 }
+    } }
+    if t != expected_type { type_error(s, c, expected_type, t) }
     op_set(c, n, 8, i + 1)
 }
 fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
@@ -947,6 +1160,21 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
     while true {
         let t = tk(c)
         if wanted {
+            if g(c, 11) > 0 {
+                let top = g(c, 11) - 1
+                if op(c, top, 0) == 6 { if type_argument(op(c, top, 4)) { if op(c, top, 8) == 0 {
+                    let element = type(s, c)
+                    if element == 2 { fail(s, c, "array element cannot have type void") }
+                    if element >= 1600000 { limit(s, c) }
+                    op_set(c, top, 20, element + 100000)
+                    hex(s, c, o, "48b8")
+                    number(s, c, o, element, 8)
+                    value_push(s, c, o)
+                    typed(s, c, -3)
+                    wanted = false
+                    continue
+                } } }
+            }
             if t == 13 {
                 push_op(s, c, 113, 0)
                 next(c)
@@ -973,7 +1201,7 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
             }
             if t == 12 { literal(s, c, o) }
             else {
-                if t == 9 { string(s, c, o, d, f) }
+                if byte_literal(t) { string_literal(s, c, o, d, f) }
                 else {
                     if t == 21 {
                         hex(s, c, o, "48b8")
@@ -989,7 +1217,7 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                             typed(s, c, 1)
                             next(c)
                         } else {
-                            if t == 11 {
+                            if callable(t) {
                                 let a = off(c)
                                 let n = length(c)
                                 let sy = symbol(s, c, a, n)
@@ -1023,6 +1251,54 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
             wanted = false
             continue
         }
+        if t == 47 {
+            let record_type = pop_type(s, c)
+            next(c)
+            let index = record_field(s, c, record_type)
+            consume(s, c, o, 0)
+            hex(s, c, o, "48b9")
+            number(s, c, o, index, 8)
+            emit(s, c, o, 232)
+            relative(s, c, o, native_builtin(c, 31))
+            value_push(s, c, o)
+            typed(s, c, record(c, record_type - 1000, 40 + index * 20))
+            next(c)
+            continue
+        }
+        if t == 48 {
+            let array_type = pop_type(s, c)
+            if array_type < 100000 { fail(s, c, "indexing requires a typed array") }
+            push_op(s, c, 48, array_type)
+            next(c)
+            skip(c)
+            wanted = true
+            continue
+        }
+        if t == 49 {
+            while g(c, 11) > 0 {
+                let top = op(c, g(c, 11) - 1, 0)
+                if top == 48 { break }
+                if top == 5 { break }
+                if top == 6 { break }
+                apply(s, c, o, f)
+            }
+            if g(c, 11) == 0 { break }
+            let top = g(c, 11) - 1
+            if op(c, top, 0) != 48 { fail(s, c, "unexpected ']' in expression") }
+            let index_type = pop_type(s, c)
+            if index_type != 0 { type_error(s, c, 0, index_type) }
+            if g(c, 12) != op(c, top, 12) { bad(s, c) }
+            consume(s, c, o, 1)
+            consume(s, c, o, 0)
+            emit(s, c, o, 232)
+            relative(s, c, o, native_builtin(c, 25))
+            value_push(s, c, o)
+            typed(s, c, op(c, top, 4) - 100000)
+            set(c, 11, top)
+            set(c, 13, g(c, 13) - 1)
+            next(c)
+            continue
+        }
         while g(c, 11) > 0 {
             if op(c, g(c, 11) - 1, 0) < 100 { break }
             apply(s, c, o, f)
@@ -1046,6 +1322,7 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                 let top = op(c, g(c, 11) - 1, 0)
                 if top == 5 { break }
                 if top == 6 { break }
+                if top == 48 { fail(s, c, "expected closing bracket for array index") }
                 apply(s, c, o, f)
             }
             if g(c, 11) == 0 { break }
@@ -1054,8 +1331,15 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                 argument(s, c, top)
                 let id = op(c, top, 4)
                 if op(c, top, 8) != arity(c, id) { fail(s, c, "too few function arguments") }
+                let array_type = op(c, top, 20)
                 set(c, 11, top)
                 call_emit(s, c, o, f, id)
+                if type_argument(id) { pop_type(s, c)
+                    typed(s, c, array_type) }
+                if id == 281 { pop_type(s, c)
+                    typed(s, c, array_type - 100000) }
+                if id == 283 { pop_type(s, c)
+                    typed(s, c, array_type) }
             } else {
                 if g(c, 12) != op(c, top, 12) + 1 { bad(s, c) }
                 set(c, 11, top)
@@ -1069,6 +1353,7 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
                 let top = op(c, g(c, 11) - 1, 0)
                 if top == 5 { break }
                 if top == 6 { break }
+                if top == 48 { fail(s, c, "expected closing bracket for array index") }
                 apply(s, c, o, f)
             }
             if g(c, 11) == 0 { break }
@@ -1090,6 +1375,7 @@ fn expression(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) -> int64 {
     while g(c, 11) > 0 {
         let t = op(c, g(c, 11) - 1, 0)
         if t == 5 { fail(s, c, "expected ')' to close expression") }
+        if t == 48 { fail(s, c, "expected closing bracket for array index") }
         if t == 6 { fail(s, c, "expected ')' to close function call") }
         apply(s, c, o, f)
     }
@@ -1110,6 +1396,15 @@ fn enter(s: bytes, c: bytes, kind: int64, a: int64, b: int64, returned: int64) {
     bset(c, i, 20, returned)
     set(c, 10, i + 1)
 }
+fn clear_scope(s: bytes, c: bytes, o: bytes, first: int64) {
+    var i = first
+    while i < g(c, 7) {
+        hex(s, c, o, "48c785")
+        number(s, c, o, -8 * (sym(c, i, 16) + 1), 4)
+        number(s, c, o, 0, 4)
+        i = i + 1
+    }
+}
 fn epilogue(s: bytes, c: bytes, o: bytes, value: bool) {
     if value { consume(s, c, o, 0) }
     else { hex(s, c, o, "31c0") }
@@ -1118,6 +1413,58 @@ fn epilogue(s: bytes, c: bytes, o: bytes, value: bool) {
 fn separator(s: bytes, c: bytes) {
     if tk(c) != 1 { if tk(c) != 8 { fail(s, c, "expected newline or closing brace") } }
     skip(c)
+}
+fn aggregate_assignment(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes, found: int64) {
+    if found < 0 { fail(s, c, "unknown variable") }
+    var current_type = sym(c, found, 8)
+    load(s, c, o, sym(c, found, 16))
+    while true {
+        var element_type = 2
+        var index = 0
+        var indexed = false
+        if tk(c) == 47 {
+            next(c)
+            index = record_field(s, c, current_type)
+            element_type = record(c, current_type - 1000, 40 + index * 20)
+            next(c)
+        } else {
+            if tk(c) != 48 { fail(s, c, "expected field or array index") }
+            if current_type < 100000 { fail(s, c, "indexing requires a typed array") }
+            indexed = true
+            element_type = current_type - 100000
+            next(c)
+            skip(c)
+            let index_type = expression(s, c, o, d, f)
+            if index_type != 0 { type_error(s, c, 0, index_type) }
+            expect(s, c, 49)
+            consume(s, c, o, 1)
+            consume(s, c, o, 0)
+            value_push(s, c, o)
+            emit(s, c, o, 81)
+            set(c, 19, 0)
+        }
+        if tk(c) == 18 {
+            next(c)
+            let value_type = expression(s, c, o, d, f)
+            if value_type != element_type { type_error(s, c, element_type, value_type) }
+            consume(s, c, o, 2)
+            if indexed { consume(s, c, o, 1) }
+            consume(s, c, o, 0)
+            if !indexed { hex(s, c, o, "48b9")
+                number(s, c, o, index, 8) }
+            emit(s, c, o, 232)
+            relative(s, c, o, native_builtin(c, 32))
+            return
+        }
+        if indexed { consume(s, c, o, 1) }
+        consume(s, c, o, 0)
+        if !indexed { hex(s, c, o, "48b9")
+            number(s, c, o, index, 8) }
+        emit(s, c, o, 232)
+        relative(s, c, o, native_builtin(c, 31))
+        value_push(s, c, o)
+        current_type = element_type
+    }
 }
 fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
     var fnid = 0
@@ -1140,6 +1487,13 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
         let frame_patch = g(c, 4)
         number(s, c, o, 0, 4)
         if g(c, 16) == 1 { hex(s, c, o, windows_stack_probe()) }
+        hex(s, c, o, "488dbd")
+        let clear_offset = g(c, 4)
+        number(s, c, o, 0, 4)
+        emit(s, c, o, 185)
+        let clear_count = g(c, 4)
+        number(s, c, o, 0, 4)
+        hex(s, c, o, "31c0f348ab")
         p = 0
         while p < arity(c, fnid) {
             hex(s, c, o, "488b85")
@@ -1159,13 +1513,17 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 let b = block(c, top, 12)
                 let returned = block(c, top, 16)
                 let then_return = block(c, top, 20)
+                clear_scope(s, c, o, block(c, top, 4))
                 set(c, 7, block(c, top, 4))
                 set(c, 10, top)
                 next(c)
                 if kind == 0 {
                     if result_type(c, fnid) != 2 { if returned == 0 { fail(s, c, "function may reach its end without returning") } }
                     epilogue(s, c, o, false)
-                    put(o, frame_patch, ((g(c, 9) * 8 + 15) / 16) * 16)
+                    let frame_size = ((g(c, 9) * 8 + 15) / 16) * 16
+                    put(o, frame_patch, frame_size)
+                    put(o, clear_offset, -frame_size)
+                    put(o, clear_count, frame_size / 8)
                     break
                 }
                 if kind == 1 {
@@ -1231,6 +1589,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     level = level - 1
                 }
                 if level < 0 { fail(s, c, "break and continue require an enclosing while loop") }
+                clear_scope(s, c, o, block(c, level, 4))
                 jump(s, c, o, f, block(c, level, 12))
                 next(c)
                 separator(s, c)
@@ -1243,6 +1602,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     level = level - 1
                 }
                 if level < 0 { fail(s, c, "break and continue require an enclosing while loop") }
+                clear_scope(s, c, o, block(c, level, 4))
                 jump(s, c, o, f, block(c, level, 8))
                 next(c)
                 separator(s, c)
@@ -1274,7 +1634,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 else {
                     if pt == 1 { relative(s, c, o, native_address(c, 4)) }
                     else {
-                        if pt != 3 { fail(s, c, "print requires int64, bool or bytes; a void call has no value") }
+                        if pt != 3 { if pt != 4 { fail(s, c, "print requires int64, bool, bytes or string; a void call has no value") } }
                         relative(s, c, o, native_address(c, 5))
                     }
                 }
@@ -1313,7 +1673,11 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 let saved = g(c, 0)
                 let found = symbol(s, c, off(c), length(c))
                 next(c)
-                if tk(c) == 18 {
+                if tk(c) == 47 {
+                    aggregate_assignment(s, c, o, d, f, found)
+                } else { if tk(c) == 48 {
+                    aggregate_assignment(s, c, o, d, f, found)
+                } else { if tk(c) == 18 {
                     if found < 0 { set(c, 0, saved)
                         fail(s, c, "unknown variable") }
                     if sym(c, found, 12) == 0 { fail(s, c, "cannot assign to an immutable let binding") }
@@ -1337,7 +1701,7 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                     expression(s, c, o, d, f)
                     if g(c, 0) != end { bad(s, c) }
                     consume(s, c, o, 0)
-                }
+                } } }
                 separator(s, c)
                 continue
             }
@@ -1493,7 +1857,7 @@ fn main() {
     let argc = arg_count()
     if argc == 2 {
         let option = arg(1)
-        if equal(option, "--version") { print("Ramos 0.9.0 — compiler written in Ramos; Linux and Windows x64")
+        if equal(option, "--version") { print("Ramos 0.10.0 — compiler written in Ramos; Linux and Windows x64")
             return }
         if equal(option, "--help") { print("Usage: ramos build SOURCE.ramos -o PROGRAM [--force] [--target linux|windows]")
             return }
@@ -1532,6 +1896,7 @@ fn main() {
     if io_error() != 0 { fail(s, c, "cannot read input (readable regular file required; source size limit is 1048576)") }
     utf8(s, c)
     lex(s, c)
+    records(s, c)
     discover(s, c)
     let o = buffer(1048576)
     let d = buffer(1048576)
@@ -1558,67 +1923,101 @@ fn main() {
     if write_file(arg(4), result, flags) != 0 { fail(s, c, "cannot publish output: check existing file, source alias, directory and permissions") }
 }
 
-fn runtime_text() -> bytes { return "bf010000004885d2741ab8010000000f054883f8fc74f34885c07e094801c64829c275e6c3bf01000000b83c0000000f050f0b4883ec20488d74241fc6060ae83908000048ffc2e8b4ffffff4883c420c34885c0740e488d3515000000ba05000000eb9c488d350c000000ba06000000eb8e747275650a66616c73650a488d3570000000ba3d000000bf02000000e872ffffffbf01000000b83c0000000f050f0b488d351d000000ba2f000000bf02000000e84effffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a483d000010000f87b2000000488d500f4883e2f8498d0c164881f9000000010f87a70000004d85ed75325052b80900000031ffbe00000001ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff73754989c55a584889c14b8d4435004901d6488908c356e88fffffff5e488b08488d7808f3a4c3488b00c3483b0873550fb6440808c3483b08734a4881faff000000774f8854080831c0c3488b10488d7008e823feffff488d350a000000ba01000000e912feffff0a488d3547000000ba3f000000eb28488d3578000000ba46000000eb1a488d35b0000000ba30000000eb0c488d35d2000000ba3a000000bf02000000e8d6fdffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a498b07488b00c3498b0f483b010f83ccfeffff488b74c10831c0803c06000f844cfeffff48ffc0483d000010000f8790feffffebe5498b4708c3488b10488d7008bf02000000e88efcffff31c0c3483dff0000000f8793feffff4889c7b83c0000000f050f0b488b084881f90010000073354885c97438488d700831d2803c1600742c48ffc24839ca72f256488d4101e870fdffff5e488d7808488b0848ffc9f3a44883c008c348c7c0dcffffffc348c7c0eaffffffc355534881ecb00000004889e549c747080000000048c78590000000ffffffffe88bffffff4885c00f88170100004889c6b80101000048c7c79cffffffba000808004531d20f054885c00f88f5000000488985900000004889c74889eeb8050000000f054885c00f88d80000008b45182500f000003d008000000f85be000000488b4530483d000010000f87a5000000e8bafcffff4889859800000031db488b8598000000488b104829da7422488d741808488bbd9000000031c00f054883f8fc74db4885c0787d74294801c3ebcf488bbd90000000488db5a8000000ba0100000031c00f054883f8fc74e34885c078547542488bbd9000000048c78590000000ffffffffb8030000000f054885c07834488b450049894710488b45084989471849c7472001000000488b8598000000488918eb2e48c7c0e5ffffffeb0748c7c0eaffffff49894708488bbd900000004885ff7807b8030000000f0531c0e8ecfbffff4881c4b00000005b5dc34885d2741cb8010000000f054883f8fc74f34885c0780c740b4801c64829c275e431c0c348c7c0fbffffffc3b806010000488b7d18488b7530488d95800000004531d20f054883f8fe74304885c0782d49837f2000741a498b4710483b8580000000750d498b4718483b8588000000740d48f7451002000000740b31c0c348c7c0eaffffffc348c7c0efffffffc355534881ec401100004889e548894d084889551048c74518ffffffff48c74520ffffffff48c745280000000049c74708000000004883fa030f87e8010000e872fdffff4885c00f88f80100004889450031c931d2803c0800740f803c082f7504488d510148ffc1ebeb4839d10f84b4010000488d341048897530488dbd100100004885d2740d4889c64889d1f3a4c60700eb0566c7072e00b80101000048c7c79cffffff488db510010000ba000029004531d20f054885c00f888601000048894518e8d7feffff4885c00f887401000031dbffc383fb100f8752010000b83e010000488dbd20110000be0800000031d20f054883f8fc74da4883f8080f8536010000488d7d40488d3585010000b90b000000f3a4488b8520110000b91000000089c283e20f83c261881748ffc748c1e804e2edc60700488b7530488d7d4031c98a040e3a040f750984c0748648ffc1ebefb801010000488b7d18488d7540bac1000a0041ba800100000f054883f8ef0f845dffffff4885c00f88c60000004889452048c74528010000004889c7488b4508488b10488d7008e8d5fdffff4885c00f889e000000b85b000000488b7d20bea401000048f74510010000007405beed0100000f054885c0787a488b7d2048c74520ffffffffb8030000000f054885c07862e8b7fdffff4885c07858b83c010000488b7d18488d75404889fa4c8b553041b80100000048f745100200000074034531c00f054885c0782a48c745280000000031c0eb1e48c7c0eaffffffeb1548c7c0efffffffeb0c4885c0780748c7c0fbffffff4889453849894708488b7d204885ff7807b8030000000f0548837d28007411b807010000488b7d18488d754031d20f05488b7d184885ff7807b8030000000f05488b45384881c4401100005b5dc32e72616d6f732d746d702d31c0c34989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e8d1f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8df0000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e852f7ffffeb1248c7c0e5ffffff4989470831c0e8d3f6ffff4883c4205b5dc3498b47404885c07533b80900000031ffbe00301000ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f8360f7ffff49894740c3488d704031ffba0010000031c00f054883f8fc74f6c3" }
+fn runtime_text() -> bytes { return "bf010000004885d2741ab8010000000f054883f8fc74f34885c07e094801c64829c275e6c3bf01000000b83c0000000f050f0b4883ec20488d74241fc6060ae8570a000048ffc2e8b4ffffff4883c420c34885c0740e488d3515000000ba05000000eb9c488d350c000000ba06000000eb8e747275650a66616c73650a488d3570000000ba3d000000bf02000000e872ffffffbf01000000b83c0000000f050f0b488d351d000000ba2f000000bf02000000e84effffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a4d85ed753ab80900000031ffbe00008001ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f83b60200004989c549c7450000000001c3483d000010000f8790020000535550488d58274883e3f831ede8a2ffffff498b7f504885ff7418498d85000000014839c7730c48837f0800750548391f73324c89ef48837f0800750548391f732348033f498d85000000014839c772e585ed0f8545020000bd01000000e8c9000000ebad488b174829da4883fa20721a488d0c1f48891148c741080000000048c741180000000048891f48c7470801000000488b042448894718488d6f184989fb488b074801f8498947504c0337488b0f48c1e9034883e9044883c72031c0f348ab4c89d84c29e8498dbd000000014889c248d1ea4801d7ffc0498b0b48c1e903f3ab4889e84883c4085d5bc34c89f0c34c39e87234498d95000000014839d073284c29e848c1e8038b048285c0741affc84c01e84883780801750e48c740080300000041b801000000c34d85ed0f84050100005051525657415041514152415353554889e64c89ff4839fe730e488b06e89bffffff4883c608ebed4531c04c89eb48837b08037526488d7320488b7b184883c7074883e7f84801f74839fe730e488b06e868ffffff4883c608ebed48031b498d85000000014839c372c44585c075b94c89eb48837b0803743248837b0801753348c74308000000004c2b334889df4c29ef48d1ef4c01ef4881c700000001488b0b48c1e90331c0f3abeb0848c743080100000048031b498d85000000014839c372b04c89eb498d8500000001488d134803134839c2731b48837b0800750f48837a08007508488b02480103ebd84889d3ebd34d896f505d5b415b415a415941585f5e5a595831c0c356e8b1fdffff5e488b08488d7808f3a4c3488b00c3483b0873550fb6440808c3483b08734a4881faff000000774f8854080831c0c3488b10488d7008e805fcffff488d350a000000ba01000000e9f4fbffff0a488d3547000000ba3f000000eb28488d3578000000ba46000000eb1a488d35b0000000ba30000000eb0c488d35d2000000ba3a000000bf02000000e8b8fbffffbf01000000b83c0000000f050f0b52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a498b07488b00c3498b0f483b010f83ccfeffff488b74c10831c0803c06000f844cfeffff48ffc0483d000010000f8790feffffebe5498b4708c3488b10488d7008bf02000000e870faffff31c0c3483dff0000000f8793feffff4889c7b83c0000000f050f0b488b084881f90010000073354885c97438488d700831d2803c1600742c48ffc24839ca72f256488d4101e892fbffff5e488d7808488b0848ffc9f3a44883c008c348c7c0dcffffffc348c7c0eaffffffc355534881ecb00000004889e549c747080000000048c78590000000ffffffffe88bffffff4885c00f88170100004889c6b80101000048c7c79cffffffba000808004531d20f054885c00f88f5000000488985900000004889c74889eeb8050000000f054885c00f88d80000008b45182500f000003d008000000f85be000000488b4530483d000010000f87a5000000e8dcfaffff4889859800000031db488b8598000000488b104829da7422488d741808488bbd9000000031c00f054883f8fc74db4885c0787d74294801c3ebcf488bbd90000000488db5a8000000ba0100000031c00f054883f8fc74e34885c078547542488bbd9000000048c78590000000ffffffffb8030000000f054885c07834488b450049894710488b45084989471849c7472001000000488b8598000000488918eb2e48c7c0e5ffffffeb0748c7c0eaffffff49894708488bbd900000004885ff7807b8030000000f0531c0e80efaffff4881c4b00000005b5dc34885d2741cb8010000000f054883f8fc74f34885c0780c740b4801c64829c275e431c0c348c7c0fbffffffc3b806010000488b7d18488b7530488d95800000004531d20f054883f8fe74304885c0782d49837f2000741a498b4710483b8580000000750d498b4718483b8588000000740d48f7451002000000740b31c0c348c7c0eaffffffc348c7c0efffffffc355534881ec401100004889e548894d084889551048c74518ffffffff48c74520ffffffff48c745280000000049c74708000000004883fa030f87e8010000e872fdffff4885c00f88f80100004889450031c931d2803c0800740f803c082f7504488d510148ffc1ebeb4839d10f84b4010000488d341048897530488dbd100100004885d2740d4889c64889d1f3a4c60700eb0566c7072e00b80101000048c7c79cffffff488db510010000ba000029004531d20f054885c00f888601000048894518e8d7feffff4885c00f887401000031dbffc383fb100f8752010000b83e010000488dbd20110000be0800000031d20f054883f8fc74da4883f8080f8536010000488d7d40488d3585010000b90b000000f3a4488b8520110000b91000000089c283e20f83c261881748ffc748c1e804e2edc60700488b7530488d7d4031c98a040e3a040f750984c0748648ffc1ebefb801010000488b7d18488d7540bac1000a0041ba800100000f054883f8ef0f845dffffff4885c00f88c60000004889452048c74528010000004889c7488b4508488b10488d7008e8d5fdffff4885c00f889e000000b85b000000488b7d20bea401000048f74510010000007405beed0100000f054885c0787a488b7d2048c74520ffffffffb8030000000f054885c07862e8b7fdffff4885c07858b83c010000488b7d18488d75404889fa4c8b553041b80100000048f745100200000074034531c00f054885c0782a48c745280000000031c0eb1e48c7c0eaffffffeb1548c7c0efffffffeb0c4885c0780748c7c0fbffffff4889453849894708488b7d204885ff7807b8030000000f0548837d28007411b807010000488b7d18488d754031d20f05488b7d184885ff7807b8030000000f05488b45384881c4401100005b5dc32e72616d6f732d746d702d31c0c34989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e8d1f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8df0000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e852f7ffffeb1248c7c0e5ffffff4989470831c0e8f5f4ffff4883c4205b5dc3498b47404885c07533b80900000031ffbe00301000ba0300000041ba2200000049c7c0ffffffff4531c90f05483d01f0ffff0f8360f7ffff49894740c3488d704031ffba0010000031c00f054883f8fc74f6c3488d7008488b384801f731c94839fe0f83d20000000fb61648ffc648ffc181fa8000000072e681fac20000000f828602000081faf40000000f877a02000041b80100000041b98000000041babf00000081fae0000000725841b80200000081fae0000000750641b9a000000081faed000000750641ba9f00000081faf0000000722e41b80300000041b98000000041babf00000081faf0000000750641b99000000081faf4000000750641ba8f0000004839fe0f83ff0100000fb61648ffc64439ca0f82f00100004439d20f87e701000041b98000000041babf00000041ffc875cee925ffffffc350e812ffffff58488d7008488b00e9e9f5ffffe800ffffff4889c8c34885c90f88bc0100004839ca0f8cb3010000488d7008488b384801f74531c04989f14939c875034989f14939d0742f4839fe0f838d01000048ffc64839fe7319440fb6164181e2c00000004181fa80000000750548ffc6ebe249ffc0ebc44889f04c29c84c89cee974f5ffff5051488b00480301e81ef3ffff4989c0488d7808488b742408488b0e4883c608f3a45e488b0e4883c608f3a44883c4084c89c0c3488b10483b11751c488d7008488d79084889d131c04885c97404f3a67505b801000000c331c0c331c931d2eb004881f9000002000f87fc00000052488d04cd00000000e8aff2ffff5a4989c0488b0848c1e903488d78084889d0f348ab4c89c0c3488b0048c1e803c3488b1048c1ea034839d10f83ce000000488b44c808c34c8b0049c1e8034c39c10f83b8000000488954c80831c0c34881f9000002000f8792000000505152e881ffffff4989c0488d7808488b742410488b0e483b087603488b0848c1e9034883c608f348a54883c4184c89c0c35648c1e003e817f2ffff5e488d7808488b0848c1e903488d74cef84885c97413488b164889174883ee084883c70848ffc9ebe8c3e95affffffe96bffffff488d353d000000ba2a000000e9a4f4ffff488d3556000000ba30000000e993f4ffff488d3575000000ba3d000000e982f4ffff488d35a1000000ba2f000000e971f4ffff52616d6f732072756e74696d65206572726f723a20696e76616c6964205554462d3820737472696e670a52616d6f732072756e74696d65206572726f723a20737472696e6720736c696365206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a2061727261792073697a65206d757374206265206265747765656e203020616e64203133313037320a52616d6f732072756e74696d65206572726f723a20617272617920696e646578206f7574206f6620626f756e64730a" }
 fn entry_text() -> bytes { return "fc4531e44531ed4531f64889e24881ec800000004989e74889e731c0b910000000f348ab498917" }
-fn runtime_end() -> int64 { return 6840 }
+fn runtime_end() -> int64 { return 8344 }
 fn math_address() -> int64 { return 4221 }
 fn depth_address() -> int64 { return 4257 }
-fn literal_address() -> int64 { return 4508 }
+fn literal_address() -> int64 { return 5050 }
 fn integer_address() -> int64 { return 4147 }
 fn boolean_address() -> int64 { return 4177 }
-fn print_buffer_address() -> int64 { return 4561 }
+fn print_buffer_address() -> int64 { return 5103 }
 fn builtin_address(n: int64) -> int64 {
-    if n == 0 { return 4401 }
-    if n == 1 { return 4525 }
-    if n == 2 { return 4529 }
-    if n == 3 { return 4540 }
-    if n == 4 { return 4908 }
-    if n == 5 { return 4915 }
-    if n == 6 { return 5091 }
-    if n == 7 { return 5597 }
-    if n == 8 { return 4961 }
-    if n == 9 { return 4966 }
-    if n == 10 { return 4986 }
-    if n == 11 { return 6266 }
-    if n == 12 { return 6531 }
-    if n == 13 { return 6526 }
-    if n == 14 { return 6325 }
-    if n == 15 { return 6352 }
-    if n == 16 { return 6521 }
+    if n == 0 { return 4465 }
+    if n == 1 { return 5067 }
+    if n == 2 { return 5071 }
+    if n == 3 { return 5082 }
+    if n == 4 { return 5450 }
+    if n == 5 { return 5457 }
+    if n == 6 { return 5633 }
+    if n == 7 { return 6139 }
+    if n == 8 { return 5503 }
+    if n == 9 { return 5508 }
+    if n == 10 { return 5528 }
+    if n == 11 { return 6808 }
+    if n == 12 { return 7073 }
+    if n == 13 { return 7068 }
+    if n == 14 { return 6867 }
+    if n == 15 { return 6894 }
+    if n == 16 { return 7063 }
+    if n == 17 { return 4777 }
+    if n == 18 { return 4715 }
+    if n == 19 { return 7614 }
+    if n == 20 { return 7621 }
+    if n == 21 { return 7633 }
+    if n == 22 { return 7642 }
+    if n == 23 { return 7847 }
+    if n == 24 { return 7899 }
+    if n == 25 { return 7907 }
+    if n == 26 { return 7929 }
+    if n == 27 { return 7953 }
+    if n == 28 { return 7750 }
+    if n == 29 { return 7802 }
+    if n == 30 { return 8016 }
+    if n == 31 { return 8068 }
+    if n == 32 { return 8073 }
+    if n == 33 { return 7841 }
     return 0
 }
-fn windows_runtime() -> bytes { return "bf0100000055534883ec184889e54889d3b9f5ffffff83ff027505b9f4ffffff488b0559f01f00e8510000004889c74885db742f4889f94889f24989d84c8d4d004531d2488b053df01f00e82d00000085c074168b450085c0740f4801c64829c3ebcc4883c4185b5dc3b901000000488b051af01f00e8020000000f0b554889e54883e4f04883ec604c895424204c895c2428488974243048897c2438ffd04889ec5dc34883ec20488d74241fc6060ae8dd09000048ffc2e843ffffff4883c420c34885c07411488d351b000000ba05000000e928ffffff488d350f000000ba06000000e917ffffff747275650a66616c73650a488d3568000000ba3d000000eb44488d3597000000ba2f000000eb36488d35b8000000ba3f000000eb28488d35e9000000ba46000000eb1a488d3521010000ba30000000eb0c488d3543010000ba3a000000bf02000000e8b5feffffb901000000488b0534ef1f00e81cffffff0f0b52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a483d000010000f8746feffff488d500f4883e2f8498d0c164881f9000000010f873bfeffff4d85ed752f505231c9ba0000000141b80030000041b904000000488b0594ed1f00e874fdffff4885c00f840cfeffff4989c55a584889c14b8d4435004901d6488908c356e892ffffff5e488b08488d7808f3a4c3488b00c3483b080f83e8fdffff0fb6440808c3483b080f83d9fdffff4881faff0000000f87dafdffff8854080831c0c3488b10488d7008e88dfcffff488d350a000000ba01000000e97cfcffff0a498b4728c3493b47280f8398fdffff55534883ec104889e5498b0f488b1cc1b9e9fd0000ba800000004989d841b9ffffffff4531d24531db31f631ff488b05d8ec1f00e8b0fcffff85c00f8465fdffffe8e4feffff48894500b9e9fd0000ba800000004989d841b9ffffffff4c8d50084c8b1831f631ff488b059dec1f00e875fcffff85c00f842afdffff488b450048ff084883c4105b5dc3498b4708c3488b10488d7008bf02000000e8d1fbffff31c0c3483dff0000000f87f7fcffff4889c1488b0543ec1f00e82bfcffff0f0bb801000000c355534883ec104889e54889c3488b084885c974604881f900100000736031d2807c100800744e48ffc24839ca72f1488d044d02000000e829feffff48894500b9e9fd0000ba080000004c8d43084c8b0b4c8d50084c8b1849d1eb488b05edeb1f00e8bdfbffff85c0740a488b45004883c008eb1048c7c0eaffffffeb0748c7c0dcffffff4883c4105b5dc3488b05c4eb1f00e88cfbffff83f802741e83f803741983f805741c83f850741f3db7000000741848c7c0fbffffffc348c7c0feffffffc348c7c0f3ffffffc348c7c0efffffffc355534881ec800000004889e548c74540ffffffff49c7470800000000e80dffffff4885c00f885f0100004889c1ba0000008041b8070000004531c941ba0300000041bb8000000031f6488b053ceb1f00e8fcfaffff4883f8ff0f8425010000488945404889c1488b052feb1f00e8dffaffff83f8010f8500010000488b4d404889ea488b051beb1f00e8c3faffff85c00f84ee000000f74500100000000f85d8000000837d20000f85c50000008b45243d000010000f87b7000000e8d2fcffff4889454831db488b45484c8b004929d87430488b4d40488d5418084c8d4d504531d2488b05c3ea1f00e863faffff85c00f848e0000008b455085c074304801c3ebc4488b4d40488d555841b8010000004c8d4d504531d2488b058eea1f00e82efaffff85c0745d837d50007545488b4d4048c74540ffffffff488b0554ea1f00e80cfaffff85c0743b8b451c498947108b452c48c1e0208b55304809d04989471849c7472001000000488b4548488918eb3848c7c0e5ffffffeb0e48c7c0eaffffffeb05e830feffff49894708488b4d404883f9ff740c488b05f6e91f00e8aef9ffff31c0e8e8fbffff4881c4800000005b5dc3488b4d1031d241b8070000004531c941ba0300000041bb8000000031f6488b05b4e91f00e874f9ffff4883f8ff746a504889c1488d5540488b05b2e91f00e85af9ffff85c0743d59488b0591e91f00e849f9ffff49837f2000741c8b455c493b471075138b456c48c1e0208b55704809d0493b4718742e48f7450802000000742c31c0c359488b0554e91f00e80cf9ffff48c7c0fbffffffc3e867fdffff4883f8fe74ddc348c7c0eaffffffc348c7c0efffffffc355534881eca00000004889e548894d004889550848c74520ffffffff48c745280000000049c74708000000004883fa037728e88efcffff4885c00f88640200004889453848c7c000200000e8d9faffff4c8d40084c894510eb0c48c7c0eaffffffe93e020000488b4d38ba001000004c8b45104531c9488b05cee81f00e866f8ffff85c00f84150200003d0010000073c9488b451031c931db66833c4800741066833c485c7504488d590148ffc1ebe94881fbe30f000077a14839d9749c48895d78e884feffff4885c00f88d401000048c7c000200000e84dfaffff488d780848897d18488b7510488b4d7848d1e1f3a44889bd8000000031dbffc383fb100f8788010000488b0547e81f00e8d7f7ffff48898588000000488b053ce81f00e8c4f7ffff48c1e0204831858800000049ff4748498b474848318588000000488bbd80000000488d359b010000b916000000f3a4488b8588000000b91000000089c283e20f83c2616689174883c70248c1e804e2eb66c7070000488b7510488b7d18668b06663b0775136685c00f8468ffffff4883c6024883c702ebe5488b4d18ba000000404531c04531c941ba0100000041bb8000000031f6488b0563e71f00e823f7ffff4883f8ff0f84ad0000004889452048c745280100000031db488b45004c8b004929d87436488b4d20488d5418084c8d8d900000004531d2488b05f0e61f00e8e0f6ffff85c00f848f0000008b859000000085c0747c4801c3ebbe488b4d2048c74520ffffffff488b05f9e61f00e8b1f6ffff85c07464e80bfdffff4885c0785f488b4d18488b55104531c048f7450802000000740641b801000000488b05fce61f00e87cf6ffff85c0742f48c745280000000031c0eb28e8cffaffff4883f8ef0f846ffeffffeb1748c7c0efffffffeb0e48c7c0fbffffffeb05e8acfaffff4889453049894708488b4d204883f9ff740c488b056ee61f00e826f6ffff48837d28007410488b4d18488b0597e61f00e80ff6ffff488b45304881c4a00000005b5dc32e00720061006d006f0073002d0074006d0070002d004989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e846f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8d80000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e8c7f6ffffeb1248c7c0e5ffffff4989470831c0e84bf6ffff4883c4205b5dc3498b47404885c0752c31c9ba0030100041b80030000041b904000000488b05fbe31f00e8dbf3ffff4885c00f8473f4ffff49894740c3554883ec204889e548894500b9f6ffffff488b05b8e31f00e8b0f3ffff4889c1488b55004883c24041b8001000004c8d4d084531d2488b05ece31f00e88cf3ffff85c074058b4508eb1f488b05afe31f00e877f3ffff83f86d740c83f8267407e8d0f7ffffeb0231c04883c4205dc3488b05e2e31f00e852f3ffff4889c1498d5728488b05e7e31f00e83ff3ffff4885c00f84d7f3ffff498907b9e9fd0000488b05bae31f00e822f3ffffc331c9488b052be31f00e813f3ffff0f0b" }
+fn windows_runtime() -> bytes { return "bf0100000055534883ec184889e54889d3b9f5ffffff83ff027505b9f4ffffff488b0559f01f00e8510000004889c74885db742f4889f94889f24989d84c8d4d004531d2488b053df01f00e82d00000085c074168b450085c0740f4801c64829c3ebcc4883c4185b5dc3b901000000488b051af01f00e8020000000f0b554889e54883e4f04883ec604c895424204c895c2428488974243048897c2438ffd04889ec5dc34883ec20488d74241fc6060ae8f70b000048ffc2e843ffffff4883c420c34885c07411488d351b000000ba05000000e928ffffff488d350f000000ba06000000e917ffffff747275650a66616c73650a488d3568000000ba3d000000eb44488d3597000000ba2f000000eb36488d35b8000000ba3f000000eb28488d35e9000000ba46000000eb1a488d3521010000ba30000000eb0c488d3543010000ba3a000000bf02000000e8b5feffffb901000000488b0534ef1f00e81cffffff0f0b52616d6f732072756e74696d65206572726f723a2061726974686d65746963206f766572666c6f77206f72206469766973696f6e206279207a65726f0a52616d6f732072756e74696d65206572726f723a2063616c6c206465707468206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a206275666665722073697a65206d757374206265206265747765656e203020616e6420313034383537360a52616d6f732072756e74696d65206572726f723a2062756666657220616c6c6f636174696f6e206661696c6564206f72206172656e61206c696d69742065786365656465640a52616d6f732072756e74696d65206572726f723a2062756666657220696e646578206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a20627974652076616c7565206d757374206265206265747765656e203020616e64203235350a4d85ed753331c9ba0000800141b80030000041b904000000488b05bbed1f00e89bfdffff4885c00f8433feffff4989c549c7450000000001c3483d000010000f870dfeffff535550488d58274883e3f831ede8a9ffffff498b7f504885ff7418498d85000000014839c7730c48837f0800750548391f73324c89ef48837f0800750548391f732348033f498d85000000014839c772e585ed0f85c2fdffffbd01000000e8c9000000ebad488b174829da4883fa20721a488d0c1f48891148c741080000000048c741180000000048891f48c7470801000000488b042448894718488d6f184989fb488b074801f8498947504c0337488b0f48c1e9034883e9044883c72031c0f348ab4c89d84c29e8498dbd000000014889c248d1ea4801d7ffc0498b0b48c1e903f3ab4889e84883c4085d5bc34c89f0c34c39e87234498d95000000014839d073284c29e848c1e8038b048285c0741affc84c01e84883780801750e48c740080300000041b801000000c34d85ed0f84050100005051525657415041514152415353554889e64c89ff4839fe730e488b06e89bffffff4883c608ebed4531c04c89eb48837b08037526488d7320488b7b184883c7074883e7f84801f74839fe730e488b06e868ffffff4883c608ebed48031b498d85000000014839c372c44585c075b94c89eb48837b0803743248837b0801753348c74308000000004c2b334889df4c29ef48d1ef4c01ef4881c700000001488b0b48c1e90331c0f3abeb0848c743080100000048031b498d85000000014839c372b04c89eb498d8500000001488d134803134839c2731b48837b0800750f48837a08007508488b02480103ebd84889d3ebd34d896f505d5b415b415a415941585f5e5a595831c0c356e8b1fdffff5e488b08488d7808f3a4c3488b00c3483b080f83cefbffff0fb6440808c3483b080f83bffbffff4881faff0000000f87c0fbffff8854080831c0c3488b10488d7008e873faffff488d350a000000ba01000000e962faffff0a498b4728c3493b47280f837efbffff55534883ec104889e5498b0f488b1cc1b9e9fd0000ba800000004989d841b9ffffffff4531d24531db31f631ff488b05beea1f00e896faffff85c00f844bfbffffe803fdffff48894500b9e9fd0000ba800000004989d841b9ffffffff4c8d50084c8b1831f631ff488b0583ea1f00e85bfaffff85c00f8410fbffff488b450048ff084883c4105b5dc3498b4708c3488b10488d7008bf02000000e8b7f9ffff31c0c3483dff0000000f87ddfaffff4889c1488b0529ea1f00e811faffff0f0bb801000000c355534883ec104889e54889c3488b084885c974604881f900100000736031d2807c100800744e48ffc24839ca72f1488d044d02000000e848fcffff48894500b9e9fd0000ba080000004c8d43084c8b0b4c8d50084c8b1849d1eb488b05d3e91f00e8a3f9ffff85c0740a488b45004883c008eb1048c7c0eaffffffeb0748c7c0dcffffff4883c4105b5dc3488b05aae91f00e872f9ffff83f802741e83f803741983f805741c83f850741f3db7000000741848c7c0fbffffffc348c7c0feffffffc348c7c0f3ffffffc348c7c0efffffffc355534881ec800000004889e548c74540ffffffff49c7470800000000e80dffffff4885c00f885f0100004889c1ba0000008041b8070000004531c941ba0300000041bb8000000031f6488b0522e91f00e8e2f8ffff4883f8ff0f8425010000488945404889c1488b0515e91f00e8c5f8ffff83f8010f8500010000488b4d404889ea488b0501e91f00e8a9f8ffff85c00f84ee000000f74500100000000f85d8000000837d20000f85c50000008b45243d000010000f87b7000000e8f1faffff4889454831db488b45484c8b004929d87430488b4d40488d5418084c8d4d504531d2488b05a9e81f00e849f8ffff85c00f848e0000008b455085c074304801c3ebc4488b4d40488d555841b8010000004c8d4d504531d2488b0574e81f00e814f8ffff85c0745d837d50007545488b4d4048c74540ffffffff488b053ae81f00e8f2f7ffff85c0743b8b451c498947108b452c48c1e0208b55304809d04989471849c7472001000000488b4548488918eb3848c7c0e5ffffffeb0e48c7c0eaffffffeb05e830feffff49894708488b4d404883f9ff740c488b05dce71f00e894f7ffff31c0e807faffff4881c4800000005b5dc3488b4d1031d241b8070000004531c941ba0300000041bb8000000031f6488b059ae71f00e85af7ffff4883f8ff746a504889c1488d5540488b0598e71f00e840f7ffff85c0743d59488b0577e71f00e82ff7ffff49837f2000741c8b455c493b471075138b456c48c1e0208b55704809d0493b4718742e48f7450802000000742c31c0c359488b053ae71f00e8f2f6ffff48c7c0fbffffffc3e867fdffff4883f8fe74ddc348c7c0eaffffffc348c7c0efffffffc355534881eca00000004889e548894d004889550848c74520ffffffff48c745280000000049c74708000000004883fa037728e88efcffff4885c00f88640200004889453848c7c000200000e8f8f8ffff4c8d40084c894510eb0c48c7c0eaffffffe93e020000488b4d38ba001000004c8b45104531c9488b05b4e61f00e84cf6ffff85c00f84150200003d0010000073c9488b451031c931db66833c4800741066833c485c7504488d590148ffc1ebe94881fbe30f000077a14839d9749c48895d78e884feffff4885c00f88d401000048c7c000200000e86cf8ffff488d780848897d18488b7510488b4d7848d1e1f3a44889bd8000000031dbffc383fb100f8788010000488b052de61f00e8bdf5ffff48898588000000488b0522e61f00e8aaf5ffff48c1e0204831858800000049ff4748498b474848318588000000488bbd80000000488d359b010000b916000000f3a4488b8588000000b91000000089c283e20f83c2616689174883c70248c1e804e2eb66c7070000488b7510488b7d18668b06663b0775136685c00f8468ffffff4883c6024883c702ebe5488b4d18ba000000404531c04531c941ba0100000041bb8000000031f6488b0549e51f00e809f5ffff4883f8ff0f84ad0000004889452048c745280100000031db488b45004c8b004929d87436488b4d20488d5418084c8d8d900000004531d2488b05d6e41f00e8c6f4ffff85c00f848f0000008b859000000085c0747c4801c3ebbe488b4d2048c74520ffffffff488b05dfe41f00e897f4ffff85c07464e80bfdffff4885c0785f488b4d18488b55104531c048f7450802000000740641b801000000488b05e2e41f00e862f4ffff85c0742f48c745280000000031c0eb28e8cffaffff4883f8ef0f846ffeffffeb1748c7c0efffffffeb0e48c7c0fbffffffeb05e8acfaffff4889453049894708488b4d204883f9ff740c488b0554e41f00e80cf4ffff48837d28007410488b4d18488b057de41f00e8f5f3ffff488b45304881c4a00000005b5dc32e00720061006d006f0073002d0074006d0070002d004989f04989c24885c0790348f7d841b90a00000031d249f7f180c23048ffce88164885c075ee4d85d2790648ffcec6062d4c89c24829f2c34883ec20488d742420e8baffffff4889d0e846f8ffff4883c420c349c7473000000000488b08488d700831c04531c04531c94531db4885c97474803e2d750b41b80100000049ffc1eb08803e2b750349ffc14939c9745749ba34333333333333f3420fb6140e83ea3083fa0977404585db75254c39d07c1a750f83fa07760a4585c0740e83fa087709486bc00a4829d0eb0641bb0100000049ffc14939c972c14585db75144585c0750348f7d8c349c74730eaffffff31c0c349c74730deffffff31c0c3498b4730c3498b4738c355534883ec204889e531db48c745080000000049c7470800000000e8c20000004889450049837f38007579488b4d00488b11483b510872244889c8e8d80000004885c00f88870000007451488b4d0048c701000000004889410831d20fb644114048ff0183f80a741f4881fb01001000730c8884190020000048ffc3ebad48c7450801000000eba34885db741780bc19ff1f00000d750d48ffcbeb0849c747380100000048837d0800751e4881fb0000100077154889d8488b75004881c600200000e8c7f6ffffeb1248c7c0e5ffffff4989470831c0e86af4ffff4883c4205b5dc3498b47404885c0752c31c9ba0030100041b80030000041b904000000488b05e1e11f00e8c1f1ffff4885c00f8459f2ffff49894740c3554883ec204889e548894500b9f6ffffff488b059ee11f00e896f1ffff4889c1488b55004883c24041b8001000004c8d4d084531d2488b05d2e11f00e872f1ffff85c074058b4508eb1f488b0595e11f00e85df1ffff83f86d740c83f8267407e8d0f7ffffeb0231c04883c4205dc3488d7008488b384801f731c94839fe0f83d20000000fb61648ffc648ffc181fa8000000072e681fac20000000f828602000081faf40000000f877a02000041b80100000041b98000000041babf00000081fae0000000725841b80200000081fae0000000750641b9a000000081faed000000750641ba9f00000081faf0000000722e41b80300000041b98000000041babf00000081faf0000000750641b99000000081faf4000000750641ba8f0000004839fe0f83ff0100000fb61648ffc64439ca0f82f00100004439d20f87e701000041b98000000041babf00000041ffc875cee925ffffffc350e812ffffff58488d7008488b00e90cf5ffffe800ffffff4889c8c34885c90f88bc0100004839ca0f8cb3010000488d7008488b384801f74531c04989f14939c875034989f14939d0742f4839fe0f838d01000048ffc64839fe7319440fb6164181e2c00000004181fa80000000750548ffc6ebe249ffc0ebc44889f04c29c84c89cee997f4ffff5051488b00480301e841f2ffff4989c0488d7808488b742408488b0e4883c608f3a45e488b0e4883c608f3a44883c4084c89c0c3488b10483b11751c488d7008488d79084889d131c04885c97404f3a67505b801000000c331c0c331c931d2eb004881f9000002000f87fc00000052488d04cd00000000e8d2f1ffff5a4989c0488b0848c1e903488d78084889d0f348ab4c89c0c3488b0048c1e803c3488b1048c1ea034839d10f83ce000000488b44c808c34c8b0049c1e8034c39c10f83b8000000488954c80831c0c34881f9000002000f8792000000505152e881ffffff4989c0488d7808488b742410488b0e483b087603488b0848c1e9034883c608f348a54883c4184c89c0c35648c1e003e83af1ffff5e488d7808488b0848c1e903488d74cef84885c97413488b164889174883ee084883c70848ffc9ebe8c3e95affffffe96bffffff488d353d000000ba2a000000e944efffff488d3556000000ba30000000e933efffff488d3575000000ba3d000000e922efffff488d35a1000000ba2f000000e911efffff52616d6f732072756e74696d65206572726f723a20696e76616c6964205554462d3820737472696e670a52616d6f732072756e74696d65206572726f723a20737472696e6720736c696365206f7574206f6620626f756e64730a52616d6f732072756e74696d65206572726f723a2061727261792073697a65206d757374206265206265747765656e203020616e64203133313037320a52616d6f732072756e74696d65206572726f723a20617272617920696e646578206f7574206f6620626f756e64730a488b0506de1f00e876edffff4889c1498d5728488b050bde1f00e863edffff4885c00f84fbedffff498907b9e9fd0000488b05dedd1f00e846edffffc331c9488b054fdd1f00e837edffff0f0b" }
 fn windows_entry() -> bytes { return "fc4531e44531ed4531f64881ec800000004989e74889e731c0b910000000f348abe88dffffff" }
 fn windows_imports() -> bytes { return "0002200000000000000000000003200080002000a002200000000000000000000e03200020012000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a032000000000002a032000000000003603200000000000440320000000000054032000000000006a03200000000000800320000000000090032000000000009e03200000000000ac03200000000000ba03200000000000d803200000000000e403200000000000f8032000000000000a0420000000000020042000000000002e042000000000003c042000000000004e04200000000000000000000000000064042000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a032000000000002a032000000000003603200000000000440320000000000054032000000000006a03200000000000800320000000000090032000000000009e03200000000000ac03200000000000ba03200000000000d803200000000000e403200000000000f8032000000000000a0420000000000020042000000000002e042000000000003c042000000000004e0420000000000000000000000000006404200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b45524e454c33322e646c6c00005348454c4c33322e646c6c00000047657453746448616e646c6500000000577269746546696c650000004578697450726f636573730000005669727475616c416c6c6f63000000005769646543686172546f4d756c7469427974650000004d756c746942797465546f57696465436861720000004765744c6173744572726f720000000043726561746546696c6557000000436c6f736548616e646c6500000047657446696c655479706500000047657446696c65496e666f726d6174696f6e427948616e646c65000000005265616446696c650000000047657446756c6c506174684e616d6557000000004765745469636b436f756e7436340000000047657443757272656e7450726f6365737349640000004d6f766546696c6545785700000044656c65746546696c6557000000476574436f6d6d616e644c696e6557000000536574436f6e736f6c654f7574707574435000000000436f6d6d616e644c696e65546f4172677657000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" }
-fn windows_end() -> int64 { return 7532 }
+fn windows_end() -> int64 { return 9032 }
 fn windows_stack_probe() -> bytes { return "483d0010000072144881ec0010000048830c2400482d00100000ebe44829c4" }
-fn windows_return() -> int64 { return 7516 }
+fn windows_return() -> int64 { return 9016 }
 fn windows_address(n: int64) -> int64 {
     if n == 0 { return 4340 }
     if n == 1 { return 4354 }
-    if n == 2 { return 4902 }
+    if n == 2 { return 5440 }
     if n == 3 { return 4260 }
     if n == 4 { return 4290 }
-    if n == 5 { return 4967 }
+    if n == 5 { return 5505 }
     return 0
 }
 fn windows_builtin(n: int64) -> int64 {
-    if n == 0 { return 4798 }
-    if n == 1 { return 4919 }
-    if n == 2 { return 4923 }
-    if n == 3 { return 4938 }
-    if n == 4 { return 4997 }
-    if n == 5 { return 5002 }
-    if n == 6 { return 5420 }
-    if n == 7 { return 6037 }
-    if n == 8 { return 5150 }
-    if n == 9 { return 5155 }
-    if n == 10 { return 5175 }
-    if n == 11 { return 5204 }
-    if n == 12 { return 7064 }
-    if n == 13 { return 7059 }
-    if n == 14 { return 6858 }
-    if n == 15 { return 6885 }
-    if n == 16 { return 7054 }
+    if n == 0 { return 4855 }
+    if n == 1 { return 5457 }
+    if n == 2 { return 5461 }
+    if n == 3 { return 5476 }
+    if n == 4 { return 5535 }
+    if n == 5 { return 5540 }
+    if n == 6 { return 5958 }
+    if n == 7 { return 6575 }
+    if n == 8 { return 5688 }
+    if n == 9 { return 5693 }
+    if n == 10 { return 5713 }
+    if n == 11 { return 5742 }
+    if n == 12 { return 7602 }
+    if n == 13 { return 7597 }
+    if n == 14 { return 7396 }
+    if n == 15 { return 7423 }
+    if n == 16 { return 7592 }
+    if n == 17 { return 5167 }
+    if n == 18 { return 5105 }
+    if n == 19 { return 8225 }
+    if n == 20 { return 8232 }
+    if n == 21 { return 8244 }
+    if n == 22 { return 8253 }
+    if n == 23 { return 8458 }
+    if n == 24 { return 8510 }
+    if n == 25 { return 8518 }
+    if n == 26 { return 8540 }
+    if n == 27 { return 8564 }
+    if n == 28 { return 8361 }
+    if n == 29 { return 8413 }
+    if n == 30 { return 8627 }
+    if n == 31 { return 8679 }
+    if n == 32 { return 8684 }
+    if n == 33 { return 8452 }
     return 0
 }

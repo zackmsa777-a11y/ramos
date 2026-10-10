@@ -43,19 +43,13 @@ def check_runtime():
         raise SystemExit('Embedded process entry differs from bootstrap source')
     if int(re.search(r'fn runtime_end\(\) -> int64 \{ return (\d+)', source)[1]) != entry_offset:
         raise SystemExit('Runtime entry offset mismatch')
-    builtin_constants = [
-        'RUNTIME_BUFFER_NEW_FILE', 'RUNTIME_BUFFER_LEN_FILE', 'RUNTIME_BUFFER_GET_FILE',
-        'RUNTIME_BUFFER_SET_FILE', 'RUNTIME_ARG_COUNT_FILE', 'RUNTIME_ARG_FILE',
-        'RUNTIME_READ_FILE_FILE', 'RUNTIME_WRITE_FILE_FILE', 'RUNTIME_IO_ERROR_FILE',
-        'RUNTIME_STDERR_FILE', 'RUNTIME_EXIT_FILE', 'RUNTIME_PLATFORM_FILE',
-        'RUNTIME_READ_LINE_FILE', 'RUNTIME_STDIN_EOF_FILE', 'RUNTIME_INT_TO_TEXT_FILE',
-        'RUNTIME_TEXT_TO_INT_FILE', 'RUNTIME_PARSE_ERROR_FILE',
-    ]
+    from runtime_data import BUILTINS
     table = source[source.index('fn builtin_address'):]
-    for i, const in enumerate(builtin_constants):
+    for i, name in enumerate(BUILTINS):
         value = int(re.search(r'if n == ' + str(i) + r' \{ return (\d+)', table)[1])
-        if value != symbols[const]:
-            raise SystemExit(f'Runtime intrinsic offset mismatch: {const}')
+        expected = 4096 + symbols['runtime_' + name] - symbols['runtime_writer']
+        if value != expected:
+            raise SystemExit(f'Runtime intrinsic offset mismatch: {name}')
     for fn, const in [('math_address', 'RUNTIME_ERROR_FILE'), ('depth_address', 'RUNTIME_DEPTH_FILE'),
                       ('literal_address', 'RUNTIME_BUFFER_LITERAL_FILE'), ('integer_address', 'RUNTIME_INTEGER_FILE'),
                       ('boolean_address', 'RUNTIME_BOOLEAN_FILE'), ('print_buffer_address', 'RUNTIME_BUFFER_PRINT_FILE')]:
@@ -74,7 +68,7 @@ def main():
     if hashes['stage2'] != hashes['stage3'] or digest(ROOT / 'build/stage3-isolated') != hashes['stage3']:
         raise SystemExit('Self-hosting fixed point failed')
     report = {
-        'version': '0.9.0', 'target': 'x86_64-linux',
+        'version': '0.10.0', 'target': 'x86_64-linux',
         'compiler_source': 'compiler/ramos.ramos',
         'source_sha256': digest(ROOT / 'compiler/ramos.ramos'),
         'executables': hashes, 'stage2_equals_stage3': True,
@@ -88,6 +82,8 @@ def main():
     sys.path.insert(0, str(ROOT / 'tests'))
     from test_usability import UsabilityTests
     report['bootstrap_skips_post_0_7_grammar_tests'] = unittest.TestLoader().loadTestsFromTestCase(UsabilityTests).countTestCases()
+    from test_values import ValueTests
+    report['bootstrap_skips_values_tests'] = unittest.TestLoader().loadTestsFromTestCase(ValueTests).countTestCases()
     report['corpus_passed_with'] = ['stage0', 'stage2', 'stage3']
     (ROOT / 'build/bootstrap-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

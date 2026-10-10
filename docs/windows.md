@@ -1,4 +1,4 @@
-# Windows support (Ramos 0.9)
+# Windows support (Ramos 0.10)
 
 Ramos produces native Windows x64 console executables in PE32+ format. The same
 language supports arithmetic, booleans, scopes, control flow, typed functions,
@@ -7,7 +7,7 @@ There is no interpreter, Python dependency or C runtime in generated programs.
 
 ## Use Ramos on Windows
 
-Download [ramos.exe from the 0.9 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.9.0/ramos.exe)
+Download [ramos.exe from the 0.10 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.10.0/ramos.exe)
 and open PowerShell in its directory. CI artifacts are also available from the
 [Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml). Save a UTF-8 `hello.ramos`:
 
@@ -45,7 +45,7 @@ Only the initial assembly runtime/bootstrap audit uses GNU binutils.
 
 The Ramos emitter writes PE headers, sections, imports and a relocation directory
 itself. Code is read/execute, literals are read-only, import slots are read/write,
-and the buffer arena is read/write. No section is both writable and executable.
+and the value heap is read/write. No section is both writable and executable.
 The PE advertises NX compatibility and ASLR, uses position-independent code and
 contains no timestamps or build paths. The imports are Windows' built-in
 `KERNEL32.dll` and `SHELL32.dll`; no compiler tool, CRT or interpreter is imported.
@@ -95,3 +95,6 @@ can run the same harness under Wine using `make test-windows` with an isolated
 Version 0.9 adds native buffered stdin and signed decimal conversions. Console
 input uses the configured input code page; redirected input preserves bytes.
 See [input and conversion semantics](input-text.md).
+
+Version 0.10 adds strings, reclaimed heap memory, structs and typed arrays with
+the same contracts as Linux. See [values and memory](values.md).

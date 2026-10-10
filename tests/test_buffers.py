@@ -142,14 +142,9 @@ print(buffer_len(b))
                 self.assertIn(b'byte value', result.stderr)
 
     def test_arena_limit_includes_metadata_and_padding(self):
-        body = '''var i = 0
-while i < 15 {
-buffer(1048576)
-i = i + 1
-}
-buffer(1048441)
-print(42)
-'''
+        body = ''.join(f'let b{i} = buffer(1048576)\n' for i in range(15))
+        # All fifteen handles remain live. Each block needs 32 bytes metadata.
+        body += 'let tail = buffer(1048064)\ncollect()\nprint(42)\n'
         self.assert_runs('fn main() {\n' + body + '}', b'42\n')
         result = self.build('fn main() {\n' + body + 'buffer(0)\n}', '--force')
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -238,7 +233,7 @@ while true {}
             for line in maps:
                 fields = line.split()
                 begin, end = (int(part, 16) for part in fields[0].split('-'))
-                if end - begin == 16 * 1024 * 1024:
+                if end - begin == 24 * 1024 * 1024:
                     arena.append(fields[1])
                 self.assertFalse('w' in fields[1] and 'x' in fields[1])
             self.assertEqual(arena, ['rw-p'])

@@ -1,7 +1,7 @@
 {
   "checked_on": "2026-10-10",
   "upstream_registration": false,
-  "upstream_pr_opened": false,
+  "upstream_pr_opened": true,
   "blocking_condition": "No evidence meeting upstream requirement of 2000 indexed .ramos files spread across independent owners/repositories.",
   "upstream_search_observation": {
     "legacy_api_query": "extension:ramos",
@@ -45,5 +45,7 @@
     "main": "https://github.com/zackmsa777-a11y/language-ramos/actions/runs/38038319293",
     "tag": "https://github.com/zackmsa777-a11y/language-ramos/actions/runs/38038320442",
     "conclusion": "success"
-  }
+  },
+  "upstream_pr_state": "closed",
+  "upstream_pr_url": "https://github.com/github-linguist/linguist/pull/8264"
 }

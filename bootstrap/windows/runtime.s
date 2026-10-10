@@ -125,34 +125,21 @@ index_message: .ascii "Ramos runtime error: buffer index out of bounds\n"
 index_message_end:
 value_message: .ascii "Ramos runtime error: byte value must be between 0 and 255\n"
 value_message_end:
-runtime_buffer_new:
-    cmp rax, BUFFER_LIMIT
-    ja runtime_buffer_size_error
-    lea rdx, [rax + 15]
-    and rdx, -8
-    lea rcx, [r14 + rdx]
-    cmp rcx, BUFFER_ARENA_LIMIT
-    ja runtime_buffer_allocation_error
+runtime_heap_prepare:
     test r13, r13
-    jnz runtime_buffer_allocate
-    push rax
-    push rdx
+    jnz runtime_heap_ready
     xor ecx, ecx
-    mov edx, BUFFER_ARENA_LIMIT
+    mov edx, OFFSET FLAT:HEAP_MAPPING_SIZE
     mov r8d, 0x3000
     mov r9d, 4
     API VirtualAlloc
     test rax, rax
     jz runtime_buffer_allocation_error
     mov r13, rax
-    pop rdx
-    pop rax
-runtime_buffer_allocate:
-    mov rcx, rax
-    lea rax, [r13 + r14]
-    add r14, rdx
-    mov [rax], rcx
+    mov QWORD PTR [r13], BUFFER_ARENA_LIMIT
+runtime_heap_ready:
     ret
+.include "bootstrap/src/heap_runtime.inc"
 runtime_buffer_literal:
     push rsi
     call runtime_buffer_new
@@ -661,6 +648,8 @@ runtime_write_return:
 temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
 .include "bootstrap/src/text_runtime.inc"
 .include "bootstrap/windows/stdin.s.inc"
+.set runtime_value_error, runtime_error
+.include "bootstrap/src/values_runtime.inc"
 runtime_initialize:
     API GetCommandLineW
     mov rcx, rax

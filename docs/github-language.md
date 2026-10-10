@@ -49,7 +49,9 @@ See [recorded verification](linguist-verification.json).
 This fork classifies the actual `compiler/ramos.ramos` file as Ramos. It does not
 change the registry running on GitHub.com. See [the submission checklist](linguist-submission.md).
 
-No upstream pull request has been opened. Besides the contribution policy,
+Draft [upstream PR #8264](https://github.com/github-linguist/linguist/pull/8264) was
+opened at the owner's explicit request and then closed when that request was
+cancelled. Ramos has not been accepted upstream. Besides the contribution policy,
 [Linguist's AGENTS.md](https://github.com/github-linguist/linguist/blob/main/AGENTS.md)
 explicitly requires the usage evidence, sample licensing and passing CI, and says:
 "Do not open a PR if any of the above conditions are not met".

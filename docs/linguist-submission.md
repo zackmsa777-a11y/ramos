@@ -1,7 +1,8 @@
 # Prepared Ramos Linguist submission
 
 Status: implementation available in the owner's fork; upstream submission is
-blocked by insufficient independent adoption evidence. No upstream PR exists.
+blocked by insufficient independent adoption evidence. Draft PR #8264 was
+opened at the owner's request and closed after cancellation; it was not merged.
 
 ## Technical artifacts
 

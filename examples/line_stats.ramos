@@ -1,0 +1,26 @@
+// Stream UTF-8 lines through strings, structs and typed arrays.
+// Each loop releases its temporary values; total input need not fit the heap.
+struct Stats { lines: int64, characters: int64, longest: int64, recent: [int64] }
+
+fn number(n: int64) -> string { return string(int_to_text(n)) }
+
+fn main() {
+    let stats = Stats(0, 0, 0, array(int64, 8, 0))
+    while true {
+        let raw = read_line()
+        if io_error() != 0 {
+            stderr("cannot read stdin\n")
+            exit(1)
+        }
+        if stdin_eof() && buffer_len(raw) == 0 { break }
+        let line = string(raw)
+        let characters = len(line)
+        stats.recent[stats.lines % 8] = characters
+        stats.lines = stats.lines + 1
+        stats.characters = stats.characters + characters
+        if characters > stats.longest { stats.longest = characters }
+        print(number(stats.lines) + s": " + line)
+    }
+    print(s"lines=" + number(stats.lines) + s" characters=" + number(stats.characters) +
+        s" longest=" + number(stats.longest))
+}

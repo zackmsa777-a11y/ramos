@@ -1,7 +1,7 @@
 # Compiler written in Ramos
 
 `ramos.ramos` is the executable compiler source. It has no imports or generated
-host-language parser. `main` calls `read_file`, `utf8`, `lex`, `discover`,
+host-language parser. `main` calls `read_file`, `utf8`, `lex`, `records`, `discover`,
 `functions`, and `elf`, then publishes the binary with `write_file`.
 
 The lexer keeps source spans in a token table and validates string escapes.
@@ -19,7 +19,7 @@ allocation and argv/I/O state. Arithmetic remains checked.
 
 ## Packed representation
 
-The language currently has byte buffers, so the compiler uses signed 32-bit
+The compiler preserves seed-compatible byte-buffer source and uses signed 32-bit
 cells for metadata with checked native int64 operations. Values requiring all
 64 bits are parsed from source and emitted directly as little-endian immediates.
 There are no handle-to-integer conversions or forged buffer pointers.
@@ -35,7 +35,7 @@ There are no handle-to-integer conversions or forged buffer pointers.
 `c` byte offsets: scalar state 0..255; 256 function records of 256 bytes at 256;
 4,096 active symbol records of 24 bytes at 70,000; at most 50,000 token records
 of 12 bytes at 200,000; 128 block records of 40 bytes at 850,000; type stack at
-900,000; operator/call records of 24 bytes at 910,000. Each region ends before
+900,000; 64 struct records of 512 bytes at 857,000; operator/call records of 24 bytes at 910,000. Each region ends before
 the next. Function parameters occupy sixteen 12-byte records at record offset
 64. The symbol counter also tracks 4,096 total declarations across all functions.
 
@@ -44,9 +44,13 @@ Scalar state cell indices: 0 current token, 1 token count, 2 function count,
 symbols, 8 total declarations, 9 frame slots, 10 block depth, 11 operators,
 12 expression types, 13 expression nesting, 14 decoded-data length, 15 diagnostic
 source override, 16 selected target (0 Linux, 1 Windows), 17 literal-end cursor,
-18 nonnegative int32 RHS literal value, 19 removable value-push end cursor.
+18 nonnegative int32 RHS literal value, 19 removable value-push end cursor,
+20 struct count.
 Token kinds preserve the bootstrap constants. Types are
-0 int64, 1 bool, 2 void, 3 bytes. Callable IDs 256..272 identify OS/buffer intrinsics.
+0 int64, 1 bool, 2 void, 3 bytes, 4 string, 1000 + struct index; an array
+adds 100000 to its element type (at most 16 levels). IDs 256..283 and 289 identify
+public intrinsics; 512 + struct index identifies a constructor. Private runtime
+helper offsets are never exposed as callable source intrinsics.
 
 `f` holds up to 40,000 12-byte fixup records at zero and up to 40,000 4-byte label
 positions at 600,000. Fixup kinds are 1 function, 2 branch, 3 literal. All rel32
@@ -111,3 +115,19 @@ The process-state block is 128 bytes: offsets 48/56/64 hold parse status, sticky
 stdin EOF and the lazy scratch pointer; Windows temporary-file uniqueness uses
 its separate counter at 72. Existing argv and file identity fields are retained.
 See [input/text semantics](../docs/input-text.md).
+
+## Managed values
+
+Version 0.10 adds token kinds 45..50 for string/struct, dot, brackets and string
+literals. Struct discovery registers all names before resolving fields. Struct
+records contain name spans, field count, definition token bounds and up to sixteen
+field records. Operator/call record field 20 carries a typed-array result/element
+type while arguments are checked; indexing uses its own delimiter marker.
+
+The private native `heap_runtime.inc` and `values_runtime.inc` are shared by both
+OS boundaries. Heap handles preserve the original length-at-handle/data-at-+8 ABI.
+Physical block headers are 32 bytes; a uint32 ownership map resolves conservative
+roots, including interior pointers. A cached next block accelerates allocation;
+a complete scan and collection/retry handle fragmentation and exhaustion.
+Generated frames start zeroed and ended scopes clear locals. Process-state offset
+80 stores the allocation cursor. See [semantics and limits](../docs/values.md).

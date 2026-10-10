@@ -66,10 +66,10 @@ Every `read_line` updates `io_error`, including resetting it after successful
 reads or EOF; it does not change decimal parse status or file identity protection.
 
 Input is read in 4 KiB chunks. A private lazy RW scratch mapping of 1 MiB +
-12 KiB is reused outside the existing 16 MiB buffer arena. Returned lines are
-fresh mutable arena allocations sized to their payload, so short lines do not
-each consume 1 MiB. The arena is still finite and allocations still trap on
-resource exhaustion. Do not mix this buffered API with another consumer of stdin.
+12 KiB is reused outside the 16 MiB value heap. Returned lines are
+fresh mutable heap allocations sized to their payload, so short lines do not
+each consume 1 MiB. Version 0.10 can reclaim discarded lines; allocation still traps if live
+data exceeds the heap. Do not mix this buffered API with another consumer of stdin.
 
 Linux reads fd 0 directly and retries EINTR. Windows uses `GetStdHandle` and
 `ReadFile`; broken pipe and handle EOF are treated as normal end of input.

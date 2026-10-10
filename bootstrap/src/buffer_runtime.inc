@@ -1,39 +1,22 @@
-# Copied inside runtime_writer..runtime_writer_end. Opaque handles always
-# point into this process-owned monotonic arena. No routine frees/reuses bytes.
-# r12=Ramos call depth, r13=arena base (zero before lazy mmap), r14=used bytes.
-runtime_buffer_new:
-    cmp rax, BUFFER_LIMIT
-    ja runtime_buffer_size_error
-    # Negative lengths compare above BUFFER_LIMIT as unsigned.
-    lea rdx, [rax + 15]
-    and rdx, -8
-    lea rcx, [r14 + rdx]
-    cmp rcx, BUFFER_ARENA_LIMIT
-    ja runtime_buffer_allocation_error
+# Native Linux mapping; common allocator keeps the public length/payload ABI.
+runtime_heap_prepare:
     test r13, r13
-    jnz runtime_buffer_allocate
-    push rax
-    push rdx
+    jnz runtime_heap_ready
     mov eax, 9
     xor edi, edi
-    mov esi, BUFFER_ARENA_LIMIT
-    mov edx, 3                 # PROT_READ | PROT_WRITE, never PROT_EXEC
-    mov r10d, 0x22            # MAP_PRIVATE | MAP_ANONYMOUS
+    mov esi, OFFSET FLAT:HEAP_MAPPING_SIZE
+    mov edx, 3
+    mov r10d, 0x22
     mov r8, -1
     xor r9d, r9d
     syscall
     cmp rax, -4095
     jae runtime_buffer_allocation_error
     mov r13, rax
-    pop rdx
-    pop rax
-runtime_buffer_allocate:
-    mov rcx, rax
-    lea rax, [r13 + r14]
-    add r14, rdx
-    mov QWORD PTR [rax], rcx
-    # Anonymous mmap is zero-filled; this region has never been handed out.
+    mov QWORD PTR [r13], BUFFER_ARENA_LIMIT
+runtime_heap_ready:
     ret
+.include "bootstrap/src/heap_runtime.inc"
 
 runtime_buffer_literal:
     push rsi
@@ -108,3 +91,6 @@ runtime_buffer_value_message:
 .equ RUNTIME_BUFFER_GET_FILE, CODE_OFFSET + runtime_buffer_get - runtime_writer
 .equ RUNTIME_BUFFER_SET_FILE, CODE_OFFSET + runtime_buffer_set - runtime_writer
 .equ RUNTIME_BUFFER_PRINT_FILE, CODE_OFFSET + runtime_buffer_print - runtime_writer
+
+.equ RUNTIME_COLLECT_FILE, CODE_OFFSET + runtime_collect - runtime_writer
+.equ RUNTIME_MEMORY_USED_FILE, CODE_OFFSET + runtime_memory_used - runtime_writer

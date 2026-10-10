@@ -20,7 +20,7 @@ the bootstrap and self-hosted compilers. No C library, shell, subprocess or exte
 On Linux, arguments are raw operating-system bytes and may be empty or invalid
 UTF-8. Windows arguments are UTF-8 copies of the native UTF-16 command line.
 Paths must be nonempty, shorter than 4096 bytes, and contain no NUL. All byte
-buffers retain the 1 MiB payload and 16 MiB process-arena limits. Allocations
+buffers retain the 1 MiB payload and 16 MiB live-heap limit (plus an 8 MiB ownership map). Discarded values can be reclaimed in 0.10; allocations
 still trap on resource exhaustion; OS file failures are explicitly fallible.
 `arg` returns a fresh mutable copy, not a pointer into the kernel argv stack.
 

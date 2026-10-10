@@ -1,6 +1,6 @@
 # Intrinsic records: name pointer/length, arity, result type, three argument
 # types, runtime file offset. Name resolution preserves local shadowing.
-.equ BUILTIN_COUNT, 17
+.equ BUILTIN_COUNT, 19
 find_builtin:
     push rbx
     push r12
@@ -115,6 +115,8 @@ stdin_eof_name: .ascii "stdin_eof"
 int_to_text_name: .ascii "int_to_text"
 text_to_int_name: .ascii "text_to_int"
 parse_error_name: .ascii "parse_error"
+collect_name: .ascii "collect"
+memory_used_name: .ascii "memory_used"
 .balign 8
 builtin_signatures:
     .quad buffer_name, 6, 1, TYPE_BUFFER, TYPE_INT, 0, 0, RUNTIME_BUFFER_NEW_FILE
@@ -134,4 +136,6 @@ builtin_signatures:
     .quad int_to_text_name, 11, 1, TYPE_BUFFER, TYPE_INT, 0, 0, RUNTIME_INT_TO_TEXT_FILE
     .quad text_to_int_name, 11, 1, TYPE_INT, TYPE_BUFFER, 0, 0, RUNTIME_TEXT_TO_INT_FILE
     .quad parse_error_name, 11, 0, TYPE_INT, 0, 0, 0, RUNTIME_PARSE_ERROR_FILE
+    .quad collect_name, 7, 0, TYPE_VOID, 0, 0, 0, RUNTIME_COLLECT_FILE
+    .quad memory_used_name, 11, 0, TYPE_INT, 0, 0, 0, RUNTIME_MEMORY_USED_FILE
 .section .text
