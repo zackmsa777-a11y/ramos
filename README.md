@@ -18,7 +18,8 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ```
 
 Version 0.8 adds line/block comments, short-circuit `&&`/`||` and more helpful
-diagnostics. See [the semantics and examples](docs/usability.md).
+diagnostics. The native validation corpus passes 106 Linux tests and 56 Windows
+tests. See [the semantics and examples](docs/usability.md).
 
 Version 0.7.1 optimizes constant arithmetic, stack transfers and checked buffer
 accesses without changing language syntax. See [the emitter changes](docs/optimization.md)
