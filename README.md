@@ -1,14 +1,14 @@
-# Ramos 0.4
+# Ramos 0.5
 
 A native x86-64 Linux compiler written entirely in assembly. Ramos source uses
 braces and `.ramos` files. The compiler emits instruction bytes and ELF executable
 headers directly, with no delegated code-generation backend.
 
-Version 0.4 adds typed functions, parameters, return values, forward calls,
-and direct/mutual recursion with a runtime call-depth check. Version 0.3's
-booleans, comparisons, lexical scope and structured control flow remain.
-The compiler is implemented in assembly; owned buffers, strings and file I/O
-are next on the [self-hosting roadmap](docs/self-hosting.md).
+Version 0.5 adds opaque byte buffers, string-valued expressions and checked
+byte access. Buffers can be passed to functions, returned and printed. Version
+0.4 typed functions and recursion, and 0.3 structured control flow remain.
+The compiler is implemented in assembly; file I/O and compiler collections are
+next on the [self-hosting roadmap](docs/self-hosting.md).
 
 ## Try it
 
@@ -72,7 +72,7 @@ fn main() {
 
 - Exactly one parameterless `main` returning void is required. Other top-level
   functions may appear before or after it.
-- `print` accepts a string literal, integer expression, or boolean expression
+- `print` accepts a string literal, buffer, integer expression, or boolean expression
   and adds a newline. Booleans print as `true` or `false`.
 - Integer expressions support `+`, `-`, `*`, `/`, `%`, unary `+`/`-`, and
   parentheses. Multiplication, division, and remainder bind more tightly than
@@ -82,20 +82,20 @@ fn main() {
   `-9223372036854775808` is accepted as a directly negated literal; its positive
   magnitude cannot be used as an ordinary positive literal.
 - `let` declares an immutable binding; `var` declares a mutable
-  binding. Every binding must have an initializer. `int64` and `bool` types
+  binding. Every binding must have an initializer. `int64`, `bool`, and `bytes` types
   are inferred and fixed for the lifetime of the binding.
 - Assignment is supported only for `var`. Names must be declared before use;
   duplicate declarations in the same block are errors. Inner blocks may
   shadow outer names, and their bindings are invisible after the block ends.
   Identifiers use ASCII letters,
   underscores, and digits, with a letter or underscore first. Keywords are
-  reserved. String-valued bindings are not implemented.
+  reserved. String-valued bindings hold mutable byte buffers.
 - Separate statements with newlines; the final statement may directly precede
   `}`. Newlines after operators and opening parentheses are allowed. Semicolons
   and comments are not implemented.
-- Input is UTF-8. String escapes are `\n`, `\t`, `\r`, `\"`, and `\\`.
+- Input is UTF-8. String escapes are `\n`, `\t`, `\r`, `\"`, `\\`, and `\0`.
 - Empty bodies, empty strings, LF, and CRLF are supported.
-- NUL bytes, malformed UTF-8, unsupported escapes, and raw newlines inside
+- Raw NUL source bytes, malformed UTF-8, unsupported escapes, and raw newlines inside
   strings are rejected. Diagnostics contain filename, line, and byte column.
 
 ## Booleans and control flow
@@ -158,8 +158,8 @@ fn announce() {
 }
 ```
 
-Parameters require `int64` or `bool` annotations and are immutable. A result
-annotation is `-> int64`, `-> bool`, or `-> void`; omitting it means void.
+Parameters require `int64`, `bool`, or `bytes` annotations and are immutable. A result
+annotation is `-> int64`, `-> bool`, `-> bytes`, or `-> void`; omitting it means void.
 Calls evaluate arguments left to right and require exactly matching types and
 argument counts. Functions may call later definitions, themselves or each other.
 A lexical binding can shadow a function name; that name then cannot be called.
@@ -180,6 +180,31 @@ unusually small stack limit selected by the caller.
 
 Run `make functions` for factorial, a digit classifier and a void helper.
 See [the native calling convention](docs/functions.md) for compiler details.
+
+## Byte buffers
+
+```text
+fn main() {
+    let source = "let answer = 42"
+    print(buffer_len(source))
+    print(buffer_get(source, 0))
+    buffer_set(source, 0, 76)
+    print(source)
+}
+```
+
+`buffer(length)` allocates zero-filled bytes. `buffer_len`, `buffer_get`, and
+`buffer_set` provide length, checked reads, and checked writes. Indices count
+bytes; reads return 0..255 and writes accept only that range. String literals
+in expressions allocate fresh buffers. Bindings and function values alias their
+buffer; `let` protects the binding while allowing content changes.
+
+Buffers live until process exit in a bounded 16 MiB arena, with at most 1 MiB
+payload per buffer. Descriptors and alignment count toward the arena limit.
+Invalid sizes, indices, byte values or failed allocation report a runtime error
+and exit 1. There is no freeing or resizing in this milestone. Direct string
+literal printing avoids allocation. Run `make buffers` to scan stored source
+text and return a buffer from a function. See [buffer semantics](docs/buffers.md).
 
 ## Arithmetic behavior
 
@@ -204,6 +229,7 @@ make
 make calculator
 make control-flow
 make functions
+make buffers
 make test
 ```
 
@@ -222,6 +248,9 @@ Implementation files:
 - `src/functions.inc`: signature discovery, typed arguments, calls and returns.
 - `src/function_codegen.inc`: private frames, argument copying and native calls.
 - `src/runtime.inc`: position-independent I/O, integer conversion, and errors.
+- `src/buffers.inc`: typed intrinsic lookup and argument checking.
+- `src/buffer_codegen.inc`: buffer calls and mutable literal copies.
+- `src/buffer_runtime.inc`: bounded allocation, byte access and buffer output.
 
 The executable runs native instructions. Locals occupy stack slots; expressions
 use balanced pushes and pops. Code is read/execute, string data is read-only,
@@ -243,7 +272,7 @@ source-size limit. Standard input and device files are not supported.
 ./ramos --version
 ```
 
-Next: owned buffers, strings, collections, CLI arguments, and files. See the [bootstrap milestones](docs/self-hosting.md).
+Next: CLI arguments, fallible file I/O, compiler collections and wrapping arithmetic. See the [bootstrap milestones](docs/self-hosting.md).
 Performance claims need repeatable workload benchmarks and later
 optimization. Native code and assembly implementation alone do not establish a
 speed advantage over mature languages.
@@ -255,8 +284,8 @@ Games, web servers, and a separate browser target are later platform projects.
 
 ## Benchmarks
 
-The historical 0.2 results have not been remeasured for 0.4. The old benchmark
+The historical 0.2 results have not been remeasured for 0.5. The old benchmark
 script requires a 0.2 compiler because its binary adapter uses that version's
-entry layout; it rejects 0.4 before timing or modifying generated code. See
+entry layout; it rejects later versions before timing or modifying generated code. See
 [the measured 0.2 comparison](benchmarks/report.md) for Ramos, C, Rust,
 and Python, including raw timings and reproduction instructions.

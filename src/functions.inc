@@ -46,6 +46,9 @@ parse_type:
     mov eax, TYPE_BOOL
     cmp QWORD PTR [rip + token], T_BOOL
     je parse_type_done
+    mov eax, TYPE_BUFFER
+    cmp QWORD PTR [rip + token], T_BYTES
+    je parse_type_done
     mov eax, TYPE_VOID
     cmp QWORD PTR [rip + token], T_VOID
     jne syntax_error
@@ -85,6 +88,11 @@ discover_name:
     mov rdi, QWORD PTR [rip + identifier_offset]
     mov rsi, QWORD PTR [rip + identifier_length]
     call find_function
+    cmp rax, -1
+    jne function_error
+    mov rdi, QWORD PTR [rip + identifier_offset]
+    mov rsi, QWORD PTR [rip + identifier_length]
+    call find_builtin
     cmp rax, -1
     jne function_error
     mov rbx, QWORD PTR [rip + function_count]
@@ -313,7 +321,7 @@ parse_named_call:
     jne parse_named_action_invalid_call
     mov rdi, rbx
     mov rsi, r12
-    call find_function
+    call find_callable
     cmp rax, -1
     je parse_named_action_invalid_call
     call parse_call
@@ -368,7 +376,7 @@ parse_name_call:
     jne parse_name_expression_invalid_call
     mov rdi, rbx
     mov rsi, r12
-    call find_function
+    call find_callable
     cmp rax, -1
     je parse_name_expression_invalid_call
     call parse_call
@@ -392,6 +400,8 @@ parse_name_expression_invalid_call:
 
 # rax = function index; current token = opening parenthesis.
 parse_call:
+    cmp rax, FUNCTION_LIMIT
+    jae parse_builtin_call
     push rbx
     push r12
     push r13

@@ -143,6 +143,7 @@ bounded block parsing preserve compiler limits and generated memory protections.
 Phase 2 security remains an ongoing track, not a completed guarantee.
 
 Version 0.4 adds typed functions, arguments, return values and recursion with
-a bounded call counter. Next add the collection and I/O capabilities needed
+a bounded call counter. Version 0.5 adds process-owned byte buffers, string-valued
+expressions and checked byte access. Next add file I/O and compiler collections needed
 for a compiler written in Ramos. See
 [self-hosting milestones](self-hosting.md).

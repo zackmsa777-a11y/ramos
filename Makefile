@@ -5,7 +5,7 @@ PREFIX ?= /usr/local
 DESTDIR ?=
 INSTALL ?= install
 
-.PHONY: all test demo calculator control-flow functions install clean
+.PHONY: all test demo calculator control-flow functions buffers install clean
 all: ramos
 
 build/ramos.o: src/ramos.s $(wildcard src/*.inc)
@@ -16,7 +16,7 @@ ramos: build/ramos.o
 	$(LD) -z noexecstack --build-id=none -o $@ $<
 
 test: ramos
-	$(PYTHON) tests/test_ramos.py
+	$(PYTHON) -m unittest discover -s tests
 
 demo: ramos
 	./ramos build example.ramos -o example --force
@@ -34,9 +34,13 @@ functions: ramos
 	./ramos build examples/functions.ramos -o build/functions --force
 	./build/functions
 
+buffers: ramos
+	./ramos build examples/buffers.ramos -o build/buffers --force
+	./build/buffers
+
 install: ramos
 	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/bin"
 	$(INSTALL) -m 755 ramos "$(DESTDIR)$(PREFIX)/bin/ramos"
 
 clean:
-	rm -f ramos example calculator build/ramos.o build/control-flow build/functions
+	rm -f ramos example calculator build/ramos.o build/control-flow build/functions build/buffers

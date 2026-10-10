@@ -58,7 +58,7 @@ generate_executable:
     call emit_bytes
     # Process entry calls main using the private Ramos ABI.
     lea rsi, [rip + entry_initialize]
-    mov ecx, 3
+    mov ecx, OFFSET FLAT:ENTRY_INITIALIZE_SIZE
     call emit_bytes
     mov eax, 0xe8
     call emit_byte
@@ -121,6 +121,12 @@ emit_control_dispatch:
     je emit_return
     cmp r15, IR_DROP
     je emit_drop
+    cmp r15, IR_BUILTIN
+    je emit_builtin
+    cmp r15, IR_BUFFER_LITERAL
+    je emit_buffer_literal
+    cmp r15, IR_PRINT_BUFFER
+    je emit_buffer_print
     jmp syntax_error
 emit_label:
     mov rax, QWORD PTR [rip + code_cursor]
@@ -202,6 +208,17 @@ emit_integer_print:
     call emit_relative
     jmp emit_ir_next
 emit_string_print:
+    call emit_string_address
+    mov eax, 0xba
+    call emit_byte
+    mov rax, QWORD PTR [r13 + 16]
+    call emit_u32
+    mov eax, 0xe8
+    call emit_byte
+    mov eax, CODE_OFFSET
+    call emit_relative
+    jmp emit_ir_next
+emit_string_address:
     lea rsi, [rip + string_lea_prefix]
     mov ecx, 3
     call emit_bytes
@@ -217,16 +234,7 @@ emit_string_print:
     mov QWORD PTR [rdx + rcx + 8], rax
     inc QWORD PTR [rip + fixup_count]
     xor eax, eax
-    call emit_u32
-    mov eax, 0xba
-    call emit_byte
-    mov rax, QWORD PTR [r13 + 16]
-    call emit_u32
-    mov eax, 0xe8
-    call emit_byte
-    mov eax, CODE_OFFSET
-    call emit_relative
-    jmp emit_ir_next
+    jmp emit_u32
 emit_negation:
     lea rsi, [rip + negate_bytes]
     mov ecx, 4

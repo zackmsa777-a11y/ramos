@@ -72,7 +72,6 @@ class RamosTests(unittest.TestCase):
             '', 'fn main() {', 'fn other() {}', 'fn main(x) {}',
             'fn main() { print("x")', 'fn main() { print("x) }',
             'fn main() { print("\\q") }', 'fn main() { print("x\ny") }',
-            'fn main() { let x = "string" }',
             'fn main() {} fn main() {}', 'fn main() {} garbage',
             'fn main() { print("a") print("b") }',
             b'fn main() { print("\xc0\x80") }',
@@ -173,7 +172,7 @@ class RamosTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
 
     def test_help_and_version(self):
-        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.4')):
+        for argument, expected in (('--help', b'ramos build'), ('--version', b'Ramos 0.5')):
             result = subprocess.run([str(COMPILER), argument], capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0)
             self.assertIn(expected, result.stdout)

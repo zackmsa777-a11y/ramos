@@ -91,6 +91,7 @@ runtime_depth_message:
 runtime_math_message:
     .ascii "Ramos runtime error: arithmetic overflow or division by zero\n"
 .equ RUNTIME_MATH_MESSAGE_SIZE, . - runtime_math_message
+.include "src/buffer_runtime.inc"
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer
@@ -129,7 +130,10 @@ not_bytes: .byte 0x58, 0x48, 0x85, 0xc0, 0x0f, 0x94
 conditional_jump_bytes: .byte 0x58, 0x48, 0x85, 0xc0, 0x0f, 0x84
 comparison_opcodes: .byte 0x94, 0x95, 0x9c, 0x9e, 0x9f, 0x9d
 
-entry_initialize: .byte 0x45, 0x31, 0xe4
+entry_initialize:
+    .byte 0xfc, 0x45, 0x31, 0xe4, 0x45, 0x31, 0xed, 0x45, 0x31, 0xf6
+.equ ENTRY_INITIALIZE_SIZE, . - entry_initialize
+builtin_pop_arguments: .byte 0x5a, 0x59, 0x58
 # inc r12; cmp r12, CALL_DEPTH_LIMIT; ja rel32 runtime-depth-error.
 function_depth_guard: .byte 0x49, 0xff, 0xc4, 0x49, 0x83, 0xfc, CALL_DEPTH_LIMIT, 0x0f, 0x87
 function_epilogue: .byte 0xc9, 0x49, 0xff, 0xcc, 0xc3

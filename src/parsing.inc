@@ -105,10 +105,15 @@ parse_print:
     jmp parse_print_close
 parse_print_integer:
     call parse_expression
+    cmp QWORD PTR [rip + expression_type], TYPE_BUFFER
+    je parse_print_buffer
     mov edi, IR_PRINT_INT
     cmp QWORD PTR [rip + expression_type], TYPE_BOOL
     jne parse_print_emit
     mov edi, IR_PRINT_BOOL
+    jmp parse_print_emit
+parse_print_buffer:
+    mov edi, IR_PRINT_BUFFER
 parse_print_emit:
     xor esi, esi
     xor edx, edx
@@ -302,6 +307,8 @@ parse_equality_more:
     jne parse_equality_done
 parse_equality_operator:
     mov r12, QWORD PTR [rip + expression_type]
+    cmp r12, TYPE_BUFFER
+    je type_error
     call next_token
     call parse_ordering
     cmp r12, QWORD PTR [rip + expression_type]
@@ -450,6 +457,8 @@ parse_primary:
     je parse_integer_literal
     cmp rax, T_IDENT
     je parse_name_expression
+    cmp rax, T_STRING
+    je parse_buffer_literal
     cmp rax, T_TRUE
     je parse_boolean_literal
     cmp rax, T_FALSE
@@ -460,6 +469,13 @@ parse_primary:
     call parse_expression
     mov edi, T_RP
     jmp expect_token
+parse_buffer_literal:
+    mov QWORD PTR [rip + expression_type], TYPE_BUFFER
+    mov edi, IR_BUFFER_LITERAL
+    mov rsi, QWORD PTR [rip + string_offset]
+    mov rdx, QWORD PTR [rip + string_length]
+    call append_ir
+    jmp next_token
 parse_boolean_literal:
     cmp rax, T_TRUE
     sete sil

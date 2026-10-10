@@ -1,7 +1,7 @@
-# Ramos 0.4 function semantics and ABI
+# Ramos function semantics and ABI (0.5)
 
-The language supports top-level functions with explicitly typed int64/bool
-parameters, optional int64/bool/void return annotations, and inferred local
+The language supports top-level functions with explicitly typed int64/bool/bytes
+parameters, optional int64/bool/bytes/void return annotations, and inferred local
 bindings. An omitted result annotation is void. Main must take no parameters
 and return void. No closures, overloads or foreign function interface exist.
 
@@ -28,7 +28,9 @@ source is still checked for type/scope errors.
 
 ## Private native ABI
 
-- Process entry initializes r12 to zero, calls main and exits with status zero.
+- Process entry initializes r12 (call depth), r13 (buffer arena base) and r14
+  (used arena bytes) to zero, clears the direction flag, calls main and exits
+  with status zero.
 - Caller argument expressions run left to right. Each result occupies one
   eight-byte expression-stack slot, in that evaluation order.
 - `call rel32` pushes the return address. The callee checks/increments the r12
@@ -45,6 +47,8 @@ source is still checked for type/scope errors.
 - Earlier expression values remain on the caller's stack while callees run.
   Generated arithmetic/runtime routines may clobber ordinary scratch registers;
   rbp, rsp's frame discipline and the reserved r12 counter survive all calls.
+  r13/r14 persist across all functions and runtime helpers; only the buffer
+  allocator updates them. bytes results occupy one opaque eight-byte handle.
 
 The active-call limit is 64 including main. A deeper attempt writes a stderr
 call-depth diagnostic and exits 1 before allocating another local frame.

@@ -1,0 +1,36 @@
+fn count_digits(source: bytes) -> int64 {
+    var index = 0
+    var count = 0
+    while index < buffer_len(source) {
+        let c = buffer_get(source, index)
+        if c >= 48 {
+            if c <= 57 {
+                count = count + 1
+            }
+        }
+        index = index + 1
+    }
+    return count
+}
+
+fn make_word() -> bytes {
+    let word = buffer(5)
+    buffer_set(word, 0, 82)
+    buffer_set(word, 1, 97)
+    buffer_set(word, 2, 109)
+    buffer_set(word, 3, 111)
+    buffer_set(word, 4, 115)
+    return word
+}
+
+fn main() {
+    let source = "let answer = 42 + 100"
+    print("Stored source:")
+    print(source)
+    print("Digit count:")
+    print(count_digits(source))
+    let word = make_word()
+    print(word)
+    buffer_set(word, 0, 114)
+    print(word)
+}

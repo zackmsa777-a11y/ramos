@@ -1,4 +1,4 @@
-# Ramos 0.4: x86-64 Linux compiler. GNU assembler, Intel syntax.
+# Ramos 0.5: x86-64 Linux compiler. GNU assembler, Intel syntax.
 # No libc, LLVM, C backend, or external code generation.
 # Internal routines use caller-saved rax, rcx, rdx, rsi, rdi, r8-r11.
 .intel_syntax noprefix
@@ -57,6 +57,9 @@
 .equ T_INT64, 39
 .equ T_BOOL, 40
 .equ T_VOID, 41
+.equ T_BYTES, 42
+.equ BUFFER_LIMIT, 1048576
+.equ BUFFER_ARENA_LIMIT, 16777216
 .equ FUNCTION_LIMIT, 256
 .equ PARAMETER_LIMIT, 16
 .equ CALL_DEPTH_LIMIT, 64
@@ -64,6 +67,7 @@
 .equ TYPE_INT, 0
 .equ TYPE_BOOL, 1
 .equ TYPE_VOID, 2
+.equ TYPE_BUFFER, 3
 .equ IR_STRING, 1
 .equ IR_LITERAL, 2
 .equ IR_LOAD, 3
@@ -91,6 +95,9 @@
 .equ IR_CALL, 24
 .equ IR_RETURN, 25
 .equ IR_DROP, 26
+.equ IR_BUILTIN, 27
+.equ IR_BUFFER_LITERAL, 28
+.equ IR_PRINT_BUFFER, 29
 
 .section .text
 _start:
@@ -843,6 +850,20 @@ lex_keyword_next_14:
     mov eax, T_VOID
     jmp lex_return
 lex_keyword_next_15:
+    cmp rdx, 5
+    jne lex_keyword_next_16
+    cmp BYTE PTR [r12 + r13], 'b'
+    jne lex_keyword_next_16
+    cmp BYTE PTR [r12 + r13 + 1], 'y'
+    jne lex_keyword_next_16
+    cmp BYTE PTR [r12 + r13 + 2], 't'
+    jne lex_keyword_next_16
+    cmp BYTE PTR [r12 + r13 + 3], 'e'
+    jne lex_keyword_next_16
+    cmp BYTE PTR [r12 + r13 + 4], 's'
+    jne lex_keyword_next_16
+    mov eax, T_BYTES
+lex_keyword_next_16:
     jmp lex_return
 lex_number:
     xor r13d, r13d
@@ -903,6 +924,8 @@ lex_escape:
     je escape_tab
     cmp al, 'r'
     je escape_cr
+    cmp al, '0'
+    je escape_zero
     cmp al, '"'
     je escape_emit
     cmp al, 92
@@ -916,6 +939,9 @@ escape_tab:
     jmp escape_emit
 escape_cr:
     mov al, 13
+    jmp escape_emit
+escape_zero:
+    xor eax, eax
 escape_emit:
     call append_data_byte
     STEP_BYTE
@@ -962,9 +988,11 @@ expect_token:
 
 .include "src/parsing.inc"
 .include "src/functions.inc"
+.include "src/buffers.inc"
 
 .include "src/codegen.inc"
 .include "src/function_codegen.inc"
+.include "src/buffer_codegen.inc"
 
 # Refuse aliases to the source, even with --force. Existing destinations
 # require --force; renameat2(RENAME_NOREPLACE) also protects against races.
@@ -1128,8 +1156,8 @@ arg_version: .asciz "--version"
 colon: .asciz ":"
 newline_text: .asciz "\n"
 error_prefix: .asciz ": error: "
-version_message: .asciz "Ramos 0.4.0 — native assembly compiler\n"
-help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, continue, typed functions, and return.\nTarget: x86-64 Linux. Existing output requires --force.\n"
+version_message: .asciz "Ramos 0.5.0 — native assembly compiler\n"
+help_message: .asciz "Usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]\n       ramos --help | --version\nSupports main, strings, checked int64 arithmetic, let, var, bool, comparisons, if/else, while, break, continue, typed functions, return, and bounded byte buffers.\nTarget: x86-64 Linux. Existing output requires --force.\n"
 usage_message: .asciz "usage: ramos build SOURCE.ramos -o EXECUTABLE [--force]"
 input_message: .asciz "cannot read input (a readable regular file is required)"
 output_message: .asciz "cannot write or publish output"
@@ -1142,7 +1170,7 @@ number_message: .asciz "integer literal is outside the signed 64-bit range"
 undefined_message: .asciz "variable is not declared before use"
 duplicate_message: .asciz "variable is already declared in this scope"
 immutable_message: .asciz "cannot assign to a let binding; use var for mutable variables"
-type_message: .asciz "type mismatch: expected compatible int64 or bool values"
+type_message: .asciz "type mismatch: expected compatible int64, bool or bytes values"
 function_message: .asciz "invalid or duplicate function; exactly one parameterless void main is required"
 call_message: .asciz "invalid function call: check name, shadowing, argument count and types"
 return_message: .asciz "invalid return or value function may reach its end without returning"
