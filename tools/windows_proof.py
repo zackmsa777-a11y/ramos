@@ -326,7 +326,8 @@ def main():
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,
-        'tests_passed': count,
+        'tests_discovered': count, 'tests_skipped': len(result.skipped),
+        'tests_passed': count - len(result.skipped),
     }
     (BUILD / 'windows-bootstrap-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
