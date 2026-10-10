@@ -40,7 +40,8 @@ fn view_draw(page: ViewPage, name: string, number: int64, selected: int64) {
         if index == selected { tui_color(7, 4) }
         else { tui_color(7, 0) }
         let line = page.lines[index]
-        tui_at(row + 3, 3, slice(line, 0, num_min(len(line), width - 4)))
+        let clipped = slice(line, 0, num_min(len(line), width - 4))
+        tui_at(row + 3, 3, clipped + text_repeat(s" ", width - 4 - len(clipped)))
         tui_reset()
         row = row + 1
     }
