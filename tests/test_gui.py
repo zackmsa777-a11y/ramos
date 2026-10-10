@@ -83,7 +83,7 @@ class WindowsGUITests(unittest.TestCase):
     def gui_probe(self, mode):
         shutil.copytree(support.ROOT/'stdlib',self.directory/'stdlib',dirs_exist_ok=True)
         if mode == 'notes':
-            code=(support.ROOT/'examples/notes.ramos').read_text().replace('../stdlib/','stdlib/')
+            code=(support.ROOT/'examples/notes.ramos').read_text(encoding='utf-8').replace('../stdlib/','stdlib/')
         else:
             ending='exit(7)' if mode=='exit' else 'print(9223372036854775807 + 1)' if mode=='trap' else ''
             code='''weave "stdlib/gui.ramos"
