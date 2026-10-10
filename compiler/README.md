@@ -115,7 +115,7 @@ Version 0.9 adds five typed native intrinsics (IDs 268..272). `decimal` now uses
 `int_to_text`, so the compiler exercises its own conversion API. Shared assembly
 in `bootstrap/src/text_runtime.inc` handles decimal formatting/parsing and line
 assembly; each OS supplies only scratch allocation and buffered read boundaries.
-The process-state block is 128 bytes: offsets 48/56/64 hold parse status, sticky
+The process-state block is now 144 bytes (expanded in 0.13): offsets 48/56/64 hold parse status, sticky
 stdin EOF and the lazy scratch pointer; Windows temporary-file uniqueness uses
 its separate counter at 72. Existing argv and file identity fields are retained.
 See [input/text semantics](../docs/input-text.md).
@@ -168,3 +168,23 @@ modes, dimensions and timed input. Linux entry ignores SIGPIPE, and handled tty
 termination restores modes. Windows reserves import-data offset 3000 for a
 process-state pointer used by its console callback thread; import-name generation
 checks that names cannot overlap it. Native exit/trap paths invoke cleanup.
+
+## Desktop GUI boundary (0.13)
+
+Reserved intrinsics 303..307 implement `_gui_open`, `_gui_control`, `_gui_text`,
+`_gui_poll`, `_gui_close`. The Ramos `gui.ramos` library constructs checked control
+properties and typed event structs. Compiler context word 25 stores `--gui`;
+the PE writer selects subsystem 2 only for this explicit Windows option. Console
+output and Linux's static ELF format retain their existing contracts.
+
+Both process entries reserve and zero 144 bytes. Process+128 is a collector root
+for the 5120-byte GUI state; import-data+3008 supplies the pointer for the native
+window callback. The state holds native function pointers, window/class/font,
+64 control slots and a 64-entry event ring. The callback preserves Windows'
+nonvolatile registers and never allocates or calls Ramos functions. Each raw
+operation validates its byte protocol, handles, sizes and Unicode independently.
+USER32/GDI32 load lazily from System32; function addresses stay in writable heap
+state. A private adapter supplies all twelve `CreateWindowExW` arguments. Close
+releases windows/owned brushes; native exit/trap paths also invoke cleanup.
+Linux's five GUI boundaries report unsupported status while preserving static
+executables. See [contracts and tests](../docs/gui.md).

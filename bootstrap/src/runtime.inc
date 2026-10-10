@@ -83,6 +83,7 @@ runtime_math_message:
 .include "bootstrap/src/stream_runtime.inc"
 .include "bootstrap/src/stream_os.inc"
 .include "bootstrap/src/terminal_os.inc"
+.include "bootstrap/src/gui_os.inc"
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer
@@ -127,11 +128,11 @@ entry_initialize:
     xor r13d, r13d
     xor r14d, r14d
     mov rdx, rsp
-    sub rsp, 128
+    sub rsp, 144
     mov r15, rsp
     mov rdi, rsp
     xor eax, eax
-    mov ecx, 16
+    mov ecx, 18
     rep stosq
     mov [r15], rdx
     sub rsp, 32

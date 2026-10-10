@@ -1,0 +1,159 @@
+# Desktop GUI library (Ramos 0.13)
+
+`weave "stdlib/gui.ramos"` adds real desktop windows and native controls. The
+first backend is **Windows x64**. It uses system USER32/GDI32 APIs: no Python,
+interpreter, browser, C runtime or separately installed GUI toolkit is needed.
+The library and application logic are ordinary Ramos; the compiler still emits
+native code itself. Linux compilers can cross-compile these apps to Windows.
+Linux GUI startup returns `-38` (unsupported); CLI and TUI remain native on both
+platforms. An X11/Wayland backend is future work.
+
+## A complete app
+
+```ramos
+weave "stdlib/gui.ramos"
+fn main() {
+    gui_check(gui_open(s"My first Ramos window", 360, 180))
+    gui_label(1, 20, 20, 320, 24, s"Hello, desktop!")
+    gui_button(2, 20, 60, 120, 32, s"Click me")
+    var running = true
+    while running {
+        let event = gui_event(-1)
+        if event.kind == 1 { running = false }
+        if event.kind == 2 && event.id == 2 {
+            gui_set(1, s"The button works")
+        }
+    }
+    gui_check(gui_close())
+}
+```
+
+Keep `stdlib/` beside the source. On Windows, with the full release extracted:
+
+```powershell
+.\ramos.exe build .\examples\notes.ramos -o .\notes.exe --gui
+.\notes.exe
+```
+
+From Linux:
+
+```sh
+make gui-demo
+# Or:
+./ramos build examples/notes.ramos -o notes.exe --target windows --gui
+```
+
+`--gui` sets the Windows PE subsystem to desktop GUI, so Explorer or PowerShell
+launches a window without a console. Omit it to retain a console for debugging.
+It is rejected for Linux targets or when repeated. Existing output still needs
+`--force`, and every source remains protected from accidental replacement.
+The console compiler itself is unchanged; stderr/stdout APIs still use inherited
+handles when available. A GUI launched from Explorer should show messages inside
+its controls rather than relying on console output.
+
+The included **Ramos Notes** app supports Unicode editing, a file-path input,
+Save/Clear buttons, a colored panel and resizing. Save creates a new UTF-8 file
+atomically and refuses to overwrite an existing file. Choose a new filename for
+another save. File errors appear in the status label. It is a small example,
+not an editor with open dialogs, unsaved-change confirmation or autosave.
+
+## Library API
+
+Coordinates and dimensions are integer client-area pixels. Windows supplies
+font rendering, focus, Tab navigation, button activation, text selection and
+editing. Native control appearance and available glyphs depend on Windows and
+installed fonts. These are ordinary Windows controls, not terminal escape codes.
+
+| Function | Behavior |
+| --- | --- |
+| `gui_open(title, width, height) -> int64` | Open one resizable window; zero succeeds, negative status fails |
+| `gui_label(id, x, y, w, h, text)` | Native text label |
+| `gui_button(id, x, y, w, h, text)` | Native clickable button |
+| `gui_input(id, x, y, w, h, text)` | Single-line editable Unicode text |
+| `gui_editor(id, x, y, w, h, text)` | Multiline editor with vertical scrolling |
+| `gui_panel(id, x, y, w, h, color)` | Solid colored rectangular panel; Windows repaints it automatically |
+| `gui_rgb(r, g, b) -> int64` | Construct an opaque color; each component is 0..255 |
+| `gui_set(id, text)` | Update a label, button or editor's text |
+| `gui_text(id) -> string` | Read label/button/editor text as validated UTF-8 |
+| `gui_move(id, x, y, w, h)` | Move or resize a control |
+| `gui_event(timeout_ms) -> GuiEvent` | Pump messages and retrieve one typed event |
+| `gui_close() -> int64` | Destroy the window and its controls; repeated close succeeds |
+| `gui_check(status)` | Close the GUI and exit 1 with a diagnostic on failure |
+
+Every control gets a unique ID **1..64**. Creation order determines the native
+Tab order. There is one top-level window per process; close it before opening
+another. IDs are local to the current window and can be reused after close;
+applications must not retain old IDs as references to old windows. Call
+`gui_event` regularly: it dispatches OS painting, keyboard and control messages.
+There are no arbitrary callbacks into Ramos or exposed native handles.
+
+`GuiEvent` has `kind`, `id`, `width`, `height` fields:
+
+| Kind | Meaning | Fields |
+| --- | --- | --- |
+| 0 | Timeout | Other fields zero |
+| 1 | Close requested | App should finish its loop and call `gui_close` |
+| 2 | Button activated | `id` is the control ID |
+| 3 | Client resized | `width`, `height` are current client pixel dimensions |
+| 4 | Parent window key-down | `id` is a Windows virtual-key code |
+| 5 | Editor text changed | `id` is the control ID; programmatic `gui_set` can also cause this |
+
+Text inputs consume normal editing keys themselves; kind 4 is not a global
+keyboard hook. Native controls handle mouse input and activation; raw pointer
+motion, canvas drawing, images, menus, file dialogs and multiple windows are not
+part of this first API. Colored panels provide basic rectangular drawing.
+Resize events include the initial layout and minimization (zero dimensions).
+Control layout is explicit; there is no automatic layout manager or DPI scaling.
+Apps should handle small dimensions without requesting zero-sized controls.
+The Notes example keeps a minimum logical layout of 360x240 and clips when the
+client is smaller. Clipboard/editing behavior belongs to the native controls.
+
+Timeouts are `-1` for indefinite wait, `0` for immediate polling, or
+`1..2147483647` milliseconds. Waiting uses the native message wait API rather
+than spinning. Calling poll after close is an error. Resize/paint/focus events
+can exist before user input; don't assume the first event is a button press.
+
+## Limits, statuses and lifetime
+
+Window titles are at most 4095 UTF-8 bytes. Text passed to controls is at most
+32767 UTF-8 bytes; edit controls accept at most 32767 UTF-16 units through native
+editing. Reading can therefore produce more than 32767 UTF-8 bytes. Invalid UTF-8
+and embedded NUL are rejected at the native boundary. Strings stay validated;
+empty labels and edits are allowed. Initial client width is 160..4096 and height
+80..4096. Control positions are 0..8192 and dimensions 1..8192; drawing is clipped
+by the native client area. There are at most 64 controls and 64 queued events.
+A full queue fails explicitly instead of silently losing user actions.
+
+`gui_open` and `gui_close` return fallible statuses. Widget/event helpers call
+`gui_check`, so they fail with a diagnostic and exit 1. Low-level `_gui_*`
+intrinsics are reserved library machinery; they return negative statuses (or
+empty bytes with `io_error`) and validate every property independently:
+`-9` inactive window/unknown control, `-16` second active window, `-17` duplicate
+ID, `-22` invalid argument/encoding, `-27` oversized read, `-38` missing platform
+backend, `-75` event queue overflow, and native errors mapped to existing I/O
+statuses. The old checked arithmetic, allocation and bounds contracts remain.
+
+The reclaiming heap roots the GUI state. Collection does not close native
+windows. Close releases the controls and owned brushes; the default GUI font is
+borrowed, and the two system DLLs are process-owned. Normal main return, `exit`
+and native Ramos traps attempt GUI cleanup automatically. Process termination
+also releases OS resources; no durability or user-data save is promised on an
+abrupt termination. GUI calls run on the program's single main thread.
+
+## Validation
+
+The focused corpus checks raw argument/type errors, PE subsystem selection,
+existing-output preservation and static Linux unsupported behavior. Real desktop
+tests create native controls, inspect the actual panel color, inject Unicode text
+and an editing key, activate buttons, change the actual client size, and verify
+relayout, file contents and refusal to overwrite. A stress fixture opens/closes
+12 windows, collects after 40 MiB of temporary allocations and checks cleanup on
+return, explicit exit and arithmetic trap. CI runs these on native Windows;
+Wine is an additional development runner, not a user dependency.
+
+Use `python tools/windows_proof.py` on Windows. For development under Wine, set
+`RAMOS_GUI_WINE_PYTHON` to a Windows Python executable used only by the test
+harness, keep one isolated `WINEPREFIX` per X display, and set `DISPLAY`.
+The harness reads another process's editor with `WM_GETTEXT`, as required by
+[Microsoft's API contract](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextw).
+See [verification evidence](gui-verification.json). No new speed claim is made.

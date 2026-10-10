@@ -195,7 +195,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.12', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.13', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -281,6 +281,17 @@ if os.name == 'nt':
             setattr(WindowsTests, name, getattr(test_console_native.WindowsConsoleTests, name))
 
 
+import test_gui
+for name in dir(test_gui.GUITests):
+    if name.startswith('test_'):
+        setattr(WindowsTests, name, getattr(test_gui.GUITests, name))
+WindowsTests.gui_probe = test_gui.WindowsGUITests.gui_probe
+if os.name == 'nt' or os.environ.get('RAMOS_GUI_WINE_PYTHON'):
+    for name in dir(test_gui.WindowsGUITests):
+        if name.startswith('test_'):
+            setattr(WindowsTests, name, getattr(test_gui.WindowsGUITests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')
@@ -299,7 +310,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.12.0', 'target': 'x86_64-windows',
+        'version': '0.13.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

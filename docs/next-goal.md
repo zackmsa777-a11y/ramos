@@ -19,14 +19,20 @@ Version **0.12** implements the user's file-tool priority and terminal-interface
 request: streamed I/O, CLI helpers, TUI controls and working copy/search/viewer
 apps. See [cli-tui.md](cli-tui.md).
 
-The target is a useful native CLI language. This release is a measured, runnable
+Version **0.13** adds the requested desktop GUI library, with a native Windows
+backend, Unicode controls, resize/events and a working Notes app. Linux GUI
+startup is explicitly unsupported until a display-server backend ships. See
+[gui.md](gui.md).
+
+The target is a useful native application language with simple APIs. This release is a measured, runnable
 milestone; C/Rust feature/ecosystem parity is not claimed. The next slices are:
 
 1. Easier application code: else-if, range for, compound assignment; explicit per-frame stack budgeting before raising recursive depth.
-2. More CLI integration: directories, environment, paths and direct process APIs with portable error/lifetime contracts.
-3. Better authoring: source-line/caret diagnostics, formatter, editor support for new syntax, reproducible app packaging.
-4. Broader data/math: floats, generics and richer collections, with specified ownership/error semantics.
-5. Further optimization only from real application measurements.
+2. More application integration: directories, environment, paths and direct process APIs with portable error/lifetime contracts.
+3. Portable GUI: Linux display-server backend, layout/DPI, dialogs and canvas graphics, with real desktop tests.
+4. Better authoring: source-line/caret diagnostics, formatter, editor support for new syntax, reproducible app packaging.
+5. Broader data/math: floats, generics and richer collections, with specified ownership/error semantics.
+6. Further optimization only from real application measurements.
 
 Original developer-feedback priorities still guide these slices:
 

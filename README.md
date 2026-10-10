@@ -1,4 +1,4 @@
-# Ramos 0.12 — self-hosted compiler for Linux and Windows
+# Ramos 0.13 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,14 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.13 adds a **Windows desktop GUI library**: real windows, labels,
+buttons, Unicode text inputs/editors, colored panels and resize/input events.
+`--gui` builds an executable that launches without a console. The bundled
+[Ramos Notes app](examples/notes.ramos) edits and saves UTF-8 text with native
+controls. No external GUI toolkit or Python runtime is needed. Linux can
+cross-compile GUI apps; its GUI backend is not implemented yet (startup returns
+`-38`). See [the GUI library and commands](docs/gui.md).
 
 Version 0.12 adds **streamed file I/O and terminal interfaces**. Build native
 copy/search tools that process files larger than 1 MiB, and a colored, full-screen
@@ -115,7 +123,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.13.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -147,6 +155,18 @@ j/k, Space/n, p and q. Programs use the same native compiler and the ordinary
 Ramos-written `stdlib/io.ramos`, `cli.ramos` and `tui.ramos` libraries. Download
 [the complete CLI/TUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos-0.12.0-cli-tui.zip)
 and keep its folders together. See [contracts, examples and limits](docs/cli-tui.md).
+
+## Desktop GUI (Windows)
+
+```powershell
+.\ramos.exe build .\examples\notes.ramos -o .\notes.exe --gui
+.\notes.exe
+```
+
+Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.13.0/ramos-0.13.0-gui.zip)
+with both compilers, all nine libraries, examples and the ready-to-run Notes app.
+See [API, lifecycle and current limits](docs/gui.md).
 
 ## Syntax
 
@@ -449,7 +469,7 @@ The compiler is self-hosted; namespaces, more library types, floats, syntax conv
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
-permissions. Games and browser support need further platform work.
+permissions. General canvas graphics, games, a Linux GUI backend and browser support need further platform work.
 
 ## Benchmarks
 

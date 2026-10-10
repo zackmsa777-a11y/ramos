@@ -1,0 +1,50 @@
+weave "../stdlib/gui.ramos"
+weave "../stdlib/numbers.ramos"
+
+fn notes_layout(width: int64, height: int64) {
+    let w = num_max(360, width)
+    let h = num_max(240, height)
+    gui_move(1, 0, 0, w, 6)
+    gui_move(2, 20, 20, w - 40, 26)
+    gui_move(3, 20, 52, w - 40, 28)
+    gui_move(4, 20, 96, w - 40, h - 168)
+    gui_move(5, 20, h - 56, 100, 32)
+    gui_move(6, 132, h - 56, 100, 32)
+    gui_move(7, 246, h - 50, w - 266, 28)
+}
+fn main() {
+    let status = gui_open(s"Ramos Notes", 640, 440)
+    if status != 0 {
+        stderr("Ramos Notes needs the Windows GUI backend, status ")
+        stderr(int_to_text(status))
+        stderr("\n")
+        exit(1)
+    }
+    gui_panel(1, 0, 0, 640, 6, gui_rgb(55, 120, 220))
+    gui_label(2, 20, 20, 600, 26, s"A desktop app written in Ramos — file path:")
+    gui_input(3, 20, 52, 600, 28, s"ramos-note.txt")
+    gui_editor(4, 20, 96, 600, 272, s"Write a note here. Unicode text works too: 🌍")
+    gui_button(5, 20, 384, 100, 32, s"Save")
+    gui_button(6, 132, 384, 100, 32, s"Clear")
+    gui_label(7, 246, 390, 374, 28, s"Ready")
+    var running = true
+    while running {
+        let event = gui_event(-1)
+        if event.kind == 1 { running = false }
+        if event.kind == 3 { notes_layout(event.width, event.height) }
+        if event.kind == 2 {
+            if event.id == 5 {
+                let path = to_bytes(gui_text(3))
+                let content = to_bytes(gui_text(4))
+                // Create a new file; refuse to overwrite an existing note.
+                let result = write_file(path, content, 0)
+                if result == 0 { gui_set(7, s"Saved") }
+                else { gui_set(7, s"Not saved (existing file or I/O error)") }
+            }
+            if event.id == 6 { gui_set(4, s"")
+                gui_set(7, s"Cleared") }
+        }
+        if event.kind == 5 && event.id == 4 { gui_set(7, s"Editing") }
+    }
+    gui_check(gui_close())
+}

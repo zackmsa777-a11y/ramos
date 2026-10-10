@@ -1,0 +1,19 @@
+weave "../stdlib/gui.ramos"
+weave "../stdlib/numbers.ramos"
+
+fn main() {
+    gui_check(gui_open(s"Hello, Ramos", 360, 180))
+    gui_label(1, 20, 20, 320, 24, s"A real window, written in Ramos")
+    gui_button(2, 20, 60, 120, 32, s"Click me")
+    var count = 0
+    var running = true
+    while running {
+        let event = gui_event(-1)
+        if event.kind == 1 { running = false }
+        if event.kind == 2 && event.id == 2 {
+            count = count + 1
+            gui_set(1, s"Clicks: " + num_text(count))
+        }
+    }
+    gui_check(gui_close())
+}

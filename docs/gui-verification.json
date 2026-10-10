@@ -1,0 +1,7 @@
+{
+  "version": "0.13.0",
+  "gui_backend": "windows-x64",
+  "linux_gui_backend": "unsupported (-38)",
+  "windows_native_validation": "pending",
+  "new_performance_claim": false
+}

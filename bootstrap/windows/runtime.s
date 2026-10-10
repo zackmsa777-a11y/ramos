@@ -47,6 +47,7 @@ runtime_write_done:
     pop rbp
     ret
 runtime_write_failed:
+    call runtime_gui_cleanup
     call runtime_terminal_cleanup
     mov ecx, 1
     API ExitProcess
@@ -111,6 +112,7 @@ runtime_buffer_value_error:
 runtime_error:
     mov edi, 2
     call runtime_write_fd
+    call runtime_gui_cleanup
     call runtime_terminal_cleanup
     mov ecx, 1
     API ExitProcess
@@ -229,6 +231,7 @@ runtime_stderr:
 runtime_process_exit:
     cmp rax, 255
     ja runtime_buffer_value_error
+    call runtime_gui_cleanup
     call runtime_terminal_cleanup
     mov rcx, rax
     API ExitProcess
@@ -673,6 +676,7 @@ temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
 .include "bootstrap/src/stream_runtime.inc"
 .include "bootstrap/windows/stream.s.inc"
 .include "bootstrap/windows/terminal.s.inc"
+.include "bootstrap/windows/gui.s.inc"
 runtime_initialize:
     API GetCommandLineW
     mov rcx, rax
@@ -685,6 +689,7 @@ runtime_initialize:
     API SetConsoleOutputCP
     ret
 runtime_main_return:
+    call runtime_gui_cleanup
     call runtime_terminal_cleanup
     xor ecx, ecx
     API ExitProcess
@@ -695,11 +700,11 @@ runtime_entry:
     xor r12d, r12d
     xor r13d, r13d
     xor r14d, r14d
-    sub rsp, 128
+    sub rsp, 144
     mov r15, rsp
     mov rdi, rsp
     xor eax, eax
-    mov ecx, 16
+    mov ecx, 18
     rep stosq
     call runtime_initialize
 entry_end:

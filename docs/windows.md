@@ -1,4 +1,4 @@
-# Windows support (Ramos 0.12)
+# Windows support (Ramos 0.13)
 
 Ramos produces native Windows x64 console executables in PE32+ format. The same
 language supports arithmetic, booleans, scopes, control flow, typed functions,
@@ -7,7 +7,7 @@ There is no interpreter, Python dependency or C runtime in generated programs.
 
 ## Use Ramos on Windows
 
-Download [ramos.exe from the 0.12 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos.exe)
+Download [ramos.exe from the 0.13 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.13.0/ramos.exe)
 and open PowerShell in its directory. CI artifacts are also available from the
 [Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml). Save a UTF-8 `hello.ramos`:
 
@@ -27,7 +27,13 @@ Compile and run:
 Windows is the default target when the compiler runs on Windows. Existing output
 requires `--force`. Use `.exe` for Windows output filenames. The target is x64;
 32-bit Windows and a native ARM64 backend are not supported by this milestone.
-Programs are console applications; GUI/windowing bindings are future work.
+Programs default to console applications. Version 0.13 adds `--gui` and the
+[native desktop GUI library](gui.md); build the Notes example with:
+
+```powershell
+.\ramos.exe build .\examples\notes.ramos -o .\notes.exe --gui
+.\notes.exe
+```
 
 ## Cross-compile from Linux
 
@@ -49,6 +55,9 @@ and the value heap is read/write. No section is both writable and executable.
 The PE advertises NX compatibility and ASLR, uses position-independent code and
 contains no timestamps or build paths. The imports are Windows' built-in
 `KERNEL32.dll` and `SHELL32.dll`; no compiler tool, CRT or interpreter is imported.
+GUI startup loads USER32/GDI32 from System32 through `LoadLibraryExW`; ordinary
+CLI programs never initialize a GUI. Control creation and rendering use native
+system calls, and the default console subsystem remains unchanged.
 
 The private Ramos calling convention remains the same. A small native API bridge
 aligns the stack and reserves Windows shadow space for system calls. Function
