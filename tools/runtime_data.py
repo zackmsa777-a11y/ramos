@@ -17,7 +17,8 @@ BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'arg', 'read_file', 'write_file', 'io_error', 'stderr', 'process_exit', 'platform',
             'read_line', 'stdin_eof', 'int_to_text', 'text_to_int', 'parse_error', 'collect', 'memory_used', 'string_from_bytes', 'string_to_bytes', 'string_len', 'string_slice',
             'array_new', 'array_len', 'array_get', 'array_set', 'array_resize',
-            'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty', 'protect_input', 'stdout', 'file_open', 'file_read', 'file_write', 'file_eof', 'file_close', 'terminal_start', 'terminal_stop', 'terminal_width', 'terminal_height', 'terminal_key', 'file_seek', 'gui_open', 'gui_control', 'gui_text', 'gui_poll', 'gui_close']
+            'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty', 'protect_input', 'stdout', 'file_open', 'file_read', 'file_write', 'file_eof', 'file_close', 'terminal_start', 'terminal_stop', 'terminal_width', 'terminal_height', 'terminal_key', 'file_seek', 'gui_open', 'gui_control', 'gui_text', 'gui_poll', 'gui_close',
+            'cwd', 'env_get', 'dir_open', 'dir_next', 'dir_kind', 'dir_close', 'process_run', 'dir_create']
 ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print']
 
 

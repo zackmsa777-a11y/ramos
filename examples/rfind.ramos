@@ -1,0 +1,55 @@
+weave "../stdlib/system.ramos"
+weave "../stdlib/path.ramos"
+
+// Iterative traversal holds one directory handle at a time. Links are skipped.
+fn main() {
+    if arg_count() == 2 && bytes_equal(arg(1), "--help") {
+        print("usage: rfind DIRECTORY [NAME-LITERAL]\nFind regular files recursively; links are skipped; exit 2 on error.")
+        return
+    }
+    if arg_count() < 2 || arg_count() > 3 { stderr("usage: rfind DIRECTORY [NAME-LITERAL]\n")
+        exit(2) }
+    var needle = ""
+    if arg_count() == 3 { needle = arg(2) }
+    var pending = array(bytes, 16, "")
+    pending[0] = arg(1)
+    var count = 1
+    var failed = false
+    while count > 0 {
+        count -= 1
+        let parent = pending[count]
+        pending[count] = ""
+        let directory = directory_open(parent)
+        if directory.status != 0 { failed = true
+            stderr("rfind: cannot open directory: ")
+            stderr(parent)
+            stderr("\n") }
+        else {
+            while !directory.end {
+                let entry = directory_next(directory)
+                if !entry.end {
+                    let path = path_join_bytes(parent, entry.name)
+                    if entry.kind == 2 {
+                        if count == 8192 { failed = true
+                            stderr("rfind: pending directory limit (8192)\n") }
+                        else {
+                            if count == array_len(pending) { pending = array_resize(pending, count * 2, "") }
+                            pending[count] = path
+                            count += 1
+                        }
+                    } else if entry.kind == 1 && bytes_find(entry.name, needle) >= 0 {
+                        var status = stdout(path)
+                        if status == 0 { status = stdout("\n") }
+                        if status != 0 { directory_close(directory)
+                            stderr("rfind: output failed\n")
+                            exit(2) }
+                    }
+                }
+            }
+            if directory.status != 0 { failed = true
+                stderr("rfind: directory read failed\n") }
+            if directory_close(directory) != 0 { failed = true }
+        }
+    }
+    if failed { exit(2) }
+}

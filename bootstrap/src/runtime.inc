@@ -84,6 +84,8 @@ runtime_math_message:
 .include "bootstrap/src/stream_os.inc"
 .include "bootstrap/src/terminal_os.inc"
 .include "bootstrap/src/gui_os.inc"
+.include "bootstrap/src/system_runtime.inc"
+.include "bootstrap/src/system_os.inc"
 runtime_writer_end:
 .equ RUNTIME_SIZE, runtime_writer_end - runtime_writer
 .equ RUNTIME_INTEGER_FILE, CODE_OFFSET + runtime_integer - runtime_writer

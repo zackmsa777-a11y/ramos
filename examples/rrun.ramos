@@ -1,0 +1,21 @@
+weave "../stdlib/process.ramos"
+
+fn main() {
+    if arg_count() == 2 && string(arg(1)) == s"--help" {
+        print("usage: rrun EXECUTABLE-PATH [ARG...]\nDirect execution; no shell or PATH lookup; up to 256 arguments.")
+        return
+    }
+    if arg_count() < 2 || arg_count() > 258 { stderr("usage: rrun EXECUTABLE-PATH [ARG...]\n")
+        exit(2) }
+    let arguments = array(string, arg_count() - 2, s"")
+    for i in 2..arg_count() { arguments[i - 2] = string(arg(i)) }
+    let result = process_run(string(arg(1)), arguments)
+    if result.status != 0 {
+        stderr("rrun: process failed (I/O status ")
+        stderr(int_to_text(result.status))
+        stderr(")\n")
+        exit(2)
+    }
+    if result.code > 255 { exit(1) }
+    exit(result.code)
+}

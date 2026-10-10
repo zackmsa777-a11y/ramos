@@ -23,8 +23,8 @@ def winpath(path):
     return str(path) if os.name == 'nt' else 'Z:' + str(path).replace('/', '\\')
 
 
-def execute(binary, *args, timeout=45, input=None, stdin=None):
-    return subprocess.run([*RUNNER, str(binary), *args], cwd=ROOT, env=ENV,
+def execute(binary, *args, timeout=45, input=None, stdin=None, env=None):
+    return subprocess.run([*RUNNER, str(binary), *args], cwd=ROOT, env=ENV if env is None else dict(env, WINEDEBUG="-all"),
                           capture_output=True, timeout=timeout, input=input, stdin=stdin)
 
 
@@ -195,7 +195,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.14', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.15', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -274,6 +274,12 @@ for name in dir(test_cli_streams.StreamTests):
     if name.startswith("test_"):
         setattr(WindowsTests, name, getattr(test_cli_streams.StreamTests, name))
 
+import test_system
+WindowsTests.child = test_system.SystemTests.child
+for name in dir(test_system.SystemTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_system.SystemTests, name))
+
 import test_tui
 for name in dir(test_tui.TUITests):
     if name.startswith("test_"):
@@ -316,7 +322,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.14.0', 'target': 'x86_64-windows',
+        'version': '0.15.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

@@ -26,7 +26,9 @@ startup is explicitly unsupported until a display-server backend ships. See
 
 Version **0.14** adds `else if`, range `for`, and `+=`/`-=` with checked
 semantics and an updated file-search tool. See [syntax.md](syntax.md). The next
-application milestone is directory, path, environment and process integration.
+application milestone shipped as **0.15**: directory iteration/creation, lexical
+paths, environment lookup and direct child execution. See [system.md](system.md).
+Next is easier development: caret errors, formatting and compile-and-run.
 
 The target is a useful native application language with simple APIs. See the
 [ordered application-language roadmap](roadmap-1.0.md) for the user's **simple**

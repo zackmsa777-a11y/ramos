@@ -1,4 +1,4 @@
-# Ramos 0.12: self-hosting proved
+# Ramos 0.15: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -26,7 +26,9 @@ cmp build/stage2 build/stage3
 sha256sum build/stage2 build/stage3
 ```
 
-Stage 0 is the retained assembly bootstrap with the new typed OS intrinsics.
+Stage 0 is the retained assembly compiler seed with the audited native runtime.
+It supports the compiler source subset; application grammar and new OS intrinsic
+names are provided by the Ramos-written compiler.
 Stages 1, 2 and 3 are compiled from the same Ramos compiler source. Stage 1 can
 differ in instruction selection from stage 2; the required fixed point is
 **stage 2 = stage 3**. `make all` copies stage 2 to the normal `ramos` executable.

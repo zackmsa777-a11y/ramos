@@ -694,6 +694,8 @@ runtime_main_return:
     xor ecx, ecx
     API ExitProcess
     ud2
+.include "bootstrap/src/system_runtime.inc"
+.include "bootstrap/windows/system.s.inc"
 runtime_end:
 runtime_entry:
     cld

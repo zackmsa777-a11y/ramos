@@ -1,0 +1,36 @@
+// OS byte results preserve empty success separately from missing/error.
+struct SystemValue { value: bytes, status: int64 }
+fn system_cwd() -> SystemValue {
+    let value = cwd()
+    return SystemValue(value, io_error())
+}
+fn system_env(name: string) -> SystemValue {
+    let value = env_get(to_bytes(name))
+    return SystemValue(value, io_error())
+}
+struct Directory { handle: int64, status: int64, end: bool }
+struct DirectoryEntry { name: bytes, kind: int64, end: bool, status: int64 }
+fn directory_open(path: bytes) -> Directory {
+    let handle = dir_open(path)
+    return Directory(handle, io_error(), handle < 0)
+}
+// kind: 1 regular file, 2 directory, 3 link/reparse point, 4 other, 0 no entry.
+fn directory_next(directory: Directory) -> DirectoryEntry {
+    if directory.end { return DirectoryEntry("", 0, true, directory.status) }
+    let name = dir_next(directory.handle)
+    directory.status = io_error()
+    if directory.status != 0 || buffer_len(name) == 0 {
+        directory.end = true
+        return DirectoryEntry("", 0, true, directory.status)
+    }
+    return DirectoryEntry(name, dir_kind(directory.handle), false, 0)
+}
+fn directory_close(directory: Directory) -> int64 {
+    let result = dir_close(directory.handle)
+    directory.handle = -1
+    directory.end = true
+    if directory.status == 0 { directory.status = result }
+    return result
+}
+
+fn directory_create(path: bytes) -> int64 { return dir_create(path) }

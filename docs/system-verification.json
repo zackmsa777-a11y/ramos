@@ -1,0 +1,17 @@
+{
+  "version": "0.15.0",
+  "linux_discovered": 231,
+  "linux_skipped": 5,
+  "linux_passed": 226,
+  "focused_system_tests": 18,
+  "linux_selfhost_fixed_point": true,
+  "isolated_path_rebuild_matches": true,
+  "source_sha256": "b1fbd085c3745cb670a699fd09d59de39bb62ec306a2144a0bb33415cd296327",
+  "windows_native": "pending CI; no native Windows claim until proof is recorded",
+  "acceptance_examples": [
+    "examples/rfind.ramos",
+    "examples/rrun.ramos",
+    "examples/rcopy.ramos"
+  ],
+  "performance": "No 0.15 comparative speed or speedup claim; 0.14 measurements remain historical."
+}

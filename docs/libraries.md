@@ -67,6 +67,10 @@ reuses it. All functions are checked by the ordinary compiler.
 | `io.ramos` (0.12) | Streamed readers, lines, seeking, copy |
 | `cli.ramos` (0.12) | Argument/option scan helpers |
 | `tui.ramos` (0.12) | Full-screen terminal, colors, cursor, boxes and key input |
+| `gui.ramos` (0.13) | Native Windows desktop controls and events |
+| `system.ramos` (0.15) | Cwd/environment results, directory iteration and creation |
+| `path.ramos` (0.15) | Lexical path joining, names and rooted-path checks |
+| `process.ramos` (0.15) | Typed direct child execution and exit/OS status |
 | `maps.ramos` | `StringMap`, `map_new`, `map_len`, `map_has`, `map_get`, `map_set`, `map_remove` (plus `map_index`) |
 
 Number operations keep checked int64 semantics: `num_abs(INT64_MIN)` traps.
@@ -97,7 +101,8 @@ not promised. Lookup is linear; capacity doubles starting at four. Keys and
 values are immutable strings; map handles alias. Treat collection metadata
 fields as implementation state and mutate through the helper functions.
 
-All library errors print a diagnostic and exit 1. Ordinary arithmetic, array
+Contract violations in pure helpers print a diagnostic and exit 1; expected
+OS failures in I/O and system/process libraries return explicit statuses. Ordinary arithmetic, array
 bounds, allocation and UTF-8 checks retain the native Ramos traps. The standard
 library introduces no unbounded allocator or relaxed safety mode.
 
@@ -150,3 +155,5 @@ passed 164 Linux tests and 114 Windows tests. See
 and [Windows proof](windows-bootstrap-proof.json).
 
 Version 0.12 expands the bundle with [CLI and TUI libraries](cli-tui.md).
+
+See [0.15 OS contracts](system.md) for the new system, path and process helpers.

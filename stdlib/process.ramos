@@ -1,0 +1,68 @@
+// Direct synchronous execution. Inherit cwd, environment and standard streams.
+// No shell and no PATH lookup: supply an executable path (including .exe).
+struct ProcessResult { code: int64, status: int64 }
+struct ProcessPacket { data: bytes, count: int64, status: int64 }
+fn process_put(packet: ProcessPacket, value: int64) {
+    if packet.status != 0 { return }
+    if packet.count == 32767 { packet.status = -7
+        return }
+    buffer_set(packet.data, packet.count, value)
+    packet.count += 1
+}
+fn process_raw(packet: ProcessPacket, text: bytes) {
+    for i in 0..buffer_len(text) {
+        let value = buffer_get(text, i)
+        if value == 0 { packet.status = -22
+            return }
+        process_put(packet, value)
+    }
+}
+// Microsoft CRT / CommandLineToArgvW quoting: double backslashes before
+// a closing quote; before an embedded quote, emit 2*n+1 backslashes.
+fn process_quote(packet: ProcessPacket, text: bytes) {
+    process_put(packet, 34)
+    var slashes = 0
+    for i in 0..buffer_len(text) {
+        let value = buffer_get(text, i)
+        if value == 0 { packet.status = -22
+            return }
+        if value == 92 { slashes += 1 }
+        else {
+            var count = slashes
+            if value == 34 { count = slashes * 2 + 1 }
+            for j in 0..count { process_put(packet, 92) }
+            process_put(packet, value)
+            slashes = 0
+        }
+    }
+    for j in 0..slashes * 2 { process_put(packet, 92) }
+    process_put(packet, 34)
+}
+fn process_run(executable: string, arguments: [string]) -> ProcessResult {
+    if array_len(arguments) > 256 { return ProcessResult(-1, -7) }
+    let packet = ProcessPacket(buffer(32767), 0, 0)
+    let program = to_bytes(executable)
+    if platform() == 1 {
+        process_put(packet, 34)
+        for i in 0..buffer_len(program) {
+            let value = buffer_get(program, i)
+            if value == 34 || value == 0 { return ProcessResult(-1, -22) }
+            process_put(packet, value)
+        }
+        process_put(packet, 34)
+    }
+    for i in 0..array_len(arguments) {
+        let value = to_bytes(arguments[i])
+        if platform() == 1 { process_put(packet, 32)
+            process_quote(packet, value) }
+        else { process_raw(packet, value)
+            process_put(packet, 0) }
+    }
+    if packet.status != 0 { return ProcessResult(-1, packet.status) }
+    let packed = buffer(packet.count)
+    for i in 0..packet.count { buffer_set(packed, i, buffer_get(packet.data, i)) }
+    let code = _process_run(program, packed)
+    let status = io_error()
+    if status != 0 { return ProcessResult(-1, status) }
+    return ProcessResult(code, 0)
+}

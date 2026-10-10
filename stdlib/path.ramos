@@ -1,0 +1,37 @@
+weave "bytes.ramos"
+
+// Lexical helpers: no filesystem access, normalization or '..' resolution.
+// Linux treats only '/' as a separator; Windows also accepts '\\'.
+fn path_separator(value: int64) -> bool {
+    return value == 47 || (platform() == 1 && value == 92)
+}
+fn path_absolute_bytes(path: bytes) -> bool {
+    let count = buffer_len(path)
+    if count == 0 { return false }
+    if path_separator(buffer_get(path, 0)) { return true }
+    return platform() == 1 && count >= 3 && buffer_get(path, 1) == 58 && path_separator(buffer_get(path, 2))
+}
+fn path_join_bytes(parent: bytes, child: bytes) -> bytes {
+    if buffer_len(parent) == 0 || path_absolute_bytes(child) { return bytes_copy(child) }
+    if buffer_len(child) == 0 { return bytes_copy(parent) }
+    let last = buffer_get(parent, buffer_len(parent) - 1)
+    var extra = 1
+    if path_separator(last) || (platform() == 1 && last == 58) { extra = 0 }
+    let out = buffer(buffer_len(parent) + buffer_len(child) + extra)
+    bytes_put(out, 0, parent)
+    if extra == 1 { buffer_set(out, buffer_len(parent), 47) }
+    bytes_put(out, buffer_len(parent) + extra, child)
+    return out
+}
+fn path_name_bytes(path: bytes) -> bytes {
+    var end = buffer_len(path)
+    while end > 0 && path_separator(buffer_get(path, end - 1)) { end -= 1 }
+    var start = end
+    while start > 0 && !path_separator(buffer_get(path, start - 1)) { start -= 1 }
+    return bytes_slice(path, start, end)
+}
+fn path_join(parent: string, child: string) -> string {
+    return string(path_join_bytes(to_bytes(parent), to_bytes(child)))
+}
+fn path_name(path: string) -> string { return string(path_name_bytes(to_bytes(path))) }
+fn path_absolute(path: string) -> bool { return path_absolute_bytes(to_bytes(path)) }

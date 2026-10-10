@@ -1,4 +1,4 @@
-# Ramos 0.14 — self-hosted compiler for Linux and Windows
+# Ramos 0.15 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,13 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.15 adds **native CLI OS libraries**: streamed directory iteration,
+exclusive directory creation, path helpers, environment lookup and direct child
+execution. `rfind` searches a directory tree; `rrun` passes argument values and
+reports child exit status. Both run on Linux and Windows with fallible OS errors.
+See [the contracts and examples](docs/system.md). Current release validation is
+recorded in [system-verification.json](docs/system-verification.json).
 
 Version 0.14 adds **easier application syntax**: `else if`, end-exclusive
 `for i in 0..n`, and `+=`/`-=`. Bounds and destinations evaluate once; integer
@@ -86,7 +93,7 @@ working examples and release checks under those rules.
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
 [the prepared Linguist registration and remaining acceptance requirement](docs/github-language.md).
-A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.14.0)
+A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.15.0)
 provides highlighting for `.ramos` files in VS Code today.
 
 ## Try it
@@ -137,7 +144,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.14.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.15.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
@@ -178,8 +185,8 @@ and keep its folders together. See [contracts, examples and limits](docs/cli-tui
 ```
 
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.14.0/ramos-0.14.0-syntax.zip)
-with both compilers, all nine libraries, examples and the ready-to-run Notes app.
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.15.0/ramos-0.15.0-system.zip)
+with both compilers, all twelve libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
 ## Syntax
@@ -492,7 +499,7 @@ permissions. General canvas graphics, games, a Linux GUI backend and browser sup
 
 ## Benchmarks
 
-Ramos 0.14 has a fresh eight-task comparison with optimized checked C, Rust
+Ramos 0.14 has a recorded eight-task comparison with optimized checked C, Rust
 and CPython on the recorded Linux VM. The execution index is **Ramos 37.48,
 C 100, Rust 118.73 and Python 2.52** (higher is faster).
 Across this suite Ramos is **14.88× faster than Python** and takes
@@ -501,7 +508,7 @@ machine, not all programs or a language-quality score. No Windows timing claim.
 
 Every timed output is checked; the report includes nine randomized samples,
 source/compiler hashes, toolchain flags and separately reported startup/build
-costs. See [the current report](benchmarks/0.14.0/report.md),
+costs. See [the 0.14 report](benchmarks/0.14.0/report.md),
 [raw samples](benchmarks/0.14.0/results.json) and
 [the fresh pre-change 0.13 baseline](benchmarks/baseline-0.13.0/report.md).
 The syntax milestone makes no general speedup claim: existing workload binaries
@@ -520,3 +527,7 @@ The [0.7.1 report](benchmarks/report.md),
 [0.7.0/0.7.1 optimization comparison](benchmarks/optimization.md) and
 [historical 0.2 report](benchmarks/report-0.2.md) remain available for audit.
 Measurements from different machines or runs are not directly interchangeable.
+
+The 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
+self-hosting. The 0.14 benchmark table above is historical evidence; no 0.15
+comparative performance or speedup claim is made.
