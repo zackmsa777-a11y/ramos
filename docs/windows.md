@@ -7,9 +7,9 @@ There is no interpreter, Python dependency or C runtime in generated programs.
 
 ## Use Ramos on Windows
 
-Download `ramos.exe` from the Windows compiler artifact in the
-[Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml).
-Extract it and open PowerShell in that directory. Save a UTF-8 `hello.ramos`:
+Download [ramos.exe from the 0.7 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.7.0/ramos.exe)
+and open PowerShell in its directory. CI artifacts are also available from the
+[Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml). Save a UTF-8 `hello.ramos`:
 
 ```text
 fn main() {

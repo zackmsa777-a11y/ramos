@@ -80,7 +80,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, use the native `ramos.exe` from the CI artifact:
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.7.0/ramos.exe):
 
 ```powershell
 .\ramos.exe build .\hello.ramos -o .\hello.exe
