@@ -20,7 +20,9 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 Version 0.12 adds **streamed file I/O and terminal interfaces**. Build native
 copy/search tools that process files larger than 1 MiB, and a colored, full-screen
 file viewer with keyboard navigation. New Ramos libraries cover I/O, CLI helpers
-and TUI layout/input. See [the APIs and runnable tools](docs/cli-tui.md).
+and TUI layout/input. Validation passes **190 Linux tests and 134 native Windows
+tests**, including real terminal/console interaction. Both self-hosting fixed
+points match. See [the APIs and runnable tools](docs/cli-tui.md).
 
 Version 0.11 adds **`weave "library.ramos"`** and a small standard library
 written in Ramos: number/text/byte helpers, growable integer lists and string

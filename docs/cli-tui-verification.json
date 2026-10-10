@@ -7,7 +7,7 @@
   "stream_tests": 15,
   "terminal_tests": 11,
   "wine_new_shared_tests_passed": 18,
-  "windows_native_validation": "pending CI",
+  "windows_native_validation": "passed",
   "standard_library_files": [
     "bytes.ramos",
     "cli.ramos",
@@ -41,5 +41,13 @@
     "input_cases_per_program": 9,
     "new_timings": false
   },
-  "both_platforms_have_native_boundaries": true
+  "both_platforms_have_native_boundaries": true,
+  "windows_tests_passed": 134,
+  "windows_native_console_tests": 2,
+  "staged_install_verified": true,
+  "native_ci": {
+    "url": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38051519258",
+    "conclusion": "success",
+    "both_native_fixed_points": true
+  }
 }

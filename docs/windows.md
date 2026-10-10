@@ -106,6 +106,7 @@ directives even on Windows. See [libraries.md](libraries.md).
 
 Version 0.12 adds regular-file streams and TUI console controls. The Windows
 runtime enables VT output, reads native key events, and restores console modes
-on return, exit, Ramos traps and control termination. Use Windows Terminal or a
+on return, exit and Ramos traps; its control callback also attempts cleanup
+on OS control termination. Use Windows Terminal or a
 real interactive console; redirected handles are rejected for TUI startup.
 See [file tools and terminal interfaces](cli-tui.md).

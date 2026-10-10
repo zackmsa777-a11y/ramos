@@ -181,7 +181,7 @@ Do not mix this input with `read_line` or another stdin reader.
 
 Normal return, explicit exit and Ramos runtime traps restore the terminal.
 Linux also restores on SIGHUP/SIGINT/SIGTERM; Windows installs a console control
-handler for OS control termination. Ctrl+C is delivered as a key during raw
+handler that attempts cleanup on OS control termination (tested with Ctrl+Break). Ctrl+C is delivered as a key during raw
 input, so a custom TUI must handle it (the viewer does). Uncatchable termination
 such as SIGKILL cannot run cleanup. Applications must be foreground terminal
 processes. Suspended/background terminal job control is not implemented here.
@@ -210,3 +210,8 @@ interfaces runnable. Further practical-language work remains: syntax
 conveniences, reviewed recursion/stack budgets, directory/environment/process
 APIs, richer diagnostics, floats, generic collections and packaging/tooling.
 See [the staged roadmap](next-goal.md). No new speed comparison is claimed.
+
+[Native release CI](https://github.com/zackmsa777-a11y/ramos/actions/runs/38051519258)
+passed: 192 Linux tests discovered, 190 passed and two Windows-only checks
+skipped; 134 native Windows tests passed, including both isolated-console
+checks. Both self-hosting targets reached their byte-identical fixed points.
