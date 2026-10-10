@@ -14,7 +14,7 @@ function calls, branch labels and read-only literal addresses after emission.
 The ABI matches the bootstrap: arguments are pushed left to right, a call creates
 an independent rbp-relative frame, the callee copies parameters into immutable
 local slots, and the caller removes argument slots. Expression values use native
-pushes and pops. Functions preserve process registers for call depth, buffer
+pushes and pops, with immediate push/consume pairs removed when RAX is still live. Functions preserve process registers for call depth, buffer
 allocation and argv/I/O state. Arithmetic remains checked.
 
 ## Packed representation
@@ -43,7 +43,9 @@ Scalar state cell indices: 0 current token, 1 token count, 2 function count,
 3 main function index, 4 output cursor, 5 fixup count, 6 label count, 7 active
 symbols, 8 total declarations, 9 frame slots, 10 block depth, 11 operators,
 12 expression types, 13 expression nesting, 14 decoded-data length, 15 diagnostic
-source override, 16 selected target (0 Linux, 1 Windows). Token kinds preserve the bootstrap constants. Types are
+source override, 16 selected target (0 Linux, 1 Windows), 17 literal-end cursor,
+18 nonnegative int32 RHS literal value, 19 removable value-push end cursor.
+Token kinds preserve the bootstrap constants. Types are
 0 int64, 1 bool, 2 void, 3 bytes. Callable IDs 256..267 identify OS/buffer intrinsics.
 
 `f` holds up to 40,000 12-byte fixup records at zero and up to 40,000 4-byte label
@@ -82,3 +84,9 @@ padding entries, so there are no absolute code addresses to relocate.
 embedded bytes, native API imports and offsets. It is an audit tool, never a
 backend used to compile Ramos programs. After changing an OS boundary, run
 `python3 tools/runtime_data.py --write` followed by both bootstrap proofs.
+
+## Instruction selection
+
+Version 0.7.1 specializes positive constant division/remainder and immediate
+arithmetic, removes local stack transfers and inlines checked buffer accesses.
+See [the transformations and correctness argument](../docs/optimization.md).

@@ -222,6 +222,13 @@ for name in (
     setattr(WindowsTests, name, getattr(test_ramos.RamosTests, name))
 
 
+import test_optimization
+WindowsTests.run_output = lambda self: execute(self.output)
+for name in dir(test_optimization.OptimizationTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_optimization.OptimizationTests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')
@@ -240,7 +247,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.7.0', 'target': 'x86_64-windows',
+        'version': '0.7.1', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

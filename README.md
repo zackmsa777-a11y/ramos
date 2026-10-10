@@ -1,4 +1,4 @@
-# Ramos 0.7 — self-hosted compiler for Linux and Windows
+# Ramos 0.7.1 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -15,6 +15,10 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.7.1 optimizes constant arithmetic, stack transfers and checked buffer
+accesses without changing language syntax. See [the emitter changes](docs/optimization.md)
+and the [separate practicality goal](docs/next-goal.md).
 
 Version 0.7 adds native Windows executables, a Windows-native self-hosted compiler,
 and `--target linux|windows` selection. See [Windows instructions](docs/windows.md).
@@ -333,14 +337,14 @@ have a 40,000-entry bound. These are checked limits. The retained bootstrap has
 the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).
 
 The compiler is self-hosted; imports, richer collections, wrapping arithmetic,
-optimization and additional targets remain future work. Performance claims need
+broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
 permissions. Games and browser support need further platform work.
 
 ## Benchmarks
 
-Ramos 0.7 has a reproducible eight-task comparison with optimized checked C,
+The Ramos 0.7.0 baseline has a reproducible eight-task comparison with optimized checked C,
 Rust and CPython. On the recorded Linux VM, the execution index is **Ramos 19.93,
 C 100, Rust 119.04 and Python 2.53** (higher is faster). Ramos is **7.89× faster
 than Python** across this suite and takes **5.02× C's time**. These are geometric
