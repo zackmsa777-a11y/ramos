@@ -1,0 +1,131 @@
+{
+  "compiler_version": "Ramos 0.14.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+  "compiler_sha256": "84c2eec9cca7bf655a0e78baf000e2e71db4404b844939b14402c158fc3e9d48",
+  "pinned_cpu": 0,
+  "work_count": 5000000,
+  "sources_sha256": {
+    "while": "ddd884cbee85d7ba59008d97d638f79280120c0bb2adbab553ab9b76e834a345",
+    "for": "8bc42e600d5461b5ca42c0f66e497eccaf5b6f99dbe273270c58e884c67223de"
+  },
+  "binaries_sha256": {
+    "while": "d9131bd35d0f1c4df0ae1351766d61e7b6cfc2edb48b9ab94b9c51c9e133899c",
+    "for": "226196c6b70492d1a35ed8d56bc6092a34af7def84a6a37847ea2ebbab122881"
+  },
+  "samples_ns": {
+    "while": [
+      18122895,
+      18127437,
+      18394940,
+      19008356,
+      18462807,
+      18720529,
+      21062111,
+      18895544,
+      18686849,
+      18547151,
+      18287179,
+      20067003,
+      18330311,
+      18062169,
+      19000272,
+      19028921,
+      18449105
+    ],
+    "for": [
+      14306406,
+      13439900,
+      13701964,
+      14308351,
+      14202573,
+      13712723,
+      14065961,
+      13887159,
+      13503278,
+      13672052,
+      13379202,
+      13530929,
+      13465096,
+      13560264,
+      14314726,
+      12616371,
+      12857632
+    ]
+  },
+  "median_ns": {
+    "while": 18547151,
+    "for": 13672052
+  },
+  "orders": [
+    [
+      "while",
+      "for"
+    ],
+    [
+      "for",
+      "while"
+    ],
+    [
+      "for",
+      "while"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "for",
+      "while"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "for",
+      "while"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "for",
+      "while"
+    ],
+    [
+      "while",
+      "for"
+    ],
+    [
+      "for",
+      "while"
+    ],
+    [
+      "for",
+      "while"
+    ]
+  ],
+  "warmups": 2,
+  "random_seed": 14004,
+  "meaning": "Equivalent checked sum loops on a shared VM. Startup included; no general speedup or language ranking."
+}

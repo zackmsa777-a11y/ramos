@@ -1741,11 +1741,11 @@ fn functions(s: bytes, c: bytes, o: bytes, d: bytes, f: bytes) {
                 bset(c, top + 1, 28, bound)
                 bset(c, top + 1, 32, condition)
                 mark(c, f, condition)
-                load(s, c, o, slot)
-                load(s, c, o, bound)
-                consume(s, c, o, 1)
-                consume(s, c, o, 0)
-                hex(s, c, o, "4839c80f8d")
+                hex(s, c, o, "488b85")
+                number(s, c, o, -8 * (slot + 1), 4)
+                hex(s, c, o, "483b85")
+                number(s, c, o, -8 * (bound + 1), 4)
+                hex(s, c, o, "0f8d")
                 fix(s, c, o, f, 2, end)
                 continue
             }

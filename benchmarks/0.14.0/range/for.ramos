@@ -1,0 +1,7 @@
+fn main() {
+let n = text_to_int(arg(1))
+if parse_error() != 0 { exit(2) }
+var total = 0
+for i in 0..n { total += i }
+print(total)
+}
