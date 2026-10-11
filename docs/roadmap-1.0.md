@@ -5,7 +5,7 @@ applications on Windows x64 and Linux x64. A beginner should be able to build
 and run a small tool from a short example; larger tools should have the libraries,
 diagnostics and resource handling needed to keep working.
 
-This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools 0.17 text builders and 0.18 float/math are now
+This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools, 0.17 text builders and 0.18 float/math are now
 implemented; all remaining milestones below are proposals. Proposed version labels below describe order, not deadlines.
 Keep each release small enough to implement and verify completely; split a
 milestone if necessary. Python-like ease and Rust/C-like native performance

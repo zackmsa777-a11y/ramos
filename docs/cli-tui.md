@@ -192,7 +192,7 @@ and poll/read syscalls. Windows uses
 [key events](https://learn.microsoft.com/en-us/windows/console/key-event-record-str)
 and console control callbacks. There is no curses dependency, delegated renderer,
 GUI toolkit or runtime host language. TUI means a terminal interface; desktop
-windows/widgets require a future API.
+windows/widgets use the [Windows GUI API](gui.md), added in 0.13.
 
 ## Verification and remaining work
 
@@ -206,9 +206,9 @@ restored modes after exit/traps and a control event. Saved results are in
 [cli/tui verification](cli-tui-verification.json) and the bootstrap proof files.
 
 This milestone makes file-processing CLI tools and keyboard-driven terminal
-interfaces runnable. Further practical-language work remains: syntax
-conveniences, reviewed recursion/stack budgets, directory/environment/process
-APIs, richer diagnostics, floats, generic collections and packaging/tooling.
+interfaces runnable. Later releases add syntax conveniences, OS libraries,
+authoring tools and [float64](math.md). Reviewed recursion/stack budgets,
+generic collections and broader packaging/tooling remain future work.
 See [the staged roadmap](next-goal.md). No new speed comparison is claimed.
 
 [Native release CI](https://github.com/zackmsa777-a11y/ramos/actions/runs/38051519258)

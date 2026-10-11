@@ -534,7 +534,7 @@ Its output and decoded string-data arenas are each 1 MiB; labels and fixups each
 have a 40,000-entry bound. These are checked limits. The retained bootstrap has
 the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).
 
-The compiler is self-hosted; namespaces, more library types, floats, wrapping arithmetic,
+The compiler is self-hosted; namespaces, more library types, wrapping arithmetic,
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
@@ -571,8 +571,8 @@ The [0.7.1 report](benchmarks/report.md),
 [historical 0.2 report](benchmarks/report-0.2.md) remain available for audit.
 Measurements from different machines or runs are not directly interchangeable.
 
-The 0.17 text APIs, 0.16 authoring tools and 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
-self-hosting. The 0.14 benchmark table above is historical evidence; no 0.17
+The 0.18 math, 0.17 text APIs, 0.16 authoring tools and 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
+self-hosting. The 0.14 benchmark table above is historical evidence; no 0.18
 C/Rust/Python comparison or overall score is claimed. A separate
 [0.17 text-assembly measurement](benchmarks/0.17.0/text-builder.md) compares
 repeated string concatenation with the new builder: about 20.8× lower elapsed

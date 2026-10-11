@@ -1,0 +1,29 @@
+{
+  "version": "0.18.0",
+  "linux_discovered": 263,
+  "linux_skipped": 5,
+  "linux_passed": 258,
+  "windows_discovered": 205,
+  "windows_skipped": 1,
+  "windows_passed": 204,
+  "focused_float_tests": 12,
+  "independent_literal_cases": 95,
+  "independent_fixed_format_cases": 256,
+  "independent_arithmetic_cases": 200,
+  "linux_selfhost_fixed_point": true,
+  "windows_selfhost_fixed_point": true,
+  "isolated_path_rebuild_matches": true,
+  "embedded_runtime_matches_bootstrap": true,
+  "source_sha256": "5a396085532180db359991923a884dea33adb958d83bc61186894671b00ed8a2",
+  "float_runtime_sha256": "7851f21cd0a4a7e9868c8ebbbcab761a252b9b54707869b5d294a571acdf2426",
+  "math_library_sha256": "e3a7b5830788e9e74348f91d73dd6f71ce36dcbe51945e956699f8974b23c07b",
+  "native_ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38155393099",
+  "acceptance_example": "examples/mandelbrot.ramos",
+  "acceptance_dimensions": [
+    32,
+    24,
+    40
+  ],
+  "acceptance_image_sha256": "ce55cc8594e1656572c3f8dc03c1850246f041517c66b938f020f811a5829ec3",
+  "performance": "No 0.18 comparative performance measurement or overall score. Historical 0.14 cross-language and 0.17 text-builder evidence remains labeled by release."
+}

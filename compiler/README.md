@@ -204,3 +204,19 @@ publication, direct child wait and cleanup; per-OS adapters supply temp paths,
 unique candidates and unlink/rmdir. No new process-state root is required.
 The assembly seed recognizes stdout and this boundary so the compiler stays
 seed-compatible. See [contracts](../docs/devtools.md).
+
+## Finite binary64 (0.18)
+
+Primitive type 5 and tokens 57/58 represent float64 and decimal literals.
+`float_bits` converts bounded decimal rational values with base-65536 limbs,
+rounding once to nearest/ties-to-even. The compiler source stays seed-compatible.
+Eight-byte payloads use the existing Ramos stack ABI for parameters, fields,
+arrays and results. SSE2 emits arithmetic/comparisons; finite checks follow
+arithmetic, and division checks both signed zeros before executing.
+
+Intrinsics 317..320 convert int/float, format fixed decimal bytes and compute
+square root. Three further runtime slots are private finite/error/print helpers.
+Both process entries initialize MXCSR to 0x1f80 (nearest/even, gradual underflow).
+`float_runtime.inc` implements shared checked conversion and exact decimal
+rounding using bounded integer limbs, without libc or new OS imports.
+See [math contracts](../docs/math.md) and independent shared numerical tests.
