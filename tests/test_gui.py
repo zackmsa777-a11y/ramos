@@ -67,8 +67,14 @@ print(gui_number(p,48))
         binary = self.output.read_bytes(); nt = struct.unpack_from('<I', binary,60)[0]
         self.assertEqual(struct.unpack_from('<H',binary,nt+24+68)[0],2)
         self.assertNotIn(b'msvcrt.dll',binary.lower())
+        result = self.build('fn main() {}', '--target', 'linux', '--gui', '--force')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        binary = self.output.read_bytes()
+        self.assertEqual(binary[:4], b'\x7fELF')
+        self.assertEqual(struct.unpack_from('<H',binary,56)[0],7)
+        self.assertIn(b'libgtk-3.so.0\0',binary)
         self.output.write_bytes(b'preserve')
-        for args in [('--target','linux','--gui','--force'), ('--target','windows','--gui','--gui')]:
+        for args in [('--target','linux','--gui','--gui'), ('--target','windows','--gui','--gui')]:
             result = self.build('fn main() {}', *args)
             self.assertNotEqual(result.returncode,0)
             self.assertEqual(self.output.read_bytes(),b'preserve')

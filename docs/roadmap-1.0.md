@@ -5,7 +5,7 @@ applications on Windows x64 and Linux x64. A beginner should be able to build
 and run a small tool from a short example; larger tools should have the libraries,
 diagnostics and resource handling needed to keep working.
 
-This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools, 0.17 text builders and 0.18 float/math and 0.18.1 decimal input are now
+This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools, 0.17 text builders and 0.18 float/math and 0.18.1 decimal input plus 0.19 Linux GUI are now
 implemented; all remaining milestones below are proposals. Proposed version labels below describe order, not deadlines.
 Keep each release small enough to implement and verify completely; split a
 milestone if necessary. Python-like ease and Rust/C-like native performance
@@ -33,7 +33,7 @@ self-hosting. Any change in those contracts must be explicit and tested.
 0.13 already has immutable strings, reusable managed memory, structs, typed
 arrays, `weave`, a small standard library, streamed files, stdin, CLI/TUI tools
 and a Windows GUI library. Those foundations should be extended, not rebuilt.
-The Linux desktop backend is still missing. Live memory, individual values,
+0.19 adds a GTK3 Linux desktop backend; automatic layout/DPI policy and file dialogs remain missing. Live memory, individual values,
 recursion and source size have documented limits. The published comparative
 timings are historical; they are not a performance result for 0.13.
 
@@ -48,7 +48,8 @@ timings are historical; they are not a performance result for 0.13.
 | 0.18: native math (implemented; see [contracts](math.md)) | Finite `float64`, explicit conversions, square root, exact fixed formatting and Ramos math helpers | Native Mandelbrot image renderer, independently checked numerical results on both OSes |
 | 0.18.1: numerical input (implemented; see [contracts](math-input.md)) | Fallible decimal parsing with exact rounding in the Ramos math library | Streamed file/stdin statistics, independent references and long-running memory checks |
 | Follow-up: collections and limits | Profile collection growth and review memory/recursion limits before changing contracts | Bounded collection workloads and long-running live-memory checks |
-| 0.19: portable GUI | Linux backend, layout/DPI handling, file dialogs and basic drawing behind the GUI library | The same Notes source opens/saves Unicode files and remains responsive while resizing on Windows and Linux |
+| 0.19: portable GUI (implemented; see [contracts](gui.md)) | GTK3 Linux backend, existing native controls/events/panels, `run --gui` | The same Notes source opens/saves Unicode files and remains responsive while resizing on Windows and Linux |
+| GUI follow-up | Simple layout helpers, explicit DPI policy, file dialogs, drawing | A small app uses shared layout and open/save dialogs on both OSes |
 | 1.0 candidate: reliability and measured speed | Profile the acceptance apps, fix demonstrated costs, polish installation and packaging, document compatibility | Build, run and package the CLI/TUI/GUI examples from a clean installation on both OSes |
 
 ### 0.14: specify the small syntax changes first

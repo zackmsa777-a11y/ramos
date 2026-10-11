@@ -32,7 +32,7 @@ runtime_process_exit:
     ja runtime_buffer_value_error
     call runtime_terminal_cleanup
     mov rdi, rax
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 # Path bytes -> allocated NUL-terminated path, or -EINVAL/-ENAMETOOLONG.

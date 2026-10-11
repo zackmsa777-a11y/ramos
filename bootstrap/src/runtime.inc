@@ -20,7 +20,7 @@ runtime_write_done:
 runtime_write_failed:
     call runtime_terminal_cleanup
     mov edi, 1
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 
@@ -54,7 +54,7 @@ runtime_arithmetic_error:
     call runtime_write_fd
     call runtime_terminal_cleanup
     mov edi, 1
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 runtime_call_depth_error:
@@ -64,7 +64,7 @@ runtime_call_depth_error:
     call runtime_write_fd
     call runtime_terminal_cleanup
     mov edi, 1
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 runtime_depth_message:
@@ -94,7 +94,7 @@ runtime_writer_end:
 .equ RUNTIME_DEPTH_FILE, CODE_OFFSET + runtime_call_depth_error - runtime_writer
 .equ RUNTIME_ERROR_FILE, CODE_OFFSET + runtime_arithmetic_error - runtime_writer
 runtime_exit:
-    mov eax, 60
+    mov eax, 231
     xor edi, edi
     syscall
 runtime_exit_end:

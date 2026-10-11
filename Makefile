@@ -62,6 +62,7 @@ cli-tools: ramos
 	./ramos build examples/rgrep.ramos -o build/rgrep --force
 	./ramos build examples/rview.ramos -o build/rview --force
 gui-demo: ramos
+	./ramos build examples/notes.ramos -o build/notes --target linux --gui --force
 	./ramos build examples/notes.ramos -o build/notes.exe --target windows --gui --force
 install: ramos
 	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/bin"

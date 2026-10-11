@@ -320,7 +320,7 @@ runtime_process_child:
     mov edx, 8
     call runtime_io_write_all
     mov edi, 127
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 runtime_process_fork_failed:

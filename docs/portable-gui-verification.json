@@ -1,0 +1,28 @@
+{
+  "version": "0.19.0",
+  "status": "local Linux desktop acceptance passed; release CI pending",
+  "compiler_source_sha256": "de54378dc71f6eaff0c980138f90ffb8815ae9dcd944381a83f8739d59486bca",
+  "linux_desktop_backend": "GTK3, X11/Xvfb on Ubuntu 24.04 x86_64",
+  "linux_desktop_cases": [
+    "Unicode clipboard editing and exact file save",
+    "exclusive overwrite refusal",
+    "empty clear/save after resize",
+    "panel RGB pixel check",
+    "small and large client resize",
+    "WM_DELETE_WINDOW close request",
+    "12 window lifecycles",
+    "GUI survives managed collection after 40 MiB cumulative allocations",
+    "64-event queue overflow and finite timeout",
+    "missing-display status",
+    "return, exit(7), arithmetic trap process termination",
+    "run --gui window and temporary cleanup",
+    "ELF program headers/imports/alignment/W^X"
+  ],
+  "wayland_verified": false,
+  "new_performance_claim": false,
+  "follow_up": [
+    "file dialogs",
+    "automatic layout and DPI policy",
+    "general canvas drawing"
+  ]
+}

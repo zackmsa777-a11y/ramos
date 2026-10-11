@@ -1,4 +1,4 @@
-# Ramos 0.18.1 — self-hosted compiler for Linux and Windows
+# Ramos 0.19.0 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,13 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.19 adds **Linux desktop GUI support** through GTK3. The same Notes
+source now runs on Linux and Windows: Unicode editing, native controls, colored
+panels, resize events and atomic exclusive file saves. Use `ramos run app.ramos
+--gui`, or build a distributable executable with `--gui`. Linux GUI apps require
+GTK3 and a display; ordinary CLI programs and both compilers retain their static /
+no-CRT contracts. See [GUI setup, API and limits](docs/gui.md).
 
 Version 0.18.1 adds **fallible decimal input** in the Ramos math library. Parse
 signed decimal/scientific text into a typed value/status result with exact
@@ -67,8 +74,8 @@ buttons, Unicode text inputs/editors, colored panels and resize/input events.
 `--gui` builds an executable that launches without a console. The bundled
 [Ramos Notes app](examples/notes.ramos) edits and saves UTF-8 text with native
 controls. No external GUI toolkit or Python runtime is needed. Linux can
-cross-compile GUI apps; its GUI backend is not implemented yet (startup returns
-`-38`). Validation passes **194 Linux tests and 140 native Windows tests**,
+cross-compile GUI apps; Linux startup returned `-38` in that release.
+The 0.19 Linux backend requires `--gui` and GTK3. Validation passes **194 Linux tests and 140 native Windows tests**,
 with both self-hosting fixed points retained. See [the GUI library and commands](docs/gui.md).
 
 Version 0.12 adds **streamed file I/O and terminal interfaces**. Build native
@@ -180,7 +187,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.1/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.19.0/ramos.exe):
 
 ```powershell
 .\ramos.exe run .\hello.ramos
@@ -212,15 +219,24 @@ Ramos-written `stdlib/io.ramos`, `cli.ramos` and `tui.ramos` libraries. Download
 [the complete CLI/TUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.12.0/ramos-0.12.0-cli-tui.zip)
 and keep its folders together. See [contracts, examples and limits](docs/cli-tui.md).
 
-## Desktop GUI (Windows)
+## Desktop GUI (Windows and Linux)
 
 ```powershell
 .\ramos.exe build .\examples\notes.ramos -o .\notes.exe --gui
 .\notes.exe
 ```
 
+Linux desktop (install GTK3, for example `sudo apt install libgtk-3-0t64` on
+Ubuntu 24.04):
+
+```sh
+./ramos run examples/notes.ramos --gui
+./ramos build examples/notes.ramos -o notes --gui
+./notes
+```
+
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.1/ramos-0.18.1-math-input.zip)
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.19.0/ramos-0.19.0-portable-gui.zip)
 with both compilers, all thirteen libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
@@ -477,8 +493,8 @@ Implementation:
 
 Generated programs are x86-64 Linux ELF or Windows PE32+ executables. Code is read/execute,
 string data is read-only, buffer mappings are read/write, and the stack is
-non-executable. No region is both writable and executable. Linux output is static; Windows
-uses system DLLs with NX/ASLR protections and requires no C runtime.
+non-executable. No region is both writable and executable. Linux CLI output is static; `--gui` Linux output dynamically links GTK3, GLib,
+GObject and Cairo (including their system dependencies). Windows uses system DLLs with NX/ASLR protections and requires no C runtime.
 
 ## Arguments and file I/O
 
@@ -545,7 +561,8 @@ The compiler is self-hosted; namespaces, more library types, wrapping arithmetic
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
-permissions. General canvas graphics, games, a Linux GUI backend and browser support need further platform work.
+permissions. General canvas graphics, file dialogs, automatic layout/DPI policy, games and
+browser support need further work. Linux GUI is verified on X11; Wayland is not yet verified.
 
 ## Benchmarks
 

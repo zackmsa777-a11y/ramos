@@ -71,7 +71,7 @@ runtime_buffer_error:
     call runtime_write_fd
     call runtime_terminal_cleanup
     mov edi, 1
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 runtime_buffer_size_message:

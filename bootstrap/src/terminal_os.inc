@@ -139,6 +139,7 @@ runtime_terminal_cleanup:
     push rdi
     push QWORD PTR [r15 + 8]
     call runtime_terminal_stop
+    call runtime_gui_cleanup
     pop QWORD PTR [r15 + 8]
     pop rdi
     pop rsi
@@ -148,10 +149,10 @@ runtime_terminal_cleanup:
     ret
 runtime_terminal_signal:
     push rdi
-    call runtime_terminal_cleanup
+    call runtime_terminal_stop
     pop rdi
     add edi, 128
-    mov eax, 60
+    mov eax, 231
     syscall
     ud2
 runtime_signal_restorer:

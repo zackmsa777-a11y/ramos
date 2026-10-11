@@ -20,15 +20,18 @@ Windows PowerShell:
 .\ramos.exe run .\examples\rgrep.ramos -- needle README.md
 ```
 
-`run SOURCE.ramos [-- ARG...]` compiles for the OS running the compiler, using
+`run SOURCE.ramos [--gui] [-- ARG...]` compiles for the OS running the compiler, using
 the same checks, source-relative `weave` loading and machine-code generation as
 `build`. Program arguments follow an explicit `--`; empty arguments, spaces,
 Unicode, quotes and shell metacharacters remain individual values. No shell or
 PATH lookup is involved. Stdin, stdout, stderr, environment and working directory
 are inherited. The compiler prints nothing on success beyond the program's output.
 
-Use `build` for distributable executables, cross-compilation or `--gui` output;
-`run` accepts none of those build options and creates no output in your project.
+Since 0.19, `run SOURCE.ramos --gui` selects the host GUI executable format.
+For Linux this requires GTK3 and a display; Windows uses its desktop subsystem.
+The optional `--gui` precedes `--` and cannot be repeated. Use `build` for
+distributable executables and cross-compilation. `run` accepts no `--target`,
+`-o` or `--force` and creates no output in your project.
 It waits for the program and forwards exit statuses 0..255. Larger Windows
 exit codes map to 1; Linux signal termination is represented as 128 plus the
 signal number. Compiler, launch or cleanup failures return 1 with an error.

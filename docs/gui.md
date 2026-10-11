@@ -1,12 +1,22 @@
-# Desktop GUI library (Ramos 0.13)
+# Desktop GUI library (Ramos 0.19)
 
-`weave "stdlib/gui.ramos"` adds real desktop windows and native controls. The
-first backend is **Windows x64**. It uses system USER32/GDI32 APIs: no Python,
-interpreter, browser, C runtime or separately installed GUI toolkit is needed.
-The library and application logic are ordinary Ramos; the compiler still emits
-native code itself. Linux compilers can cross-compile these apps to Windows.
-Linux GUI startup returns `-38` (unsupported); CLI and TUI remain native on both
-platforms. An X11/Wayland backend is future work.
+`weave "stdlib/gui.ramos"` adds real desktop windows and native controls on
+**Windows x64 and Linux x64**, using the same application source. Windows uses
+system USER32/GDI32 APIs and needs no C runtime or extra toolkit. Linux GUI
+executables dynamically link system **GTK3, GObject, GLib and Cairo**, including
+their libc/platform dependencies. The library and application logic are ordinary
+Ramos; its compiler emits x86-64 instructions and ELF/PE imports directly, with
+no C/Python helper, external linker or delegated compiler backend.
+
+The compilers and ordinary Linux CLI/TUI output remain static. Linux GUI is
+opt-in with `--gui`; GUI startup in a static build still returns `-38`.
+Install GTK3 before launching a Linux GUI executable: on Ubuntu 24.04,
+`sudo apt install libgtk-3-0t64`; on Debian 12, `sudo apt install libgtk-3-0`.
+Development headers are not required. A running desktop display and installed
+fonts are required. Missing shared libraries are reported by the system loader
+before Ramos starts; a missing display returns `-19` from `gui_open`.
+Verification covers X11/Xvfb on Ubuntu 24.04 and native Windows. GTK chooses its
+available display backend; Wayland has not been verified for this release.
 
 ## A complete app
 
@@ -35,21 +45,23 @@ Keep `stdlib/` beside the source. On Windows, with the full release extracted:
 .\notes.exe
 ```
 
-From Linux:
+On Linux with GTK3 installed:
 
 ```sh
-make gui-demo
-# Or:
+./ramos run examples/notes.ramos --gui
+./ramos build examples/notes.ramos -o notes --gui
+./notes
+# Cross-compile the same source for Windows:
 ./ramos build examples/notes.ramos -o notes.exe --target windows --gui
 ```
 
-`--gui` sets the Windows PE subsystem to desktop GUI, so Explorer or PowerShell
-launches a window without a console. Omit it to retain a console for debugging.
-It is rejected for Linux targets or when repeated. Existing output still needs
-`--force`, and every source remains protected from accidental replacement.
-The console compiler itself is unchanged; stderr/stdout APIs still use inherited
-handles when available. A GUI launched from Explorer should show messages inside
-its controls rather than relying on console output.
+`ramos run SOURCE.ramos --gui [-- ARG...]` compiles for the host, waits for the
+app and removes its temporary binary. `build --gui` selects a desktop PE subsystem
+on Windows (no console) or a GTK3-linked ELF on Linux. Linux builds without that
+flag retain the unsupported GUI stub. Repeated flags are rejected. Existing
+output still needs `--force`, and every source remains protected from accidental
+replacement. Windows GUI apps launched from Explorer should report errors in
+controls instead of relying on inherited stdout/stderr handles.
 
 The included **Ramos Notes** app supports Unicode editing, a file-path input,
 Save/Clear buttons, a colored panel and resizing. Save creates a new UTF-8 file
@@ -59,10 +71,10 @@ not an editor with open dialogs, unsaved-change confirmation or autosave.
 
 ## Library API
 
-Coordinates and dimensions are integer client-area pixels. Windows supplies
+Coordinates and dimensions are integer client-area pixels. The native toolkit supplies
 font rendering, focus, Tab navigation, button activation, text selection and
-editing. Native control appearance and available glyphs depend on Windows and
-installed fonts. These are ordinary Windows controls, not terminal escape codes.
+editing. Native control appearance and available glyphs depend on the OS/toolkit and
+installed fonts. These are native desktop controls, not terminal escape codes.
 
 | Function | Behavior |
 | --- | --- |
@@ -71,7 +83,7 @@ installed fonts. These are ordinary Windows controls, not terminal escape codes.
 | `gui_button(id, x, y, w, h, text)` | Native clickable button |
 | `gui_input(id, x, y, w, h, text)` | Single-line editable Unicode text |
 | `gui_editor(id, x, y, w, h, text)` | Multiline editor with vertical scrolling |
-| `gui_panel(id, x, y, w, h, color)` | Solid colored rectangular panel; Windows repaints it automatically |
+| `gui_panel(id, x, y, w, h, color)` | Solid colored rectangular panel; The toolkit repaints it automatically |
 | `gui_rgb(r, g, b) -> int64` | Construct an opaque color; each component is 0..255 |
 | `gui_set(id, text)` | Update a label, button or editor's text |
 | `gui_text(id) -> string` | Read label/button/editor text as validated UTF-8 |
@@ -95,14 +107,14 @@ There are no arbitrary callbacks into Ramos or exposed native handles.
 | 1 | Close requested | App should finish its loop and call `gui_close` |
 | 2 | Button activated | `id` is the control ID |
 | 3 | Client resized | `width`, `height` are current client pixel dimensions |
-| 4 | Parent window key-down | `id` is a Windows virtual-key code |
+| 4 | Parent window key-down | `id` is a Windows virtual-key code on Windows; Linux uses GDK keyvals with common letters, arrows, Backspace, Tab, Enter and Escape normalized to those codes |
 | 5 | Editor text changed | `id` is the control ID; programmatic `gui_set` can also cause this |
 
 Text inputs consume normal editing keys themselves; kind 4 is not a global
 keyboard hook. Native controls handle mouse input and activation; raw pointer
 motion, canvas drawing, images, menus, file dialogs and multiple windows are not
 part of this first API. Colored panels provide basic rectangular drawing.
-Resize events include the initial layout and minimization (zero dimensions).
+Resize events include the initial layout; Windows also reports minimization as zero dimensions.
 Control layout is explicit; there is no automatic layout manager or DPI scaling.
 Apps should handle small dimensions without requesting zero-sized controls.
 The Notes example keeps a minimum logical layout of 360x240 and clips when the
@@ -116,8 +128,8 @@ can exist before user input; don't assume the first event is a button press.
 ## Limits, statuses and lifetime
 
 Window titles are at most 4095 UTF-8 bytes. Text passed to controls is at most
-32767 UTF-8 bytes; edit controls accept at most 32767 UTF-16 units through native
-editing. Reading can therefore produce more than 32767 UTF-8 bytes. Invalid UTF-8
+32767 UTF-8 bytes. Native editing is capped at 32767 UTF-16 units on Windows
+and 32767 Unicode scalars on GTK. Reading can therefore produce more than 32767 UTF-8 bytes. Invalid UTF-8
 and embedded NUL are rejected at the native boundary. Strings stay validated;
 empty labels and edits are allowed. Initial client width is 160..4096 and height
 80..4096. Control positions are 0..8192 and dimensions 1..8192; drawing is clipped
@@ -128,19 +140,37 @@ A full queue fails explicitly instead of silently losing user actions.
 `gui_check`, so they fail with a diagnostic and exit 1. Low-level `_gui_*`
 intrinsics are reserved library machinery; they return negative statuses (or
 empty bytes with `io_error`) and validate every property independently:
-`-9` inactive window/unknown control, `-16` second active window, `-17` duplicate
+`-9` inactive window/unknown control, `-19` unavailable Linux display, `-16` second active window, `-17` duplicate
 ID, `-22` invalid argument/encoding, `-27` oversized read, `-38` missing platform
 backend, `-75` event queue overflow, and native errors mapped to existing I/O
 statuses. The old checked arithmetic, allocation and bounds contracts remain.
 
 The reclaiming heap roots the GUI state. Collection does not close native
-windows. Close releases the controls and owned brushes; the default GUI font is
-borrowed, and the two system DLLs are process-owned. Normal main return, `exit`
+windows. Close releases each native widget tree and owned Windows brushes. System DLLs,
+GTK libraries, font caches and toolkit worker threads are process-owned. GTK
+allocations are separate from the 16 MiB Ramos managed heap; that cap does not
+limit total process memory. Linux exits terminate all process threads. Normal main return, `exit`
 and native Ramos traps attempt GUI cleanup automatically. Process termination
 also releases OS resources; no durability or user-data save is promised on an
 abrupt termination. GUI calls run on the program's single main thread.
 
 ## Validation
+
+0.19 tests the same Notes source on Linux and Windows. The Linux desktop corpus
+creates real GTK widgets, checks panel pixels, pastes Arabic/emoji via the native
+clipboard, types an editing key, activates Save/Clear, resizes and closes through
+WM_DELETE_WINDOW. It verifies exact saved bytes, exclusive overwrite refusal,
+empty saves after resize, 12 open/close cycles, GC after 40 MiB cumulative
+allocations, queue overflow, timeout/headless errors and cleanup on return/exit/trap.
+It also exercises `run --gui` with real windows and temporary-file cleanup.
+ELF checks validate loader/import segments, ordering, alignment and W^X.
+Test-only tools: `Xvfb`, `xdotool`, `xclip`, Python and libX11; none are application
+runtime dependencies. CI installs them and runs the corpus against stages 2/3.
+See [0.19 verification](portable-gui-verification.json) and the current
+[Linux/Windows self-hosting proofs](bootstrap-proof.json). No new speed claim.
+
+### Retained Windows acceptance (introduced in 0.13)
+
 
 The focused corpus checks raw argument/type errors, PE subsystem selection,
 existing-output preservation and static Linux unsupported behavior. Real desktop

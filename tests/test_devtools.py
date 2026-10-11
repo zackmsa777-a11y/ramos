@@ -205,3 +205,11 @@ for i in 0..2 {print(values[i])}
             result = self.compiler_command('run', source, env=env)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(list(temp.iterdir()), [])
+
+    def test_run_gui_flag_arguments_and_duplicate_rejection(self):
+        source = self.write_source('fn main() { print(arg_count())\nprint(arg(1)) }')
+        result = self.compiler_command('run', source, '--gui', '--', 'one argument')
+        self.assertEqual((result.returncode, result.stdout), (0, b'2\none argument\n'), result.stderr)
+        result = self.compiler_command('run', source, '--gui', '--gui')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b'usage:', result.stderr)

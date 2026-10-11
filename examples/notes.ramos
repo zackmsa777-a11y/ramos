@@ -15,7 +15,7 @@ fn notes_layout(width: int64, height: int64) {
 fn main() {
     let status = gui_open(s"Ramos Notes", 640, 440)
     if status != 0 {
-        stderr("Ramos Notes needs the Windows GUI backend, status ")
+        stderr("Ramos Notes cannot open a GUI window, status ")
         stderr(int_to_text(status))
         stderr("\n")
         exit(1)

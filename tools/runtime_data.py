@@ -19,6 +19,8 @@ BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'array_new', 'array_len', 'array_get', 'array_set', 'array_resize',
             'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty', 'protect_input', 'stdout', 'file_open', 'file_read', 'file_write', 'file_eof', 'file_close', 'terminal_start', 'terminal_stop', 'terminal_width', 'terminal_height', 'terminal_key', 'file_seek', 'gui_open', 'gui_control', 'gui_text', 'gui_poll', 'gui_close',
             'cwd', 'env_get', 'dir_open', 'dir_next', 'dir_kind', 'dir_close', 'process_run', 'dir_create', 'run_file', 'float_from_int', 'float_to_int', 'float_to_text', 'float_sqrt', 'float_check', 'float_error', 'float_print']
+LINUX_GUI = ['gtk_init_check', 'gtk_window_new', 'gtk_window_set_title', 'gtk_window_set_default_size', 'gtk_layout_new', 'gtk_container_add', 'gtk_widget_show_all', 'gtk_widget_destroy', 'g_signal_connect_data', 'gtk_label_new', 'gtk_label_set_xalign', 'gtk_button_new_with_label', 'gtk_entry_new', 'gtk_entry_set_max_length', 'gtk_entry_set_text', 'gtk_text_view_new', 'gtk_text_view_get_buffer', 'gtk_text_buffer_set_text', 'gtk_scrolled_window_new', 'gtk_scrolled_window_set_policy', 'gtk_drawing_area_new', 'gtk_widget_set_size_request', 'gtk_layout_put', 'gtk_layout_move', 'gtk_label_set_text', 'gtk_button_set_label', 'gtk_entry_get_text', 'gtk_label_get_text', 'gtk_button_get_label', 'gtk_text_buffer_get_bounds', 'gtk_text_buffer_get_text', 'g_free', 'gtk_main_iteration_do', 'g_timeout_add', 'g_source_remove', 'gtk_widget_grab_focus', 'gtk_text_buffer_get_char_count', 'g_utf8_strlen', 'g_signal_stop_emission_by_name', 'cairo_set_source_rgb', 'cairo_paint', 'gtk_text_view_set_wrap_mode', 'g_get_monotonic_time']
+
 ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print']
 
 
@@ -63,18 +65,53 @@ def imports():
     return bytes(data), offsets
 
 
+def linux_gui_imports():
+    base = 0x600000
+    data = bytearray(8192)
+    cursor = 4097
+    def name(value):
+        nonlocal cursor
+        at = cursor
+        raw = value.encode() + b'\0'
+        data[at:at + len(raw)] = raw
+        cursor += len(raw)
+        return at - 4096
+    needed = [name(n) for n in ['libgtk-3.so.0', 'libgobject-2.0.so.0', 'libglib-2.0.so.0', 'libcairo.so.2']]
+    # String table starts with a null entry, then needed libraries and symbols.
+    # Offset zero is the empty string required by the null symbol.
+    for i, n in enumerate(LINUX_GUI, 1):
+        offset = name(n)
+        struct.pack_into('<IBBHQQ', data, 1024 + i*24, offset, 0x12, 0, 0, 0, 0)
+        struct.pack_into('<QQq', data, 2304 + (i-1)*24, base + (i-1)*8, (i << 32) | 6, 0)
+    # A valid one-bucket SysV hash includes every symbol in a bounded chain.
+    count = len(LINUX_GUI) + 1
+    struct.pack_into('<III', data, 3584, 1, count, 1)
+    for i in range(1, count):
+        struct.pack_into('<I', data, 3596 + i*4, i+1 if i+1 < count else 0)
+    tags = [(1,n) for n in needed] + [(4,base+3584),(5,base+4096),
+            (6,base+1024),(10,cursor-4096),(11,24),(7,base+2304),
+            (8,len(LINUX_GUI)*24),(9,24),(0,0)]
+    for i, (tag, value) in enumerate(tags):
+        struct.pack_into('<QQ', data, 512+i*16, tag, value)
+    assert 1024 + count*24 <= 2304 and 2304 + len(LINUX_GUI)*24 <= 3584
+    assert 3596 + count*4 <= 4096 and cursor <= len(data)
+    return bytes(data)
+
 def generated():
     run('make', 'build/stage0')
     sample = ROOT / 'build/runtime-data.ramos'
     sample.write_text('fn main() {}\n')
     run('./build/stage0', 'build', str(sample), '-o', 'build/runtime-data', '--force')
     sym = symbols('build/stage0')
+    for i, name in enumerate(LINUX_GUI):
+        assert sym['LG_' + name] == 0x600000 + i*8, name
     binary = (ROOT / 'build/runtime-data').read_bytes()
     end = 4096 + sym['RUNTIME_SIZE']
     result = {
         'runtime_text': binary[4096:end],
         'entry_text': binary[end:end + sym['ENTRY_INITIALIZE_SIZE']],
         'runtime_end': end,
+        'linux_gui_imports': linux_gui_imports(),
     }
     for fn, label in zip(['math_address', 'depth_address', 'literal_address', 'integer_address',
                           'boolean_address', 'print_buffer_address'], ADDRESSES):
