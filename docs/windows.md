@@ -131,5 +131,9 @@ argument quoting, status handling, resource ownership and current limits.
 Version 0.18 adds native float64 arithmetic, conversions, square root and fixed
 decimal formatting on the same Windows runtime. See [math.md](math.md).
 
-Version 0.19.0 adds a Ramos-written decimal parser and streamed numerical
+Version 0.18.1 adds a Ramos-written decimal parser and streamed numerical
 statistics on stdin/files. See [math-input.md](math-input.md).
+
+Version 0.19 adds `run SOURCE.ramos --gui` and Linux GTK3 cross-compilation
+via `build SOURCE.ramos -o PROGRAM --target linux --gui`. Windows GUI stays
+on native USER32/GDI32. See [portable GUI setup](gui.md).

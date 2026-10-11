@@ -1,4 +1,4 @@
-# Ramos 0.18.1: self-hosting proved
+# Ramos 0.19.0: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -86,7 +86,7 @@ shared language tests and records the native Windows proof. See
 [Windows bootstrap instructions](windows.md).
 
 The retained assembly seed implements the 0.7 grammar. The compiler source uses
-compatible surface syntax while implementing the full 0.18.1 API and grammar itself. Tests
+compatible surface syntax while implementing the full 0.19.0 API and grammar itself. Tests
 for comments, short-circuit booleans and managed-value syntax run on stages 2/3 and native Windows;
 the seed explicitly skips them. The proof JSON records both discovered counts
 and these skips. No source preprocessing or external backend is required.
@@ -125,3 +125,20 @@ example. The seven math-input tests run on native self-hosted stages and
 Windows; the retained seed skips the unsupported application grammar.
 The compiler change is only its version string; native float runtime bytes
 and code generation are unchanged. See [math-input.md](math-input.md).
+
+## 0.19 portable GUI boundary
+
+Linux `--gui` output contains an ELF interpreter, dynamic symbol/hash tables and
+GLOB_DAT relocations for a fixed GTK3/GLib/GObject/Cairo API list. The Ramos ELF
+writer emits these itself. `tools/runtime_data.py` audits the import table and
+assembly call-slot order as well as the embedded machine bytes. The compiler
+itself and ordinary CLI/TUI programs remain static ELF executables. Windows GUI
+still uses the existing USER32/GDI32 boundary and requires no C runtime.
+
+Native GUI callbacks enqueue bounded data only; they do not call Ramos functions
+or allocate managed values. GTK-owned memory/threads are outside the Ramos heap.
+The Linux runtime uses exit_group so toolkit workers cannot keep a finished app
+alive. Both compiler fixed points and the actual desktop interactions are
+release prerequisites; see [the GUI contracts](gui.md) and
+[0.19 evidence](portable-gui-verification.json). Wayland, dialogs, automatic
+layout/DPI policy and general drawing are not claimed as verified features.

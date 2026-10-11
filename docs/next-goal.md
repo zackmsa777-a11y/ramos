@@ -21,7 +21,7 @@ apps. See [cli-tui.md](cli-tui.md).
 
 Version **0.13** adds the requested desktop GUI library, with a native Windows
 backend, Unicode controls, resize/events and a working Notes app. Linux GUI
-startup is explicitly unsupported until a display-server backend ships. See
+startup was unsupported in that release; 0.19 supplies an optional GTK3 backend. See
 [gui.md](gui.md).
 
 Version **0.14** adds `else if`, range `for`, and `+=`/`-=` with checked
@@ -33,7 +33,9 @@ See [devtools.md](devtools.md). Version **0.17** ships reusable text builders an
 See [text-builder.md](text-builder.md). Version **0.18** ships finite float64 arithmetic, essential math and a numerical
 renderer. See [math.md](math.md). Version **0.18.1** adds fallible decimal input
 and the streamed `rstats` app; see [math-input.md](math-input.md). Collection growth and reviewed memory/recursion
-limits remain a separate follow-up.
+limits remain a separate follow-up. Version **0.19** adds Linux GTK3 desktop
+windows with the same Notes source and `run --gui`; see [gui.md](gui.md).
+Layout/DPI helpers, file dialogs and general drawing remain follow-ups.
 
 The target is a useful native application language with simple APIs. See the
 [ordered application-language roadmap](roadmap-1.0.md) for the user's **simple**

@@ -21,8 +21,10 @@ Version 0.19 adds **Linux desktop GUI support** through GTK3. The same Notes
 source now runs on Linux and Windows: Unicode editing, native controls, colored
 panels, resize events and atomic exclusive file saves. Use `ramos run app.ramos
 --gui`, or build a distributable executable with `--gui`. Linux GUI apps require
-GTK3 and a display; ordinary CLI programs and both compilers retain their static /
-no-CRT contracts. See [GUI setup, API and limits](docs/gui.md).
+GTK3 and a display. Validation passes **271 Linux tests and 212 native Windows
+tests**, with both compiler fixed points. See [0.19 evidence](docs/portable-gui-verification.json).
+The Linux compiler and ordinary Linux CLI programs remain
+static; Windows programs still require no C runtime. See [GUI setup, API and limits](docs/gui.md).
 
 Version 0.18.1 adds **fallible decimal input** in the Ramos math library. Parse
 signed decimal/scientific text into a typed value/status result with exact

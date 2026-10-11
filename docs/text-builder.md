@@ -118,4 +118,4 @@ with byte-identical compiler fixed points on both targets. See
 
 The broader data/math milestone was split to keep releases reviewable: this
 release ships builders only. Float64 and essential math, reviewed collection and
-recursion limits, and Linux GUI remain future work. See [roadmap](roadmap-1.0.md).
+recursion limits remain future work. Linux GUI arrives in 0.19 through GTK3. See [roadmap](roadmap-1.0.md).

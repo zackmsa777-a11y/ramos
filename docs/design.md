@@ -152,3 +152,8 @@ file I/O and a compiler written in Ramos with matching stage-2/stage-3 output. S
 Version 0.7 adds native Windows x64 PE output, a Windows-native compiler,
 Windows OS intrinsics and shared parser/code generation. Simplicity and fast
 native execution remain core rules; new performance claims require measurements.
+
+The original static ELF design remains the CLI/compiler default. Since 0.19,
+explicit `--gui` output adds a system loader and audited GTK3 imports, with
+separate RX code, R literal and RW import segments. No segment is writable and
+executable. See [GUI dependencies and limits](gui.md).

@@ -166,7 +166,9 @@ It also exercises `run --gui` with real windows and temporary-file cleanup.
 ELF checks validate loader/import segments, ordering, alignment and W^X.
 Test-only tools: `Xvfb`, `xdotool`, `xclip`, Python and libX11; none are application
 runtime dependencies. CI installs them and runs the corpus against stages 2/3.
-See [0.19 verification](portable-gui-verification.json) and the current
+Native CI passed **271 Linux tests** (276 discovered, five platform skips)
+and **212 Windows tests** (213 discovered, one Linux fixture skip), with both
+compiler fixed points matching. See [0.19 verification](portable-gui-verification.json) and the current
 [Linux/Windows self-hosting proofs](bootstrap-proof.json). No new speed claim.
 
 ### Retained Windows acceptance (introduced in 0.13)
