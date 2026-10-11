@@ -75,12 +75,12 @@ Windows PowerShell:
 .\ramos.exe run .\examples\rnumber.ramos -- .\input.txt
 ```
 
-Input `é🚀`, an empty line and a final unterminated `last` produce:
+Input `é🚀`, an empty line and a final unterminated `last` produce these output lines (shown quoted to make the empty payload visible):
 
 ```text
-1: é🚀
-2: 
-3: last
+"1: é🚀"
+"2: "
+"3: last"
 ```
 
 LF/CRLF terminators normalize to LF output. Empty files produce no lines. An
