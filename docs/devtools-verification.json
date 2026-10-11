@@ -1,0 +1,22 @@
+{
+  "version": "0.16.0",
+  "linux_discovered": 245,
+  "linux_skipped": 5,
+  "linux_passed": 240,
+  "windows_discovered": 187,
+  "windows_skipped": 1,
+  "windows_passed": 186,
+  "focused_devtools_tests": 14,
+  "linux_selfhost_fixed_point": true,
+  "windows_selfhost_fixed_point": true,
+  "isolated_path_rebuild_matches": true,
+  "source_sha256": "098bcc6b07e44aa585e4f04e4864bc4a6128f141ce2670c18f05afb19cef8116",
+  "native_ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38106645869",
+  "acceptance_commands": [
+    "run examples/hello.ramos",
+    "run examples/rgrep.ramos -- needle README.md",
+    "fmt SOURCE --check",
+    "fmt SOURCE -o COPY"
+  ],
+  "performance": "No 0.16 comparative speed or speedup claim; 0.14 measurements remain historical."
+}

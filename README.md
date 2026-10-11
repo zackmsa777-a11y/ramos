@@ -21,6 +21,9 @@ Version 0.16 adds **easier development**: source-line/caret diagnostics with
 specific type names, `ramos fmt` and `ramos run`. Run a source file directly with
 arguments and inherited I/O; format a copy or check formatting in CI. All three
 tools are native and written in Ramos. See [commands and contracts](docs/devtools.md).
+Current validation passes **240 Linux tests and 186 native Windows tests**,
+with matching compiler self-rebuilds on both platforms. See
+[release evidence](docs/devtools-verification.json).
 
 Version 0.15 added **native CLI OS libraries**: streamed directory iteration,
 exclusive directory creation, path helpers, environment lookup and direct child
