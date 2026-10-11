@@ -290,8 +290,8 @@ def main():
         parser.error('use at least five samples and a positive calibration target')
     compiler, work, output = args.compiler.resolve(), args.work_dir.resolve(), args.output_dir.resolve()
     version = run([compiler, '--version'])[1].stdout.decode().strip()
-    if not version.startswith(('Ramos 0.7.', 'Ramos 0.8.', 'Ramos 0.9.', 'Ramos 0.10.', 'Ramos 0.11.', 'Ramos 0.12.', 'Ramos 0.13.', 'Ramos 0.14.', 'Ramos 0.15.')):
-        parser.error('these sources and bounds target Ramos 0.7 through 0.15')
+    if not version.startswith(('Ramos 0.7.', 'Ramos 0.8.', 'Ramos 0.9.', 'Ramos 0.10.', 'Ramos 0.11.', 'Ramos 0.12.', 'Ramos 0.13.', 'Ramos 0.14.', 'Ramos 0.15.', 'Ramos 0.16.')):
+        parser.error('these sources and bounds target Ramos 0.7 through 0.16')
     cpu = min(os.sched_getaffinity(0))
     os.sched_setaffinity(0, {cpu})
     work.mkdir(parents=True, exist_ok=True)

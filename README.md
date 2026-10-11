@@ -1,4 +1,4 @@
-# Ramos 0.15 — self-hosted compiler for Linux and Windows
+# Ramos 0.16 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -17,14 +17,17 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
-Version 0.15 adds **native CLI OS libraries**: streamed directory iteration,
+Version 0.16 adds **easier development**: source-line/caret diagnostics with
+specific type names, `ramos fmt` and `ramos run`. Run a source file directly with
+arguments and inherited I/O; format a copy or check formatting in CI. All three
+tools are native and written in Ramos. See [commands and contracts](docs/devtools.md).
+
+Version 0.15 added **native CLI OS libraries**: streamed directory iteration,
 exclusive directory creation, path helpers, environment lookup and direct child
 execution. `rfind` searches a directory tree; `rrun` passes argument values and
 reports child exit status. Both run on Linux and Windows with fallible OS errors.
-See [the contracts and examples](docs/system.md). Current release validation is
-recorded in [system-verification.json](docs/system-verification.json):
-**226 Linux tests and 172 native Windows tests passed**, with matching compiler
-self-rebuilds on both platforms.
+See [the contracts and examples](docs/system.md). Its milestone validation passed
+226 Linux tests and 172 native Windows tests with both compiler fixed points.
 
 Version 0.14 adds **easier application syntax**: `else if`, end-exclusive
 `for i in 0..n`, and `+=`/`-=`. Bounds and destinations evaluate once; integer
@@ -95,7 +98,7 @@ working examples and release checks under those rules.
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
 [the prepared Linguist registration and remaining acceptance requirement](docs/github-language.md).
-A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.15.0)
+A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.16.0)
 provides highlighting for `.ramos` files in VS Code today.
 
 ## Try it
@@ -104,8 +107,7 @@ Build the compiler with GNU binutils and Make, then run the calculator:
 
 ```sh
 make
-./ramos build examples/calculator.ramos -o calculator --force
-./calculator
+./ramos run examples/calculator.ramos
 ```
 
 Output:
@@ -128,6 +130,13 @@ The hello example can also be compiled:
 ./hello
 ```
 
+Format a copy or check a file without changing it:
+
+```sh
+./ramos fmt examples/hello.ramos -o formatted-hello.ramos
+./ramos fmt formatted-hello.ramos --check
+```
+
 Install the compiler after building (the default prefix is `/usr/local`):
 
 ```sh
@@ -146,11 +155,10 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.15.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.16.0/ramos.exe):
 
 ```powershell
-.\ramos.exe build .\hello.ramos -o .\hello.exe
-.\hello.exe
+.\ramos.exe run .\hello.ramos
 ```
 
 From Linux, cross-compile directly:
@@ -187,7 +195,7 @@ and keep its folders together. See [contracts, examples and limits](docs/cli-tui
 ```
 
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.15.0/ramos-0.15.0-system.zip)
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.16.0/ramos-0.16.0-devtools.zip)
 with both compilers, all twelve libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
@@ -233,7 +241,7 @@ fn main() {
 - Input is UTF-8. String escapes are `\n`, `\t`, `\r`, `\"`, `\\`, and `\0`.
 - Empty bodies, empty strings, LF, and CRLF are supported.
 - Raw NUL source bytes, malformed UTF-8, unsupported escapes, and raw newlines inside
-  strings are rejected. Diagnostics contain filename, line, and byte column.
+  strings are rejected. Diagnostics contain filename, line, byte column, an escaped source preview and a caret. See [authoring tools](docs/devtools.md).
 
 ## Booleans and control flow
 
@@ -530,6 +538,6 @@ The [0.7.1 report](benchmarks/report.md),
 [historical 0.2 report](benchmarks/report-0.2.md) remain available for audit.
 Measurements from different machines or runs are not directly interchangeable.
 
-The 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
-self-hosting. The 0.14 benchmark table above is historical evidence; no 0.15
+The 0.16 authoring tools and 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
+self-hosting. The 0.14 benchmark table above is historical evidence; no 0.16
 comparative performance or speedup claim is made.

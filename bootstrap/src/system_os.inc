@@ -355,3 +355,79 @@ runtime_dir_create:
 runtime_directory_create_done:
     mov [r15 + 8], rax
     ret
+
+runtime_os_run_base:
+    lea rsi, [rip + runtime_run_tmpdir]
+    mov eax, 6
+    call runtime_buffer_literal
+    call runtime_env_get
+    cmp QWORD PTR [r15 + 8], -2
+    je runtime_run_default_base
+    cmp QWORD PTR [r15 + 8], 0
+    jne runtime_run_base_error
+    cmp QWORD PTR [rax], 0
+    jne runtime_run_base_return
+runtime_run_default_base:
+    lea rsi, [rip + runtime_run_tmp]
+    mov eax, 4
+    jmp runtime_buffer_literal
+runtime_run_base_error:
+    mov rax, [r15 + 8]
+runtime_run_base_return:
+    ret
+runtime_os_run_random:
+    sub rsp, 8
+runtime_run_random_retry:
+    mov eax, 318
+    mov rdi, rsp
+    mov esi, 8
+    xor edx, edx
+    syscall
+    cmp rax, -4
+    je runtime_run_random_retry
+    cmp rax, 8
+    jne runtime_run_random_error
+    mov rax, [rsp]
+    mov QWORD PTR [r15 + 8], 0
+    add rsp, 8
+    ret
+runtime_run_random_error:
+    test rax, rax
+    js runtime_run_random_failed
+    mov rax, -5
+runtime_run_random_failed:
+    mov [r15 + 8], rax
+    xor eax, eax
+    add rsp, 8
+    ret
+runtime_os_run_mkdir:
+    call runtime_path
+    test rax, rax
+    js runtime_run_mkdir_return
+    mov rsi, rax
+    mov rdi, -100
+    mov edx, 0700
+    mov eax, 258
+    syscall
+runtime_run_mkdir_return:
+    ret
+runtime_os_run_unlink:
+    call runtime_path
+    test rax, rax
+    js runtime_run_unlink_return
+    mov rdi, rax
+    mov eax, 87
+    syscall
+runtime_run_unlink_return:
+    ret
+runtime_os_run_rmdir:
+    call runtime_path
+    test rax, rax
+    js runtime_run_rmdir_return
+    mov rdi, rax
+    mov eax, 84
+    syscall
+runtime_run_rmdir_return:
+    ret
+runtime_run_tmpdir: .ascii "TMPDIR"
+runtime_run_tmp: .ascii "/tmp"

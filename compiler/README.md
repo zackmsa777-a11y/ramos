@@ -1,9 +1,9 @@
 # Compiler written in Ramos
 
 `ramos.ramos` is the executable compiler source. It has no generated
-host-language parser. `main` calls `load_sources` (native reads, UTF-8 validation
-and per-file lexing), `records`, `discover`,
-`functions`, and `elf`, then publishes the binary with `write_file`.
+host-language parser. `main` selects build, format or run. `compile` calls
+`load_sources` (native reads, UTF-8 validation and per-file lexing), `records`,
+`discover`, `functions`, and `elf`/`pe`; build publishes with `write_file`.
 
 The lexer keeps source spans in a token table and validates string escapes.
 A signature pass permits forward and mutual calls. The parser checks types and
@@ -188,3 +188,19 @@ state. A private adapter supplies all twelve `CreateWindowExW` arguments. Close
 releases windows/owned brushes; native exit/trap paths also invoke cleanup.
 Linux's five GUI boundaries report unsupported status while preserving static
 executables. See [contracts and tests](../docs/gui.md).
+
+## Development tools (0.16)
+
+`fail` renders a bounded escaped source-line preview and caret after the original
+file/line/byte-column message. `diagnostic_type` resolves declared struct names
+and array elements. `format_source` reuses token spans plus a comment scanner to
+normalize horizontal whitespace without changing literal/comment bytes or
+statement newlines. It formats one file, independent of library loading.
+
+`run_command` packs native argument values, calls the shared `compile` pipeline
+and passes the binary to intrinsic 316, `_run_file(bytes, bytes) -> int64`.
+The shared runtime owns exclusive temporary-directory creation, executable
+publication, direct child wait and cleanup; per-OS adapters supply temp paths,
+unique candidates and unlink/rmdir. No new process-state root is required.
+The assembly seed recognizes stdout and this boundary so the compiler stays
+seed-compatible. See [contracts](../docs/devtools.md).

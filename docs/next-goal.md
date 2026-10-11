@@ -28,7 +28,9 @@ Version **0.14** adds `else if`, range `for`, and `+=`/`-=` with checked
 semantics and an updated file-search tool. See [syntax.md](syntax.md). The next
 application milestone shipped as **0.15**: directory iteration/creation, lexical
 paths, environment lookup and direct child execution. See [system.md](system.md).
-Next is easier development: caret errors, formatting and compile-and-run.
+Version **0.16** delivers caret errors, formatting and native compile-and-run.
+See [devtools.md](devtools.md). Next is data and math: floats, string builders
+and reviewed collection/memory limits.
 
 The target is a useful native application language with simple APIs. See the
 [ordered application-language roadmap](roadmap-1.0.md) for the user's **simple**

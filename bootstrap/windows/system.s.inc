@@ -8,6 +8,8 @@
 .equ SYS_EXITCODE, 4152
 .equ SYS_ATTRIBUTES, 4160
 .equ SYS_MKDIR, 4168
+.equ SYS_TEMP, 4176
+.equ SYS_RMDIR, 4184
 .macro SYSTEM_API offset
     mov rax, [r15 + 136]
     mov rax, [rax + 8 + \offset]
@@ -23,7 +25,7 @@ runtime_system_initialize:
     mov rbp, rsp
     call runtime_system_table
     lea rdi, [rax + 4104]
-    cmp QWORD PTR [rdi + 72], 0
+    cmp QWORD PTR [rdi + 88], 0
     jne runtime_system_initialized
     lea rcx, [rip + runtime_system_kernel]
     API GetModuleHandleW
@@ -540,7 +542,7 @@ runtime_system_kernel: .short 'K','E','R','N','E','L','3','2','.','d','l','l',0
 runtime_system_names:
     .asciz "GetCurrentDirectoryW", "GetEnvironmentVariableW", "SetLastError"
     .asciz "FindFirstFileW", "FindNextFileW", "FindClose", "CreateProcessW"
-    .asciz "GetExitCodeProcess", "GetFileAttributesW", "CreateDirectoryW", ""
+    .asciz "GetExitCodeProcess", "GetFileAttributesW", "CreateDirectoryW", "GetTempPathW", "RemoveDirectoryW", ""
 
 runtime_dir_create:
     push rbp
@@ -566,4 +568,69 @@ runtime_system_mkdir_done:
     mov [r15 + 8], rax
     add rsp, 16
     pop rbp
+    ret
+
+runtime_os_run_base:
+    push rbp
+    sub rsp, 16
+    mov rbp, rsp
+    call runtime_system_initialize
+    test rax, rax
+    js runtime_windows_run_base_return
+    mov eax, 8192
+    call runtime_buffer_new
+    mov [rbp], rax
+    lea rdx, [rax + 8]
+    mov ecx, 4096
+    SYSTEM_API SYS_TEMP
+    test eax, eax
+    jz runtime_windows_run_base_error
+    cmp eax, 4096
+    jae runtime_windows_run_base_long
+    mov rcx, rax
+    mov rax, [rbp]
+    add rax, 8
+    call runtime_system_utf8
+    jmp runtime_windows_run_base_return
+runtime_windows_run_base_long:
+    mov rax, -36
+    jmp runtime_windows_run_base_return
+runtime_windows_run_base_error:
+    call runtime_errno
+runtime_windows_run_base_return:
+    add rsp, 16
+    pop rbp
+    ret
+runtime_os_run_random:
+    API GetTickCount64
+    push rax
+    API GetCurrentProcessId
+    shl rax, 32
+    pop rcx
+    xor rax, rcx
+    mov QWORD PTR [r15 + 8], 0
+    ret
+runtime_os_run_mkdir:
+    jmp runtime_dir_create
+runtime_os_run_unlink:
+    call runtime_path
+    test rax, rax
+    js runtime_windows_run_unlink_return
+    mov rcx, rax
+    API DeleteFileW
+    test eax, eax
+    jz runtime_errno
+    xor eax, eax
+runtime_windows_run_unlink_return:
+    ret
+runtime_os_run_rmdir:
+    call runtime_path
+    test rax, rax
+    js runtime_windows_run_rmdir_return
+    mov rcx, rax
+    SYSTEM_API SYS_RMDIR
+    test eax, eax
+    jz runtime_errno
+    xor eax, eax
+runtime_windows_run_rmdir_return:
     ret

@@ -68,7 +68,7 @@ def main():
     if hashes['stage2'] != hashes['stage3'] or digest(ROOT / 'build/stage3-isolated') != hashes['stage3']:
         raise SystemExit('Self-hosting fixed point failed')
     report = {
-        'version': '0.15.0', 'target': 'x86_64-linux',
+        'version': '0.16.0', 'target': 'x86_64-linux',
         'compiler_source': 'compiler/ramos.ramos',
         'source_sha256': digest(ROOT / 'compiler/ramos.ramos'),
         'executables': hashes, 'stage2_equals_stage3': True,
@@ -96,6 +96,8 @@ def main():
     report['bootstrap_skips_syntax_0_14_tests'] = unittest.TestLoader().loadTestsFromTestCase(SyntaxTests).countTestCases()
     from test_system import SystemTests
     report['bootstrap_skips_system_tests'] = unittest.TestLoader().loadTestsFromTestCase(SystemTests).countTestCases()
+    from test_devtools import DevToolsTests
+    report['bootstrap_skips_devtools_tests'] = unittest.TestLoader().loadTestsFromTestCase(DevToolsTests).countTestCases()
     report['corpus_passed_with'] = ['stage0', 'stage2', 'stage3']
     (ROOT / 'build/bootstrap-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

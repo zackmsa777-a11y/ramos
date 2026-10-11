@@ -195,7 +195,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.15', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.16', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -274,6 +274,21 @@ for name in dir(test_cli_streams.StreamTests):
     if name.startswith("test_"):
         setattr(WindowsTests, name, getattr(test_cli_streams.StreamTests, name))
 
+import test_devtools
+WindowsTests.compiler_executable = COMPILER
+WindowsTests.compiler_prefix = RUNNER
+WindowsTests.compiler_command = lambda self, *args, **kwargs: execute(COMPILER, *args, **kwargs)
+WindowsTests.write_source = test_devtools.DevToolsTests.write_source
+WindowsTests.format_file = test_devtools.DevToolsTests.format_file
+for name in dir(test_devtools.DevToolsTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_devtools.DevToolsTests, name))
+if RUNNER:
+    # Wine replaces invalid TMP/TEMP values with its own Windows temp path.
+    WindowsTests.test_run_unusable_temp_directory_fails_fallibly = unittest.skip(
+        'requires native Windows temp-directory environment handling')(
+            WindowsTests.test_run_unusable_temp_directory_fails_fallibly)
+
 import test_system
 WindowsTests.child = test_system.SystemTests.child
 for name in dir(test_system.SystemTests):
@@ -322,7 +337,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.15.0', 'target': 'x86_64-windows',
+        'version': '0.16.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,
