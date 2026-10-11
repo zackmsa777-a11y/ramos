@@ -134,7 +134,7 @@ both targets. It is an acceptance example, not a comparative speed benchmark.
 The twelve shared float tests cover independent binary literal encodings (95
 cases), exact fixed formatting (256 cases), arithmetic (200 cases), recursion,
 arrays/fields/GC, invalid operations, type/literal limits, formatting and the
-renderer. Release evidence is in [math-verification.json](math-verification.json),
+renderer. The 0.18 milestone evidence is in [math-verification.json](math-verification.json),
 with [Linux](bootstrap-proof.json) and [native Windows](windows-bootstrap-proof.json)
 compiler fixed points. Existing memory, collection growth, call-depth and source
 limits remain enforced; this release does not raise them. Networking APIs,

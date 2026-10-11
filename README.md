@@ -21,6 +21,8 @@ Version 0.18.1 adds **fallible decimal input** in the Ramos math library. Parse
 signed decimal/scientific text into a typed value/status result with exact
 binary64 rounding. `rstats` computes summaries from stdin or streamed files.
 The parser adds no syntax or native dependency. See [APIs and commands](docs/math-input.md).
+Validation passes **265 Linux tests and 211 native Windows tests**, with matching
+compiler fixed points. See [0.18.1 evidence](docs/math-input-verification.json).
 
 Version 0.18 added **native float64 and essential math**: decimal/scientific literals,
 finite checked arithmetic, explicit integer conversions, square root and exact
