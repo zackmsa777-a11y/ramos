@@ -31,7 +31,8 @@ paths, environment lookup and direct child execution. See [system.md](system.md)
 Version **0.16** delivers caret errors, formatting and native compile-and-run.
 See [devtools.md](devtools.md). Version **0.17** ships reusable text builders and the streamed `rnumber` tool.
 See [text-builder.md](text-builder.md). Version **0.18** ships finite float64 arithmetic, essential math and a numerical
-renderer. See [math.md](math.md). Collection growth and reviewed memory/recursion
+renderer. See [math.md](math.md). Version **0.18.1** adds fallible decimal input
+and the streamed `rstats` app; see [math-input.md](math-input.md). Collection growth and reviewed memory/recursion
 limits remain a separate follow-up.
 
 The target is a useful native application language with simple APIs. See the
@@ -43,7 +44,7 @@ C/Rust feature/ecosystem parity is not claimed.
 Original developer-feedback priorities still guide these slices:
 
 1. Syntax conveniences: else-if, range for, assignment shortcuts and a reviewed call-depth limit.
-2. Broader math and text-to-float input for numerical programs.
+2. Broader math and scientific/shortest decimal output for numerical programs.
 3. Source-line/caret diagnostics, formatting and assembly output tooling.
 4. Further optimization only after useful programs identify measured costs.
 

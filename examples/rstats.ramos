@@ -1,0 +1,69 @@
+weave "../stdlib/math.ramos"
+weave "../stdlib/io.ramos"
+weave "../stdlib/numbers.ramos"
+
+struct NumberStats { count: int64, total: float64, low: float64, high: float64 }
+fn stats_line(stats: NumberStats, line: bytes) -> int64 {
+    let parsed = math_parse_bytes(line)
+    if parsed.status != 0 { return parsed.status }
+    if stats.count == 0 {
+        stats.total = parsed.value
+        stats.low = parsed.value
+        stats.high = parsed.value
+    } else {
+        stats.total += parsed.value
+        stats.low = math_min(stats.low, parsed.value)
+        stats.high = math_max(stats.high, parsed.value)
+    }
+    stats.count += 1
+    return 0
+}
+fn stats_error(line: int64, status: int64) {
+    stderr("rstats: invalid number on line ")
+    stderr(int_to_text(line))
+    stderr(" (status ")
+    stderr(int_to_text(status))
+    stderr(")\n")
+    exit(2)
+}
+fn stats_print(stats: NumberStats) {
+    if stats.count == 0 { stderr("rstats: no numbers\n")
+        exit(2) }
+    let report = s"count=" + num_text(stats.count) + s"\nmin=" + math_text(stats.low, 6) +
+         s"\nmax=" + math_text(stats.high, 6) + s"\nsum=" + math_text(stats.total, 6) +
+         s"\nmean=" + math_text(stats.total / float64(stats.count), 6) + s"\n"
+    if stdout(to_bytes(report)) != 0 { stderr("rstats: output failed\n")
+        exit(2) }
+}
+fn main() {
+    if arg_count() > 2 { stderr("usage: rstats [FILE]\nOne decimal number per line; no argument reads stdin.\n")
+        exit(2) }
+    let stats = NumberStats(0, 0.0, 0.0, 0.0)
+    if arg_count() == 1 {
+        while true {
+            let line = read_line()
+            if io_error() != 0 { stderr("rstats: stdin failed\n")
+                exit(2) }
+            if stdin_eof() && buffer_len(line) == 0 { break }
+            let status = stats_line(stats, line)
+            if status != 0 { stats_error(stats.count + 1, status) }
+        }
+    } else {
+        let reader = io_reader(arg(1))
+        if reader.status != 0 { stderr("rstats: cannot open input\n")
+            exit(2) }
+        while true {
+            let line = io_line(reader)
+            if reader.status != 0 { io_close(reader)
+                stderr("rstats: input failed\n")
+                exit(2) }
+            if reader.eof && buffer_len(line) == 0 { break }
+            let status = stats_line(stats, line)
+            if status != 0 { io_close(reader)
+                stats_error(stats.count + 1, status) }
+        }
+        if io_close(reader) != 0 { stderr("rstats: closing input failed\n")
+            exit(2) }
+    }
+    stats_print(stats)
+}

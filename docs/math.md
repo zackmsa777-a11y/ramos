@@ -92,7 +92,8 @@ Wrap with `string(...)` for UTF-8 string operations, or use `math_text`.
 
 Fixed printing is not a shortest-decimal, scientific or lossless round-trip
 format. Tiny values may print as zero at the chosen precision. Text-to-float
-parsing, trig/log/power functions and arbitrary precision are not provided yet.
+parsing is added by the [0.18.1 math library](math-input.md); trig/log/power
+functions and arbitrary precision remain future work.
 
 ## Ramos math library
 

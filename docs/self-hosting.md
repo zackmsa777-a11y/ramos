@@ -1,4 +1,4 @@
-# Ramos 0.18: self-hosting proved
+# Ramos 0.18.1: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -86,7 +86,7 @@ shared language tests and records the native Windows proof. See
 [Windows bootstrap instructions](windows.md).
 
 The retained assembly seed implements the 0.7 grammar. The compiler source uses
-compatible surface syntax while implementing the full 0.18 API and grammar itself. Tests
+compatible surface syntax while implementing the full 0.18.1 API and grammar itself. Tests
 for comments, short-circuit booleans and managed-value syntax run on stages 2/3 and native Windows;
 the seed explicitly skips them. The proof JSON records both discovered counts
 and these skips. No source preprocessing or external backend is required.
@@ -119,3 +119,9 @@ The compiler source itself stays within the seed grammar; the seed skips the
 12 float application tests. Native self-hosted stages and Windows run them.
 The independent Python references exist only in the test harness, never in the
 compiler pipeline. See [math contracts and verification](math.md).
+
+Version 0.18.1 adds ordinary Ramos-written decimal parsing and the rstats CLI
+example. The seven math-input tests run on native self-hosted stages and
+Windows; the retained seed skips the unsupported application grammar.
+The compiler change is only its version string; native float runtime bytes
+and code generation are unchanged. See [math-input.md](math-input.md).

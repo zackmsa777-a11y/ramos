@@ -100,3 +100,9 @@ syntax and overflow precedence, independent statuses, live input before pipe
 closure, binary data, CRLF and refill boundaries, exact limits and oversized
 line recovery, 20,000 short lines, OS failures, preserved input-file protection,
 and the interactive example. Both self-hosting proofs run these tests.
+
+## Decimal float input (since 0.18.1)
+
+The Ramos-written [math parser](math-input.md) adds signed decimal/scientific
+float input with a typed value/status result. Integer `text_to_int` and its
+`parse_error` global retain the contracts above; float parsing does not change them.

@@ -22,3 +22,199 @@ fn math_sqrt(value: float64) -> float64 { return float_sqrt(value) }
 fn math_text(value: float64, places: int64) -> string {
     return string(float_to_text(value, places))
 }
+
+// Fallible decimal input. Status: 0 success, -22 syntax, -27 literal limits,
+// -34 a valid supported decimal rounds outside the finite binary64 range.
+struct FloatResult { value: float64, status: int64 }
+
+// Private conversion work: base-65536 limbs, bounded by the public input caps.
+struct MathMagnitude { limbs: [int64], count: int64 }
+fn math_decimal_new(value: int64) -> MathMagnitude {
+    let out = MathMagnitude(array(int64, 512, 0), 1)
+    out.limbs[0] = value
+    return out
+}
+fn math_decimal_copy(value: MathMagnitude) -> MathMagnitude {
+    let out = math_decimal_new(0)
+    out.count = value.count
+    for i in 0..value.count { out.limbs[i] = value.limbs[i] }
+    return out
+}
+fn math_decimal_trim(value: MathMagnitude) {
+    while value.count > 1 && value.limbs[value.count - 1] == 0 {
+        value.count -= 1
+    }
+}
+fn math_decimal_mul(value: MathMagnitude, factor: int64, add: int64) {
+    var carry = add
+    for i in 0..value.count {
+        let product = value.limbs[i] * factor + carry
+        value.limbs[i] = product % 65536
+        carry = product / 65536
+    }
+    if carry > 0 {
+        value.limbs[value.count] = carry
+        value.count += 1
+    }
+}
+fn math_decimal_shift(value: MathMagnitude, count: int64) {
+    for i in 0..count { math_decimal_mul(value, 2, 0) }
+}
+fn math_decimal_half(value: MathMagnitude) {
+    var carry = 0
+    var i = value.count
+    while i > 0 {
+        i -= 1
+        let part = carry * 65536 + value.limbs[i]
+        value.limbs[i] = part / 2
+        carry = part % 2
+    }
+    math_decimal_trim(value)
+}
+fn math_decimal_compare(a: MathMagnitude, b: MathMagnitude) -> int64 {
+    if a.count < b.count { return -1 }
+    if a.count > b.count { return 1 }
+    var i = a.count
+    while i > 0 {
+        i -= 1
+        if a.limbs[i] < b.limbs[i] { return -1 }
+        if a.limbs[i] > b.limbs[i] { return 1 }
+    }
+    return 0
+}
+fn math_decimal_sub(a: MathMagnitude, b: MathMagnitude) {
+    var borrow = 0
+    for i in 0..a.count {
+        var value = a.limbs[i] - borrow
+        if i < b.count { value -= b.limbs[i] }
+        borrow = 0
+        if value < 0 { value += 65536
+            borrow = 1 }
+        a.limbs[i] = value
+    }
+    math_decimal_trim(a)
+}
+fn math_decimal_bits(value: MathMagnitude) -> int64 {
+    var high = value.limbs[value.count - 1]
+    var count = (value.count - 1) * 16
+    while high > 0 { count += 1
+        high = high / 2 }
+    return count
+}
+fn math_decimal_digit(value: int64) -> bool { return value >= 48 && value <= 57 }
+// Scale an exactly representable integer by an exact power of two. The caller
+// has already rounded the significand and checked finite range. No bit cast.
+fn math_decimal_scale(value: int64, exponent: int64) -> float64 {
+    var out = float64(value)
+    var power = exponent
+    while power >= 64 { out = out * 18446744073709551616.0
+        power -= 64 }
+    while power <= -64 { out = out / 18446744073709551616.0
+        power += 64 }
+    while power > 0 { out = out * 2.0
+        power -= 1 }
+    while power < 0 { out = out / 2.0
+        power += 1 }
+    return out
+}
+fn math_parse_bytes(text: bytes) -> FloatResult {
+    let size = buffer_len(text)
+    if size == 0 { return FloatResult(0.0, -22) }
+    var i = 0
+    var negative = false
+    if buffer_get(text, i) == 45 { negative = true
+        i += 1 }
+    else if buffer_get(text, i) == 43 { i += 1 }
+    let start = i
+    var digits = 0
+    var fraction = 0
+    var dot = false
+    while i < size {
+        let value = buffer_get(text, i)
+        if math_decimal_digit(value) {
+            digits += 1
+            if dot { fraction += 1 }
+        } else if value == 46 && !dot {
+            if digits == 0 || i + 1 >= size { return FloatResult(0.0, -22) }
+            if !math_decimal_digit(buffer_get(text, i + 1)) { return FloatResult(0.0, -22) }
+            dot = true
+        } else if value == 101 || value == 69 { break }
+        else { return FloatResult(0.0, -22) }
+        i += 1
+    }
+    if digits == 0 { return FloatResult(0.0, -22) }
+    let end = i
+    var exponent = 0
+    var exponent_negative = false
+    if i < size {
+        i += 1
+        if i < size {
+            if buffer_get(text, i) == 45 { exponent_negative = true
+                i += 1 }
+            else if buffer_get(text, i) == 43 { i += 1 }
+        }
+        if i == size { return FloatResult(0.0, -22) }
+        while i < size {
+            let value = buffer_get(text, i)
+            if !math_decimal_digit(value) { return FloatResult(0.0, -22) }
+            if exponent <= 400 { exponent = exponent * 10 + value - 48 }
+            i += 1
+        }
+    }
+    // Validate the entire syntax before reporting supported-size/range failures.
+    if digits > 768 || exponent > 400 { return FloatResult(0.0, -27) }
+    if exponent_negative { exponent = -exponent }
+    exponent -= fraction
+    let numerator = math_decimal_new(0)
+    let denominator = math_decimal_new(1)
+    for at in start..end {
+        let value = buffer_get(text, at)
+        if value != 46 { math_decimal_mul(numerator, 10, value - 48) }
+    }
+    if exponent >= 0 {
+        for at in 0..exponent { math_decimal_mul(numerator, 10, 0) }
+    } else {
+        for at in 0..-exponent { math_decimal_mul(denominator, 10, 0) }
+    }
+    var power = math_decimal_bits(numerator) - math_decimal_bits(denominator)
+    var result = 0.0
+    if math_decimal_bits(numerator) != 0 {
+        let compare_n = math_decimal_copy(numerator)
+        let compare_d = math_decimal_copy(denominator)
+        if power >= 0 { math_decimal_shift(compare_d, power) }
+        else { math_decimal_shift(compare_n, -power) }
+        if math_decimal_compare(compare_n, compare_d) < 0 { power -= 1 }
+        if power > 1023 { return FloatResult(0.0, -34) }
+        if power >= -1075 {
+            var shift = 52 - power
+            if power < -1022 { shift = 1074 }
+            if shift >= 0 { math_decimal_shift(numerator, shift) }
+            else { math_decimal_shift(denominator, -shift) }
+            let divisor = math_decimal_copy(denominator)
+            math_decimal_shift(divisor, 53)
+            var quotient = 0
+            var bit = 53
+            while bit >= 0 {
+                quotient = quotient * 2
+                if math_decimal_compare(numerator, divisor) >= 0 {
+                    math_decimal_sub(numerator, divisor)
+                    quotient += 1
+                }
+                math_decimal_half(divisor)
+                bit -= 1
+            }
+            math_decimal_mul(numerator, 2, 0)
+            let halfway = math_decimal_compare(numerator, denominator)
+            if halfway > 0 || (halfway == 0 && quotient % 2 == 1) { quotient += 1 }
+            if power >= -1022 {
+                if quotient == 9007199254740992 { quotient = quotient / 2
+                    power += 1 }
+                if power > 1023 { return FloatResult(0.0, -34) }
+                result = math_decimal_scale(quotient, power - 52)
+            } else { result = math_decimal_scale(quotient, -1074) }
+        }
+    }
+    if negative { result = -result }
+    return FloatResult(result, 0)
+}
+fn math_parse(text: string) -> FloatResult { return math_parse_bytes(to_bytes(text)) }

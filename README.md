@@ -1,4 +1,4 @@
-# Ramos 0.18 — self-hosted compiler for Linux and Windows
+# Ramos 0.18.1 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -17,11 +17,16 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
-Version 0.18 adds **native float64 and essential math**: decimal/scientific literals,
+Version 0.18.1 adds **fallible decimal input** in the Ramos math library. Parse
+signed decimal/scientific text into a typed value/status result with exact
+binary64 rounding. `rstats` computes summaries from stdin or streamed files.
+The parser adds no syntax or native dependency. See [APIs and commands](docs/math-input.md).
+
+Version 0.18 added **native float64 and essential math**: decimal/scientific literals,
 finite checked arithmetic, explicit integer conversions, square root and exact
 fixed decimal formatting. Floats work in functions, structs and arrays. The new
 `math.ramos` library and Mandelbrot image renderer run on Linux and Windows.
-See [semantics and runnable commands](docs/math.md). Release validation passes
+See [semantics and runnable commands](docs/math.md). Its milestone validation passed
 **258 Linux tests and 204 native Windows tests**, with matching compiler fixed
 points and independent numerical reference checks. See [math evidence](docs/math-verification.json).
 
@@ -173,7 +178,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.1/ramos.exe):
 
 ```powershell
 .\ramos.exe run .\hello.ramos
@@ -213,7 +218,7 @@ and keep its folders together. See [contracts, examples and limits](docs/cli-tui
 ```
 
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.0/ramos-0.18.0-math.zip)
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.1/ramos-0.18.1-math-input.zip)
 with both compilers, all thirteen libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
