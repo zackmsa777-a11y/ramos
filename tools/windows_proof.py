@@ -195,7 +195,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.17', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.18', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -300,6 +300,11 @@ for name in dir(test_text_builder.TextBuilderTests):
     if name.startswith('test_'):
         setattr(WindowsTests, name, getattr(test_text_builder.TextBuilderTests, name))
 
+import test_float
+for name in dir(test_float.FloatTests):
+    if name.startswith('test_'):
+        setattr(WindowsTests, name, getattr(test_float.FloatTests, name))
+
 import test_tui
 for name in dir(test_tui.TUITests):
     if name.startswith("test_"):
@@ -342,7 +347,7 @@ def main():
     if not result.wasSuccessful():
         raise SystemExit(1)
     report = {
-        'version': '0.17.0', 'target': 'x86_64-windows',
+        'version': '0.18.0', 'target': 'x86_64-windows',
         'execution_host': 'windows' if os.name == 'nt' else 'wine',
         'source_sha256': sha(source), 'executables': hashes,
         'stage2_equals_stage3': True, 'seed_equals_stage2': True,

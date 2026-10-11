@@ -1,4 +1,4 @@
-# Windows support (Ramos 0.17)
+# Windows support (Ramos 0.18)
 
 Ramos produces native Windows x64 console executables in PE32+ format. The same
 language supports arithmetic, booleans, scopes, control flow, typed functions,
@@ -7,7 +7,7 @@ There is no interpreter, Python dependency or C runtime in generated programs.
 
 ## Use Ramos on Windows
 
-Download [ramos.exe from the 0.17 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.17.0/ramos.exe)
+Download [ramos.exe from the 0.18 release](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.0/ramos.exe)
 and open PowerShell in its directory. CI artifacts are also available from the
 [Self-hosting proof workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml). Save a UTF-8 `hello.ramos`:
 
@@ -127,3 +127,6 @@ See [file tools and terminal interfaces](cli-tui.md).
 Version 0.15 adds wide-API directory iteration/creation, cwd and environment
 lookup, and direct native child execution. See [OS libraries](system.md) for
 argument quoting, status handling, resource ownership and current limits.
+
+Version 0.18 adds native float64 arithmetic, conversions, square root and fixed
+decimal formatting on the same Windows runtime. See [math.md](math.md).

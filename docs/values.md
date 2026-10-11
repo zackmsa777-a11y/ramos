@@ -98,7 +98,7 @@ struct Point { x: int64, y: int64 }
 
 Indices and counts are signed integers. Negative or out-of-range indices and
 counts outside 0..131072 trap before access. Elements occupy eight bytes, so
-the maximum payload is 1 MiB. Arrays of int64, bool, bytes, string, structs and
+the maximum payload is 1 MiB. Arrays of int64, float64 (since 0.18), bool, bytes, string, structs and
 arrays are supported; void elements are rejected. There is no unchecked default
 reference: every nonempty constructor/growth supplies a typed fill value.
 
@@ -124,7 +124,7 @@ therefore consume 32 bytes. Mapped memory is RW and never executable. Stdin
 retains its separate lazy 1 MiB + 12 KiB scratch mapping.
 
 The collector scans active stack words/saved registers and object payload words.
-An integer or byte sequence resembling an allocated address can retain that
+An integer, float payload or byte sequence resembling an allocated address can retain that
 object conservatively. This is not an exact memory-accounting or real-time GC
 guarantee. There is no manual `free`, pointer cast, moving collection or dangling
 alias API. A program whose reachable data exceeds the heap still traps; the
@@ -157,8 +157,8 @@ Validation covers Unicode reference comparisons, immutable copies, bounds and
 type failures, aliases, constructors/calls/returns, active-expression roots,
 reused zeroed buffers, live-heap exhaustion and cyclic graph lifetimes.
 Performance tables remain the historical 0.7.1 measurements; this release makes
-no new comparative speed claim. Syntax conveniences, imports/stdlib, floats
-and formatter/assembly tooling remain subsequent priorities.
+no new comparative speed claim for 0.10. Subsequent releases add syntax conveniences,
+weave/stdlib, authoring tools and [float64](math.md); assembly inspection remains future work.
 
 The [native CI run](https://github.com/zackmsa777-a11y/ramos/actions/runs/38041196929)
 passed 144 Linux tests and 94 Windows tests, with matching self-hosted compiler

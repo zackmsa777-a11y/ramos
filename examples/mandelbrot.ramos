@@ -1,0 +1,53 @@
+weave "../stdlib/numbers.ramos"
+weave "../stdlib/bytes.ramos"
+
+fn positive(index: int64, maximum: int64) -> int64 {
+    let value = text_to_int(arg(index))
+    if parse_error() != 0 || value < 1 || value > maximum {
+        stderr("mandelbrot: invalid dimensions/iteration count\n")
+        exit(2)
+    }
+    return value
+}
+fn main() {
+    if arg_count() != 2 && arg_count() != 5 {
+        stderr("usage: mandelbrot OUTPUT.pgm [WIDTH HEIGHT ITERATIONS]\n")
+        exit(2)
+    }
+    var width = 320
+    var height = 240
+    var iterations = 100
+    if arg_count() == 5 {
+        width = positive(2, 1024)
+        height = positive(3, 1024)
+        iterations = positive(4, 10000)
+    }
+    let header = to_bytes(s"P5\n" + num_text(width) + s" " + num_text(height) + s"\n255\n")
+    let size = buffer_len(header) + width * height
+    if size > 1048576 { stderr("mandelbrot: image exceeds 1 MiB\n")
+        exit(2) }
+    let output = buffer(size)
+    bytes_put(output, 0, header)
+    for y in 0..height {
+        let ci = float64(y) * 2.0 / float64(height) - 1.0
+        for x in 0..width {
+            let cr = float64(x) * 3.5 / float64(width) - 2.5
+            var zr = 0.0
+            var zi = 0.0
+            var count = 0
+            while count < iterations && zr * zr + zi * zi <= 4.0 {
+                let real = zr * zr - zi * zi + cr
+                zi = 2.0 * zr * zi + ci
+                zr = real
+                count += 1
+            }
+            var shade = 0
+            if count < iterations { shade = 255 - count * 255 / iterations }
+            buffer_set(output, buffer_len(header) + y * width + x, shade)
+        }
+    }
+    if write_file(arg(1), output, 0) != 0 {
+        stderr("mandelbrot: cannot create output (existing files are preserved)\n")
+        exit(2)
+    }
+}

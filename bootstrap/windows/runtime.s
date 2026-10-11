@@ -672,6 +672,7 @@ temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
 .include "bootstrap/windows/stdin.s.inc"
 .set runtime_value_error, runtime_error
 .include "bootstrap/src/values_runtime.inc"
+.include "bootstrap/src/float_runtime.inc"
 .include "bootstrap/src/source_guard.inc"
 .include "bootstrap/src/stream_runtime.inc"
 .include "bootstrap/windows/stream.s.inc"
@@ -709,6 +710,9 @@ runtime_entry:
     mov ecx, 18
     rep stosq
     call runtime_initialize
+    push 8064
+    ldmxcsr [rsp]
+    add rsp, 8
 entry_end:
 # Probe each Windows stack page before reserving a potentially large frame.
 .global stack_probe, stack_probe_end

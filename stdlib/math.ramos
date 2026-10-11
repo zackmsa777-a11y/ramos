@@ -1,0 +1,24 @@
+// Finite binary64 helpers. Integer helpers remain in numbers.ramos.
+fn math_abs(value: float64) -> float64 {
+    if value == 0.0 { return 0.0 }
+    if value < 0.0 { return -value }
+    return value
+}
+// Equal values return the first argument, including signed-zero ties.
+fn math_min(a: float64, b: float64) -> float64 {
+    if b < a { return b }
+    return a
+}
+fn math_max(a: float64, b: float64) -> float64 {
+    if b > a { return b }
+    return a
+}
+fn math_clamp(value: float64, low: float64, high: float64) -> float64 {
+    if low > high { stderr("Ramos library error: reversed float clamp bounds\n")
+        exit(1) }
+    return math_min(math_max(value, low), high)
+}
+fn math_sqrt(value: float64) -> float64 { return float_sqrt(value) }
+fn math_text(value: float64, places: int64) -> string {
+    return string(float_to_text(value, places))
+}

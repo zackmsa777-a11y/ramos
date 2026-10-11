@@ -61,6 +61,7 @@ reuses it. All functions are checked by the ordinary compiler.
 
 | File | Helpers |
 | --- | --- |
+| `math.ramos` (0.18) | `math_abs`, `math_min`, `math_max`, `math_clamp`, `math_sqrt`, `math_text`; see [float contracts](math.md) |
 | `numbers.ramos` | `num_min`, `num_max`, `num_abs`, `num_clamp`, `num_text`, `num_parse` |
 | `text.ramos` | `text_starts`, `text_ends`, `text_find`, `text_contains`, `text_join`, `text_repeat` |
 | `bytes.ramos` | `bytes_copy`, `bytes_equal`, `bytes_slice`, `bytes_put` |

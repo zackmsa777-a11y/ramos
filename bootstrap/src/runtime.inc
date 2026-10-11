@@ -79,6 +79,7 @@ runtime_math_message:
 .include "bootstrap/src/stdin_runtime.inc"
 .set runtime_value_error, runtime_buffer_error
 .include "bootstrap/src/values_runtime.inc"
+.include "bootstrap/src/float_runtime.inc"
 .include "bootstrap/src/source_guard.inc"
 .include "bootstrap/src/stream_runtime.inc"
 .include "bootstrap/src/stream_os.inc"
@@ -149,6 +150,9 @@ entry_initialize:
     mov eax, 13
     syscall
     add rsp, 32
+    push 8064
+    ldmxcsr [rsp]
+    add rsp, 8
 .equ ENTRY_INITIALIZE_SIZE, . - entry_initialize
 builtin_pop_arguments: .byte 0x5a, 0x59, 0x58
 # inc r12; cmp r12, CALL_DEPTH_LIMIT; ja rel32 runtime-depth-error.

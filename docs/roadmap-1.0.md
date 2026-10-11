@@ -5,7 +5,7 @@ applications on Windows x64 and Linux x64. A beginner should be able to build
 and run a small tool from a short example; larger tools should have the libraries,
 diagnostics and resource handling needed to keep working.
 
-This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools and 0.17 text builders are now
+This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools 0.17 text builders and 0.18 float/math are now
 implemented; all remaining milestones below are proposals. Proposed version labels below describe order, not deadlines.
 Keep each release small enough to implement and verify completely; split a
 milestone if necessary. Python-like ease and Rust/C-like native performance
@@ -45,7 +45,8 @@ timings are historical; they are not a performance result for 0.13.
 | 0.15: useful OS libraries (implemented; see [contracts](system.md)) | Directory iteration, paths, environment access and direct child-process execution | Recursive name search, streamed exclusive file copy and a direct command runner; recursive backup is not shipped |
 | 0.16: easier development (implemented; see [contracts](devtools.md)) | Source-line/caret errors, a formatter and a compile-and-run command | A new user can run a file, correct a reported error and format it using the documented commands |
 | 0.17: reusable text (implemented; see [contracts](text-builder.md)) | UTF-8 builder, immutable snapshots, capacity reuse/release | Streamed UTF-8 line numbering with a reusable builder; exact-size/rejection and long-running memory checks |
-| 0.18: data and math | `float64`, conversions and essential math; better collection growth; reviewed memory/recursion limits | A numerical renderer and bounded collection workloads |
+| 0.18: native math (implemented; see [contracts](math.md)) | Finite `float64`, explicit conversions, square root, exact fixed formatting and Ramos math helpers | Native Mandelbrot image renderer, independently checked numerical results on both OSes |
+| Follow-up: collections and limits | Profile collection growth and review memory/recursion limits before changing contracts | Bounded collection workloads and long-running live-memory checks |
 | 0.19: portable GUI | Linux backend, layout/DPI handling, file dialogs and basic drawing behind the GUI library | The same Notes source opens/saves Unicode files and remains responsive while resizing on Windows and Linux |
 | 1.0 candidate: reliability and measured speed | Profile the acceptance apps, fix demonstrated costs, polish installation and packaging, document compatibility | Build, run and package the CLI/TUI/GUI examples from a clean installation on both OSes |
 
@@ -93,10 +94,10 @@ contract and should not become a second code-generation backend.
 
 ### 0.18: remove the walls using measured application needs
 
-Specify floating-point literals, IEEE-754 behavior, comparisons, conversions,
-NaN/infinity handling, division and printing before implementation. Keep integer
-overflow checks intact. Verify numerical results against independent references
-on both targets.
+0.18 now specifies and implements finite binary64 literals, comparisons, conversions,
+division, square root and fixed printing. Integer overflow checks stay intact.
+Numerical results are verified against independent references on both targets.
+See [the exact contracts](math.md); trig/log functions and text-to-float parsing remain future work.
 
 0.17 delivered a string builder; next review amortized collection growth with clear aliasing and
 lifetime rules. Keep immutable string values and low-level bytes available.

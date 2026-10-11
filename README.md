@@ -1,4 +1,4 @@
-# Ramos 0.17 — self-hosted compiler for Linux and Windows
+# Ramos 0.18 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -17,12 +17,20 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
+Version 0.18 adds **native float64 and essential math**: decimal/scientific literals,
+finite checked arithmetic, explicit integer conversions, square root and exact
+fixed decimal formatting. Floats work in functions, structs and arrays. The new
+`math.ramos` library and Mandelbrot image renderer run on Linux and Windows.
+See [semantics and runnable commands](docs/math.md). Release validation passes
+**258 Linux tests and 204 native Windows tests**, with matching compiler fixed
+points and independent numerical reference checks. See [math evidence](docs/math-verification.json).
+
 Version 0.17 adds **reusable UTF-8 text builders** to `stdlib/text.ramos`:
 append pieces, take immutable snapshots, clear for reuse or release capacity.
 `rnumber` numbers streamed text files with one reusable builder. No new syntax
 or native dependency is needed. See [API and ownership](docs/text-builder.md).
-Current validation passes **246 Linux tests and 192 native Windows tests**, with
-matching compiler fixed points. See [release evidence](docs/text-builder-verification.json).
+Its milestone validation passed **246 Linux tests and 192 native Windows tests**, with
+matching compiler fixed points. See [0.17 evidence](docs/text-builder-verification.json).
 
 Version 0.16 added **easier development**: source-line/caret diagnostics with
 specific type names, `ramos fmt` and `ramos run`. Run a source file directly with
@@ -108,7 +116,7 @@ working examples and release checks under those rules.
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
 [the prepared Linguist registration and remaining acceptance requirement](docs/github-language.md).
-A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.17.0)
+A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.18.0)
 provides highlighting for `.ramos` files in VS Code today.
 
 ## Try it
@@ -165,7 +173,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.17.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.0/ramos.exe):
 
 ```powershell
 .\ramos.exe run .\hello.ramos
@@ -205,8 +213,8 @@ and keep its folders together. See [contracts, examples and limits](docs/cli-tui
 ```
 
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.17.0/ramos-0.17.0-text-builders.zip)
-with both compilers, all twelve libraries, examples and the ready-to-run Notes app.
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.18.0/ramos-0.18.0-math.zip)
+with both compilers, all thirteen libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
 ## Syntax
@@ -226,8 +234,8 @@ fn main() {
 - Exactly one parameterless `main` returning void is required. Other top-level
   functions and structs may appear before or after it. `weave` adds library
   definitions at top level.
-- `print` accepts a string literal, buffer, integer expression, or boolean expression
-  and adds a newline. Booleans print as `true` or `false`.
+- `print` accepts a string literal, buffer, integer, float64 or boolean expression
+  and adds a newline. Booleans print as `true` or `false`; floats use six fractional digits.
 - Integer expressions support `+`, `-`, `*`, `/`, `%`, unary `+`/`-`, and
   parentheses. Multiplication, division, and remainder bind more tightly than
   addition and subtraction. Binary operators at the same precedence associate
@@ -236,7 +244,7 @@ fn main() {
   `-9223372036854775808` is accepted as a directly negated literal; its positive
   magnitude cannot be used as an ordinary positive literal.
 - `let` declares an immutable binding; `var` declares a mutable
-  binding. Every binding must have an initializer. `int64`, `bool`, `bytes`, `string`, struct and array types
+  binding. Every binding must have an initializer. `int64`, `float64`, `bool`, `bytes`, `string`, struct and array types
   are inferred and fixed for the lifetime of the binding.
 - Binding reassignment is supported only for `var`; fields and array elements can be mutated through `let`. Names must be declared before use;
   duplicate declarations in the same block are errors. Inner blocks may
@@ -272,14 +280,14 @@ fn main() {
 ```
 
 - `true` and `false` are distinct boolean literals; `!` negates a boolean.
-- `<`, `<=`, `>`, and `>=` compare signed integers. `==` and `!=` compare
-  two integers, two booleans or two strings. Mixing types is a compile-time error.
+- `<`, `<=`, `>`, and `>=` compare two signed integers or two floats. `==` and `!=` compare
+  two integers, two floats, two booleans or two strings. Mixing types is a compile-time error.
 - `&&` and `||` require booleans and short-circuit left to right; skipped operands
   still undergo type checking.
 - From lowest to highest precedence: `||`, `&&`, equality, ordering, addition/subtraction,
   multiplication/division/remainder, unary signs/`!`, and primary expressions.
   Operators at one level associate left to right. `1 < 2 < 3` is rejected;
-  combine pairwise comparisons with `&&`. Arithmetic requires integers; `+` also concatenates strings.
+  combine pairwise comparisons with `&&`. Arithmetic requires matching numeric types; `+` also concatenates strings.
 - `if condition { ... } else { ... }` and `while condition { ... }` require
   a boolean condition. `else` is optional and may follow on a new line.
   Branches use braces; `else if` chains test later conditions only when prior arms fail.
@@ -292,7 +300,7 @@ fn main() {
 - `for name in start..end { ... }` evaluates int64 bounds once, then counts
   upward with an excluded end. The counter is immutable and local to the body;
   empty/reversed ranges do not run. `break`/`continue` target the innermost loop.
-- `+=` accepts int64/string, `-=` accepts int64, and both are statements with
+- `+=` accepts int64/float64/string, `-=` accepts int64/float64, and both are statements with
   matching operand types. Destinations and indices evaluate once, before the RHS.
   Bindings require `var`; fields/elements retain mutation through `let`.
   Separate statements with newlines, including after a compound statement.
@@ -407,7 +415,22 @@ into the executable; no runtime package loader is needed. Repeated dependencies
 load once, cycles fail, and output protection covers every source. Run
 `make library-demo` or see [library semantics and APIs](docs/libraries.md).
 
+## Numerical programs
+
+```sh
+./ramos run examples/mandelbrot.ramos -- image.pgm 320 240 100
+```
+
+Use `float64(n)` for explicit integer conversion, `float_sqrt(x)` for square root,
+and `float_to_text(x, places)` for 0..18 fixed fractional digits. Floating-point
+arithmetic traps on non-finite results or division by zero; gradual underflow
+is allowed. See [all float rules and the math library](docs/math.md).
+
 ## Arithmetic behavior
+
+The following overflow rules apply to int64. Float64 has the separately documented
+finite-value policy above.
+
 
 Generated native instructions check signed overflow for addition, subtraction,
 multiplication, and negation. Division truncates toward zero; a remainder has the
