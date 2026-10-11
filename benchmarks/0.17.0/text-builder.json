@@ -1,0 +1,112 @@
+{
+  "version": "Ramos 0.17.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+  "machine": "Linux-6.17.0-1020-oracle-x86_64-with-glibc2.39",
+  "cpu": "Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz",
+  "compiler_sha256": "35adef7c8b883bdacd53abed1214588230fbd303496599f6a02dfe48e44e0cb1",
+  "text_library_sha256": "941cfa3c3daeac2f2f4946d9197f904fc4c8067c965b01c0df00caa4bd5e5a62",
+  "method": "Linux native processes; one warmup and five measured runs; alternate order; elapsed includes startup and full content verification against text_repeat; 64-byte ASCII appends; same compiler and OS checks in both variants.",
+  "scope": "Single application workload comparing two Ramos APIs, not a language score or a comparison with C, Rust or Python.",
+  "results": [
+    {
+      "appends": 1024,
+      "result_bytes": 65536,
+      "timings_seconds": {
+        "concat": [
+          0.017608443973585963,
+          0.016475751996040344,
+          0.016045898897573352,
+          0.014848518883809447,
+          0.015557466074824333
+        ],
+        "builder": [
+          0.0018729830626398325,
+          0.001951990881934762,
+          0.0019399670418351889,
+          0.0018835109658539295,
+          0.0018271540757268667
+        ]
+      },
+      "medians_seconds": {
+        "concat": 0.016045898897573352,
+        "builder": 0.0018835109658539295
+      },
+      "concat_over_builder": 8.519142807484853
+    },
+    {
+      "appends": 2048,
+      "result_bytes": 131072,
+      "timings_seconds": {
+        "concat": [
+          0.027699935948476195,
+          0.026947078993543983,
+          0.028606100007891655,
+          0.025195121066644788,
+          0.02612778008915484
+        ],
+        "builder": [
+          0.0032988139428198338,
+          0.003640627022832632,
+          0.003695613006129861,
+          0.004527278942987323,
+          0.0033611999824643135
+        ]
+      },
+      "medians_seconds": {
+        "concat": 0.026947078993543983,
+        "builder": 0.003640627022832632
+      },
+      "concat_over_builder": 7.4017686581300755
+    },
+    {
+      "appends": 4096,
+      "result_bytes": 262144,
+      "timings_seconds": {
+        "concat": [
+          0.07570515782572329,
+          0.07201459188945591,
+          0.07261266186833382,
+          0.06998614314943552,
+          0.07194582698866725
+        ],
+        "builder": [
+          0.007586373016238213,
+          0.006397276883944869,
+          0.006346796872094274,
+          0.006288378033787012,
+          0.007280580000951886
+        ]
+      },
+      "medians_seconds": {
+        "concat": 0.07201459188945591,
+        "builder": 0.006397276883944869
+      },
+      "concat_over_builder": 11.257069718240528
+    },
+    {
+      "appends": 8192,
+      "result_bytes": 524288,
+      "timings_seconds": {
+        "concat": [
+          0.28700598212890327,
+          0.27493148297071457,
+          0.2912658960558474,
+          0.2770652340259403,
+          0.28883180883713067
+        ],
+        "builder": [
+          0.015282941982150078,
+          0.013262659078463912,
+          0.013867961941286922,
+          0.013376475078985095,
+          0.013786688214167953
+        ]
+      },
+      "medians_seconds": {
+        "concat": 0.28700598212890327,
+        "builder": 0.013786688214167953
+      },
+      "concat_over_builder": 20.81761607069349
+    }
+  ],
+  "measured_at": "2026-10-11T02:59:20.997473+00:00"
+}

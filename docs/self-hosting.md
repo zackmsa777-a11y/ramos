@@ -1,4 +1,4 @@
-# Ramos 0.16: self-hosting proved
+# Ramos 0.17: self-hosting proved
 
 The compiler implementation is [compiler/ramos.ramos](../compiler/ramos.ramos).
 It reads source files, lexes and checks tokens, discovers typed signatures,
@@ -86,7 +86,7 @@ shared language tests and records the native Windows proof. See
 [Windows bootstrap instructions](windows.md).
 
 The retained assembly seed implements the 0.7 grammar. The compiler source uses
-compatible surface syntax while implementing the full 0.16 API and grammar itself. Tests
+compatible surface syntax while implementing the full 0.17 API and grammar itself. Tests
 for comments, short-circuit booleans and managed-value syntax run on stages 2/3 and native Windows;
 the seed explicitly skips them. The proof JSON records both discovered counts
 and these skips. No source preprocessing or external backend is required.
@@ -108,3 +108,7 @@ Version 0.16 keeps formatting, previews and compile-and-run orchestration in
 Ramos. The retained seed recognizes `stdout` and `_run_file` so it can compile
 this source; its own CLI explicitly skips the 14 development-tool tests. Native
 self-hosted stages and Windows run them. See [devtools.md](devtools.md).
+
+Version 0.17 adds only Ramos-written text helpers and the rnumber example.
+Its six shared acceptance tests run on native self-hosted stages and Windows;
+the retained seed skips the unsupported weave/struct grammar.

@@ -1,0 +1,44 @@
+weave "../stdlib/io.ramos"
+weave "../stdlib/text.ramos"
+weave "../stdlib/numbers.ramos"
+
+// Number UTF-8 lines, streaming files of any total size with one reusable builder.
+fn main() {
+    if arg_count() != 2 { stderr("usage: rnumber FILE\n")
+        exit(2) }
+    if bytes_equal(arg(1), "--help") {
+        print("usage: rnumber FILE\nNumber UTF-8 lines; LF output; exit 2 on I/O/size error.")
+        return }
+    let reader = io_reader(arg(1))
+    let out = text_builder()
+    var number = 0
+    var done = reader.status != 0
+    while !done {
+        let line = io_line(reader)
+        if reader.status != 0 { done = true }
+        else if reader.eof && buffer_len(line) == 0 { done = true }
+        else {
+            number += 1
+            text_builder_clear(out)
+            var status = text_builder_append(out, num_text(number))
+            if status == 0 { status = text_builder_append(out, s": ") }
+            if status == 0 { status = text_builder_append(out, string(line)) }
+            if status == 0 { status = text_builder_append(out, s"\n") }
+            if status != 0 { io_close(reader)
+                stderr("rnumber: numbered line exceeds 1 MiB\n")
+                exit(2) }
+            if stdout(to_bytes(text_builder_finish(out))) != 0 { io_close(reader)
+                stderr("rnumber: output failed\n")
+                exit(2) }
+        }
+    }
+    var status = reader.status
+    if reader.handle >= 0 {
+        let closed = io_close(reader)
+        if status == 0 { status = closed }
+    }
+    if status != 0 { stderr("rnumber: input failed (I/O status ")
+        stderr(int_to_text(status))
+        stderr(")\n")
+        exit(2) }
+}

@@ -158,3 +158,9 @@ and [Windows proof](windows-bootstrap-proof.json).
 Version 0.12 expands the bundle with [CLI and TUI libraries](cli-tui.md).
 
 See [0.15 OS contracts](system.md) for the new system, path and process helpers.
+
+## Reusable text assembly (0.17)
+
+The existing `text.ramos` library now provides `TextBuilder` for appending checked
+UTF-8 pieces, immutable snapshots, capacity reuse and dropping backing storage.
+See [complete ownership/limit contracts and a streamed file tool](text-builder.md).

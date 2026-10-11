@@ -2732,7 +2732,7 @@ fn main() {
     let argc = arg_count()
     if argc == 2 {
         let option = arg(1)
-        if equal(option, "--version") { print("Ramos 0.16.0 — compiler written in Ramos; Linux and Windows x64")
+        if equal(option, "--version") { print("Ramos 0.17.0 — compiler written in Ramos; Linux and Windows x64")
             return }
         if equal(option, "--help") { print("Usage: ramos build SOURCE.ramos -o PROGRAM [--force] [--target linux|windows] [--gui]\n       ramos run SOURCE.ramos [-- ARG...]\n       ramos fmt SOURCE.ramos [--check | -o FILE [--force]]")
             return }

@@ -61,3 +61,58 @@ fn text_repeat(text: string, count: int64) -> string {
     }
     return string(out)
 }
+
+// Reusable UTF-8 assembly. Append copies only the new text, growing by doubling.
+// Snapshots are immutable copies; aliases of the builder share mutable state.
+struct TextBuilder { data: bytes, count: int64 }
+fn text_builder() -> TextBuilder { return TextBuilder(buffer(64), 0) }
+fn text_builder_valid(builder: TextBuilder) {
+    if builder.count < 0 || builder.count > buffer_len(builder.data) {
+        stderr("Ramos library error: invalid text builder state\n")
+        exit(1)
+    }
+}
+// Byte count, not Unicode scalar count.
+fn text_builder_bytes(builder: TextBuilder) -> int64 {
+    text_builder_valid(builder)
+    return builder.count
+}
+// Return -27 without changing the builder if the result exceeds 1 MiB.
+// Allocation failure retains the checked native runtime trap.
+fn text_builder_append(builder: TextBuilder, text: string) -> int64 {
+    text_builder_valid(builder)
+    let raw = to_bytes(text)
+    let size = buffer_len(raw)
+    if size > 1048576 - builder.count { return -27 }
+    let total = builder.count + size
+    if total > buffer_len(builder.data) {
+        var capacity = buffer_len(builder.data)
+        if capacity == 0 { capacity = 64 }
+        while capacity < total {
+            if capacity >= 524288 { capacity = 1048576 }
+            else { capacity = capacity * 2 }
+        }
+        let grown = buffer(capacity)
+        bytes_put(grown, 0, builder.data)
+        builder.data = grown
+    }
+    bytes_put(builder.data, builder.count, raw)
+    builder.count = total
+    return 0
+}
+fn text_builder_finish(builder: TextBuilder) -> string {
+    text_builder_valid(builder)
+    return string(bytes_slice(builder.data, 0, builder.count))
+}
+// Reuse capacity for the next result.
+fn text_builder_clear(builder: TextBuilder) {
+    text_builder_valid(builder)
+    builder.count = 0
+}
+// Drop owned storage; normal collection reclaims it if no other alias holds it.
+// Existing string snapshots remain valid and future appends can reuse the builder.
+fn text_builder_release(builder: TextBuilder) {
+    text_builder_valid(builder)
+    builder.data = ""
+    builder.count = 0
+}

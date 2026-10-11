@@ -1,4 +1,4 @@
-# Ramos 0.16 — self-hosted compiler for Linux and Windows
+# Ramos 0.17 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -17,13 +17,18 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
-Version 0.16 adds **easier development**: source-line/caret diagnostics with
+Version 0.17 adds **reusable UTF-8 text builders** to `stdlib/text.ramos`:
+append pieces, take immutable snapshots, clear for reuse or release capacity.
+`rnumber` numbers streamed text files with one reusable builder. No new syntax
+or native dependency is needed. See [API and ownership](docs/text-builder.md).
+
+Version 0.16 added **easier development**: source-line/caret diagnostics with
 specific type names, `ramos fmt` and `ramos run`. Run a source file directly with
 arguments and inherited I/O; format a copy or check formatting in CI. All three
 tools are native and written in Ramos. See [commands and contracts](docs/devtools.md).
-Current validation passes **240 Linux tests and 186 native Windows tests**,
+Its milestone validation passed **240 Linux tests and 186 native Windows tests**,
 with matching compiler self-rebuilds on both platforms. See
-[release evidence](docs/devtools-verification.json).
+[0.16 evidence](docs/devtools-verification.json).
 
 Version 0.15 added **native CLI OS libraries**: streamed directory iteration,
 exclusive directory creation, path helpers, environment lookup and direct child
@@ -101,7 +106,7 @@ working examples and release checks under those rules.
 GitHub's language sidebar cannot yet name Ramos because it is absent from
 Linguist's registry. This repository keeps real `.ramos` sources and documents
 [the prepared Linguist registration and remaining acceptance requirement](docs/github-language.md).
-A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.16.0)
+A [Ramos editor extension](https://github.com/zackmsa777-a11y/language-ramos/releases/tag/v0.17.0)
 provides highlighting for `.ramos` files in VS Code today.
 
 ## Try it
@@ -158,7 +163,7 @@ existing destination and remove their unpublished temporary output.
 
 ## Windows
 
-On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.16.0/ramos.exe):
+On Windows, download the native [ramos.exe](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.17.0/ramos.exe):
 
 ```powershell
 .\ramos.exe run .\hello.ramos
@@ -198,7 +203,7 @@ and keep its folders together. See [contracts, examples and limits](docs/cli-tui
 ```
 
 Weave `stdlib/gui.ramos`, create controls and poll `gui_event`. Download the
-[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.16.0/ramos-0.16.0-devtools.zip)
+[GUI bundle](https://github.com/zackmsa777-a11y/ramos/releases/download/v0.17.0/ramos-0.17.0-text-builders.zip)
 with both compilers, all twelve libraries, examples and the ready-to-run Notes app.
 See [API, lifecycle and current limits](docs/gui.md).
 
@@ -541,6 +546,10 @@ The [0.7.1 report](benchmarks/report.md),
 [historical 0.2 report](benchmarks/report-0.2.md) remain available for audit.
 Measurements from different machines or runs are not directly interchangeable.
 
-The 0.16 authoring tools and 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
-self-hosting. The 0.14 benchmark table above is historical evidence; no 0.16
-comparative performance or speedup claim is made.
+The 0.17 text APIs, 0.16 authoring tools and 0.15 OS APIs are validated for behavior, resource lifetime and deterministic
+self-hosting. The 0.14 benchmark table above is historical evidence; no 0.17
+C/Rust/Python comparison or overall score is claimed. A separate
+[0.17 text-assembly measurement](benchmarks/0.17.0/text-builder.md) compares
+repeated string concatenation with the new builder: about 20.8× lower elapsed
+time for 8192 appends / 512 KiB on the recorded Linux machine. This is one
+application workload, not a general language speed claim.

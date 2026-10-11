@@ -1,0 +1,10 @@
+weave "../../stdlib/text.ramos"
+fn main() {
+    let count = text_to_int(arg(1))
+    if parse_error() != 0 { exit(2) }
+    let piece = s"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab"
+    var result = s""
+    for i in 0..count { result += piece }
+    print(result == text_repeat(piece, count))
+    print(len(result))
+}
