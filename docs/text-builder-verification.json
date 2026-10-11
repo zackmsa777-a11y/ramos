@@ -1,0 +1,18 @@
+{
+  "version": "0.17.0",
+  "linux_discovered": 251,
+  "linux_skipped": 5,
+  "linux_passed": 246,
+  "windows_discovered": 193,
+  "windows_skipped": 1,
+  "windows_passed": 192,
+  "focused_text_builder_tests": 6,
+  "linux_selfhost_fixed_point": true,
+  "windows_selfhost_fixed_point": true,
+  "isolated_path_rebuild_matches": true,
+  "source_sha256": "3b7f332a787ba53af04651ecc6600b6637b757fab3c2786d096ade21bb2b5e9f",
+  "text_library_sha256": "941cfa3c3daeac2f2f4946d9197f904fc4c8067c965b01c0df00caa4bd5e5a62",
+  "native_ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38107012939",
+  "acceptance_example": "examples/rnumber.ramos",
+  "performance": "Focused Linux text-assembly measurement in benchmarks/0.17.0/text-builder.json; no 0.17 C/Rust/Python comparison or overall score."
+}

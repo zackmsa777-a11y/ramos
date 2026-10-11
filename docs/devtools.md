@@ -121,7 +121,7 @@ exit codes, temporary cleanup, error paths, repeated runs and an empty tool PATH
 The native Linux and Windows [self-hosting workflow](https://github.com/zackmsa777-a11y/ramos/actions/workflows/selfhost.yml)
 runs the shared corpus and verifies byte-identical compiler fixed points.
 
-Release validation passes **240 Linux tests** (245 discovered, five platform
+The 0.16 milestone validation passed **240 Linux tests** (245 discovered, five platform
 skips) and **186 native Windows tests** (187 discovered, one Linux fixture
 skip), with both byte-identical compiler fixed points and an empty-PATH Linux
 rebuild. See [release evidence](devtools-verification.json).

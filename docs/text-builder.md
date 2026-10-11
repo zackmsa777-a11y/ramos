@@ -111,6 +111,11 @@ success and nonmutating rejection, invalid counts, automatic reclamation across
 6000 results, CRLF/empty/final lines, large streamed files and fallible size/I/O
 errors. Native Linux and Windows compiler fixed-point proofs remain required.
 
+Release validation passes **246 Linux tests** (251 discovered, five platform
+skips) and **192 native Windows tests** (193 discovered, one Linux fixture skip),
+with byte-identical compiler fixed points on both targets. See
+[release evidence](text-builder-verification.json).
+
 The broader data/math milestone was split to keep releases reviewable: this
 release ships builders only. Float64 and essential math, reviewed collection and
 recursion limits, and Linux GUI remain future work. See [roadmap](roadmap-1.0.md).

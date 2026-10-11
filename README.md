@@ -21,6 +21,8 @@ Version 0.17 adds **reusable UTF-8 text builders** to `stdlib/text.ramos`:
 append pieces, take immutable snapshots, clear for reuse or release capacity.
 `rnumber` numbers streamed text files with one reusable builder. No new syntax
 or native dependency is needed. See [API and ownership](docs/text-builder.md).
+Current validation passes **246 Linux tests and 192 native Windows tests**, with
+matching compiler fixed points. See [release evidence](docs/text-builder-verification.json).
 
 Version 0.16 added **easier development**: source-line/caret diagnostics with
 specific type names, `ramos fmt` and `ramos run`. Run a source file directly with
