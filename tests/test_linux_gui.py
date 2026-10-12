@@ -28,12 +28,27 @@ class LinuxGUITests(unittest.TestCase):
         cls.server = subprocess.Popen(['Xvfb','-displayfd',str(write),'-screen','0','1280x900x24','-nolisten','tcp'],
                                       pass_fds=(write,), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         os.close(write)
-        with selectors.DefaultSelector() as sel:
-            sel.register(read, selectors.EVENT_READ)
-            if not sel.select(5):
-                cls.server.kill(); cls.server.wait(); os.close(read)
-                raise RuntimeError('Xvfb startup timed out')
-        number = os.read(read, 64).strip().decode(); os.close(read)
+        # Xvfb can write the number and newline separately. Closing the reader
+        # after a partial announcement makes its final write fail and kills it.
+        announcement = b''
+        deadline = time.monotonic() + 5
+        try:
+            with selectors.DefaultSelector() as sel:
+                sel.register(read, selectors.EVENT_READ)
+                while b'\n' not in announcement:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not sel.select(remaining):
+                        raise RuntimeError('Xvfb startup timed out')
+                    chunk = os.read(read, 64)
+                    if not chunk or len(announcement) + len(chunk) > 64:
+                        raise RuntimeError('Xvfb display announcement incomplete')
+                    announcement += chunk
+        except Exception:
+            cls.server.kill(); cls.server.wait()
+            raise
+        finally:
+            os.close(read)
+        number = announcement.strip().decode()
         cls.env = dict(os.environ, DISPLAY=':'+number, GDK_BACKEND='x11', LC_ALL='C.UTF-8')
         cls.desktop = Desktop(cls.env)
 
