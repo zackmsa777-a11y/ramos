@@ -11,6 +11,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libgtk-3-0t64 xvfb xdotool xclip
       - name: Bootstrap, prove Linux self-hosting, and build the Windows compiler
         run: make clean all selfhost windows
+      - name: Verify a clean Linux compiler and library installation
+        run: python3 tools/package_probe.py --compiler ./ramos --output build/linux-package-proof.json
       - name: Preserve native compilers and Linux proof
         uses: actions/upload-artifact@v4
         with:
@@ -19,6 +21,7 @@ jobs:
             ramos
             build/ramos.exe
             build/bootstrap-proof.json
+            build/linux-package-proof.json
   windows:
     needs: bootstrap
     runs-on: windows-latest
@@ -33,6 +36,9 @@ jobs:
         env:
           RAMOS_WINDOWS_COMPILER: native/build/ramos.exe
         run: python tools/windows_proof.py
+      - name: Verify a clean native Windows compiler and library installation
+        shell: pwsh
+        run: python tools/package_probe.py --compiler native/build/ramos.exe --output build/windows-package-proof.json
       - name: Preserve Windows compiler and proof
         uses: actions/upload-artifact@v4
         with:
@@ -40,3 +46,4 @@ jobs:
           path: |
             native/build/ramos.exe
             build/windows-bootstrap-proof.json
+            build/windows-package-proof.json
