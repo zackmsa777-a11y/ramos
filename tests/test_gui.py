@@ -197,7 +197,7 @@ print(gui_close())
         report=self.directory/'gui.json'
         worker=[sys.executable] if os.name=='nt' else [os.environ.get('RAMOS_WINE','wine'),self.native_path(Path(os.environ['RAMOS_GUI_WINE_PYTHON']))]
         result=subprocess.run([*worker,self.native_path(support.ROOT/'tools/gui_probe.py'),self.native_path(self.output),mode,self.native_path(self.directory),self.native_path(report)],capture_output=True,timeout=90)
-        self.assertEqual(result.returncode,0,(result.stdout,result.stderr))
+        self.assertEqual(result.returncode,0,(result.stdout,result.stderr,report.read_text(encoding='utf-8') if report.exists() else 'no desktop report'))
         evidence=json.loads(report.read_text(encoding='utf-8'))
         self.assertTrue(evidence['visible'] and evidence['closed'],evidence)
         if mode not in ('notes','dialogs'):
