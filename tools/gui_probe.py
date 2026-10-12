@@ -19,6 +19,7 @@ def main():
         'EnumChildWindows': (W.BOOL, [W.HWND, C.c_void_p, W.LPARAM]),
         'GetClassNameW': (C.c_int, [W.HWND, W.LPWSTR, C.c_int]),
         'GetDlgCtrlID': (C.c_int, [W.HWND]),
+        'GetParent': (W.HWND, [W.HWND]),
         'GetWindowThreadProcessId': (W.DWORD, [W.HWND, C.POINTER(W.DWORD)]),
         'GetDlgItem': (W.HWND, [W.HWND, C.c_int]),
         'IsWindowVisible': (W.BOOL, [W.HWND]),
@@ -88,17 +89,23 @@ def main():
             # Explorer-style common dialogs expose the filename edit as edt1,
             # or as the edit child of cmb13 (ComboBoxEx32 on newer Windows).
             def filename_edit():
-                edit = user.GetDlgItem(dialog, 1152)
-                if edit: return edit
-                combo = user.GetDlgItem(dialog, 1148)
                 children = []
+                fields = []
                 @C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
                 def child(window, unused):
                     name = C.create_unicode_buffer(64)
                     user.GetClassNameW(window, name, len(name))
-                    if name.value == 'Edit': children.append(window)
+                    number = user.GetDlgCtrlID(window)
+                    parent = user.GetParent(window)
+                    parent_id = user.GetDlgCtrlID(parent) if parent else 0
+                    fields.append([number, name.value, parent_id])
+                    if name.value == 'Edit' and (number in (1152,1148) or parent_id == 1148):
+                        children.append(window)
                     return True
-                if combo: user.EnumChildWindows(combo, child, 0)
+                # Windows can nest the filename control inside a dialog child;
+                # EnumChildWindows walks descendants, unlike GetDlgItem.
+                user.EnumChildWindows(dialog, child, 0)
+                result['last_dialog_controls'] = fields
                 return children[0] if children else None
             edit = wait(filename_edit, 'filename edit ready')
             assert set_text(edit, str(path))
