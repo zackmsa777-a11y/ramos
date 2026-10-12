@@ -246,3 +246,38 @@ runtime_terminal_key_done:
     add rsp, 16
     pop rbp
     ret
+
+# Nonnegative CLOCK_MONOTONIC milliseconds; -1 and io_error on OS/range failure.
+# No allocation, console requirement, wall-clock epoch or dynamic dependency.
+runtime_monotonic_ms:
+    sub rsp, 16
+    mov eax, 228
+    mov edi, 1
+    mov rsi, rsp
+    syscall
+    test rax, rax
+    js runtime_monotonic_ms_fail
+    mov rax, [rsp]
+    test rax, rax
+    js runtime_monotonic_ms_range
+    imul rax, rax, 1000
+    jo runtime_monotonic_ms_range
+    mov rcx, rax
+    mov rax, [rsp + 8]
+    cmp rax, 1000000000
+    jae runtime_monotonic_ms_range
+    xor edx, edx
+    mov esi, 1000000
+    div rsi
+    add rax, rcx
+    jo runtime_monotonic_ms_range
+    mov QWORD PTR [r15 + 8], 0
+    add rsp, 16
+    ret
+runtime_monotonic_ms_range:
+    mov rax, -75
+runtime_monotonic_ms_fail:
+    mov [r15 + 8], rax
+    mov rax, -1
+    add rsp, 16
+    ret

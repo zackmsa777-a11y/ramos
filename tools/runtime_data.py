@@ -12,13 +12,13 @@ KERNEL = ['GetStdHandle', 'WriteFile', 'ExitProcess', 'VirtualAlloc',
           'CreateFileW', 'CloseHandle', 'GetFileType', 'GetFileInformationByHandle',
           'ReadFile', 'GetFullPathNameW', 'GetTickCount64', 'GetCurrentProcessId',
           'MoveFileExW', 'DeleteFileW', 'GetCommandLineW', 'SetConsoleOutputCP', 'GetConsoleMode', 'SetConsoleMode',
-          'GetConsoleScreenBufferInfo', 'ReadConsoleInputW', 'WaitForSingleObject', 'SetConsoleCtrlHandler', 'SetFilePointerEx', 'LoadLibraryExW', 'GetProcAddress', 'GetModuleHandleW']
+          'GetConsoleScreenBufferInfo', 'ReadConsoleInputW', 'WaitForSingleObject', 'SetConsoleCtrlHandler', 'SetFilePointerEx', 'LoadLibraryExW', 'GetProcAddress', 'GetModuleHandleW', 'QueryPerformanceCounter', 'QueryPerformanceFrequency']
 BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'arg', 'read_file', 'write_file', 'io_error', 'stderr', 'process_exit', 'platform',
             'read_line', 'stdin_eof', 'int_to_text', 'text_to_int', 'parse_error', 'collect', 'memory_used', 'string_from_bytes', 'string_to_bytes', 'string_len', 'string_slice',
             'array_new', 'array_len', 'array_get', 'array_set', 'array_resize',
             'string_concat', 'string_equal', 'record_new', 'record_get', 'record_set', 'array_empty', 'protect_input', 'stdout', 'file_open', 'file_read', 'file_write', 'file_eof', 'file_close', 'terminal_start', 'terminal_stop', 'terminal_width', 'terminal_height', 'terminal_key', 'file_seek', 'gui_open', 'gui_control', 'gui_text', 'gui_poll', 'gui_close',
-            'cwd', 'env_get', 'dir_open', 'dir_next', 'dir_kind', 'dir_close', 'process_run', 'dir_create', 'run_file', 'float_from_int', 'float_to_int', 'float_to_text', 'float_sqrt', 'float_check', 'float_error', 'float_print', 'gui_choose']
+            'cwd', 'env_get', 'dir_open', 'dir_next', 'dir_kind', 'dir_close', 'process_run', 'dir_create', 'run_file', 'float_from_int', 'float_to_int', 'float_to_text', 'float_sqrt', 'float_check', 'float_error', 'float_print', 'gui_choose', 'monotonic_ms']
 LINUX_GUI = ['gtk_init_check', 'gtk_window_new', 'gtk_window_set_title', 'gtk_window_set_default_size', 'gtk_layout_new', 'gtk_container_add', 'gtk_widget_show_all', 'gtk_widget_destroy', 'g_signal_connect_data', 'gtk_label_new', 'gtk_label_set_xalign', 'gtk_button_new_with_label', 'gtk_entry_new', 'gtk_entry_set_max_length', 'gtk_entry_set_text', 'gtk_text_view_new', 'gtk_text_view_get_buffer', 'gtk_text_buffer_set_text', 'gtk_scrolled_window_new', 'gtk_scrolled_window_set_policy', 'gtk_drawing_area_new', 'gtk_widget_set_size_request', 'gtk_layout_put', 'gtk_layout_move', 'gtk_label_set_text', 'gtk_button_set_label', 'gtk_entry_get_text', 'gtk_label_get_text', 'gtk_button_get_label', 'gtk_text_buffer_get_bounds', 'gtk_text_buffer_get_text', 'g_free', 'gtk_main_iteration_do', 'g_timeout_add', 'g_source_remove', 'gtk_widget_grab_focus', 'gtk_text_buffer_get_char_count', 'g_utf8_strlen', 'g_signal_stop_emission_by_name', 'cairo_set_source_rgb', 'cairo_paint', 'gtk_text_view_set_wrap_mode', 'g_get_monotonic_time', 'gtk_file_chooser_dialog_new', 'gtk_dialog_add_button', 'gtk_dialog_set_default_response', 'gtk_dialog_run', 'gtk_file_chooser_set_local_only', 'gtk_file_chooser_get_filename', 'gtk_file_chooser_set_current_name', 'gtk_file_chooser_set_filename', 'g_utf8_validate']
 
 ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print']
@@ -35,7 +35,7 @@ def symbols(path):
 
 def imports():
     data = bytearray(4096)
-    cursor = 768
+    cursor = 832
     def name(value, hint=False):
         nonlocal cursor
         if cursor % 2:
@@ -49,7 +49,7 @@ def imports():
     shell_name = name('SHELL32.dll')
     offsets = {}
     count = len(KERNEL) + 1
-    assert 512 + (count + 2) * 8 <= 768, "Import lookup table overlaps names"
+    assert 512 + (count + 2) * 8 <= 832, "Import lookup table overlaps names"
     for i, func in enumerate(KERNEL):
         ptr = name(func, True)
         struct.pack_into('<Q', data, 128 + i * 8, ptr)

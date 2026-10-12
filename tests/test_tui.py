@@ -19,6 +19,38 @@ class TUITests(unittest.TestCase):
     run_native = streams.StreamTests.run_native
     example = streams.StreamTests.example
 
+    def test_monotonic_clock_progresses_without_terminal_and_resets_io_error(self):
+        self.build_ok('''fn main() {
+let start = monotonic_ms()
+print(start >= 0)
+print(io_error())
+var previous = start
+var ordered = true
+for i in 0..10000 {
+    let now = monotonic_ms()
+    if now < previous || io_error() != 0 { ordered = false }
+    previous = now
+}
+while monotonic_ms() - start < 30 {}
+print(ordered)
+print(monotonic_ms() - start >= 30)
+print(memory_used() == 0)
+read_file("/this-file-does-not-exist-ramos-clock-73291")
+print(io_error() != 0)
+print(monotonic_ms() >= previous)
+print(io_error())
+}''')
+        result = self.run_native()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b'true\n0\ntrue\ntrue\ntrue\ntrue\ntrue\n0\n')
+
+    def test_monotonic_clock_arity_and_reserved_name(self):
+        for source in ['fn main() { print(monotonic_ms(1)) }',
+                       'fn monotonic_ms() -> int64 { return 0 }\nfn main() {}']:
+            result = self.build(source, '--force')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'error:', result.stderr)
+
     def test_redirected_streams_reject_interactive_mode(self):
         self.build_ok('''fn main() {
 print(terminal_start())
@@ -67,6 +99,8 @@ print(tui_safe("a\\0\\t🌍", 6))
 @unittest.skipIf(BOOTSTRAP or os.name == 'nt' or bool(os.environ.get('RAMOS_WINDOWS_COMPILER')), 'Linux pseudo-terminal integration')
 class LinuxTerminalTests(TUITests):
     # Base contract tests run once, on TUITests.
+    test_monotonic_clock_progresses_without_terminal_and_resets_io_error = None
+    test_monotonic_clock_arity_and_reserved_name = None
     test_redirected_streams_reject_interactive_mode = None
     test_draw_controls_colors_box_and_sanitized_preview = None
     test_viewer_help_missing_file_and_nonterminal = None

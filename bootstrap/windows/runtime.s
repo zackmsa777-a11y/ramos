@@ -697,6 +697,53 @@ runtime_main_return:
     ud2
 .include "bootstrap/src/system_runtime.inc"
 .include "bootstrap/windows/system.s.inc"
+# High-resolution QPC converted by quotient/remainder; no counter*1000 overflow.
+# The clock is independent of console setup and does not allocate.
+.global runtime_monotonic_ms
+runtime_monotonic_ms:
+    push rbp
+    sub rsp, 32
+    mov rbp, rsp
+    mov rcx, rbp
+    API QueryPerformanceFrequency
+    test eax, eax
+    jz runtime_monotonic_ms_os_error
+    lea rcx, [rbp + 8]
+    API QueryPerformanceCounter
+    test eax, eax
+    jz runtime_monotonic_ms_os_error
+    mov rcx, [rbp]
+    test rcx, rcx
+    jle runtime_monotonic_ms_os_error
+    mov rax, [rbp + 8]
+    test rax, rax
+    js runtime_monotonic_ms_range
+    xor edx, edx
+    div rcx
+    imul rax, rax, 1000
+    jo runtime_monotonic_ms_range
+    mov [rbp + 16], rax
+    mov rax, rdx
+    imul rax, rax, 1000
+    jo runtime_monotonic_ms_range
+    xor edx, edx
+    div rcx
+    add rax, [rbp + 16]
+    jo runtime_monotonic_ms_range
+    mov QWORD PTR [r15 + 8], 0
+    jmp runtime_monotonic_ms_done
+runtime_monotonic_ms_os_error:
+    mov rax, -5
+    jmp runtime_monotonic_ms_fail
+runtime_monotonic_ms_range:
+    mov rax, -75
+runtime_monotonic_ms_fail:
+    mov [r15 + 8], rax
+    mov rax, -1
+runtime_monotonic_ms_done:
+    add rsp, 32
+    pop rbp
+    ret
 runtime_end:
 runtime_entry:
     cld

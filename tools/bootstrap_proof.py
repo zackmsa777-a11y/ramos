@@ -68,7 +68,7 @@ def main():
     if hashes['stage2'] != hashes['stage3'] or digest(ROOT / 'build/stage3-isolated') != hashes['stage3']:
         raise SystemExit('Self-hosting fixed point failed')
     report = {
-        'version': '0.19.1', 'target': 'x86_64-linux',
+        'version': subprocess.check_output(['./ramos', '--version'], text=True).split()[1], 'target': 'x86_64-linux',
         'compiler_source': 'compiler/ramos.ramos',
         'source_sha256': digest(ROOT / 'compiler/ramos.ramos'),
         'executables': hashes, 'stage2_equals_stage3': True,
