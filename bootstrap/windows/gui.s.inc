@@ -755,6 +755,7 @@ runtime_gui_callback_panel:
     lea rdx, [r12 + 40]
     GUI FillRect
     mov eax, 1
+    jmp runtime_gui_callback_done
 runtime_gui_callback_canvas:
     call runtime_gui_canvas_paint
     mov eax, 1

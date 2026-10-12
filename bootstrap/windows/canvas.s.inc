@@ -48,6 +48,11 @@ runtime_gui_canvas_saved:
     test rax, rax
     jz runtime_gui_canvas_error
     mov rsi, rax
+    mov rcx, [rbp + 8]
+    mov rdx, rsi
+    GUI SelectObject
+    test rax, rax
+    jz runtime_gui_canvas_error
     mov ecx, 5                     # HOLLOW_BRUSH, borrowed
     GUI GetStockObject
     test rax, rax
@@ -99,7 +104,18 @@ runtime_gui_canvas_select:
     cmp QWORD PTR [r13], 5
     jae runtime_gui_canvas_ellipse
     add r10d, [r13 + 32]
+    cmp QWORD PTR [r13], 2
+    je runtime_gui_canvas_rectangle_fill
     GUI Rectangle
+    jmp runtime_gui_canvas_check
+runtime_gui_canvas_rectangle_fill:
+    mov [rbp + 24], edx
+    mov [rbp + 28], r8d
+    mov [rbp + 32], r9d
+    mov [rbp + 36], r10d
+    lea rdx, [rbp + 24]
+    mov r8, rsi
+    GUI FillRect
     jmp runtime_gui_canvas_check
 runtime_gui_canvas_ellipse:
     sub edx, [r13 + 24]
