@@ -1,0 +1,8 @@
+// Each return keeps an earlier value on its own native stack frame.
+fn sum_down(n: int64) -> int64 {
+    if n == 0 { return 0 }
+    return n + sum_down(n - 1)
+}
+fn main() {
+    print(sum_down(500))
+}

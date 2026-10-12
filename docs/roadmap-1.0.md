@@ -5,7 +5,7 @@ applications on Windows x64 and Linux x64. A beginner should be able to build
 and run a small tool from a short example; larger tools should have the libraries,
 diagnostics and resource handling needed to keep working.
 
-This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools, 0.17 text builders and 0.18 float/math and 0.18.1 decimal input plus 0.19 Linux GUI and 0.19.1 layout/file pickers plus 0.20 monotonic timing and 0.21 collection controls are now
+This development plan starts from 0.13. The 0.14 syntax, 0.15 OS libraries, 0.16 authoring tools, 0.17 text builders and 0.18 float/math and 0.18.1 decimal input plus 0.19 Linux GUI and 0.19.1 layout/file pickers plus 0.20 monotonic timing and 0.21 collection controls plus 0.22 checked recursion are now
 implemented; all remaining milestones below are proposals. Proposed version labels below describe order, not deadlines.
 Keep each release small enough to implement and verify completely; split a
 milestone if necessary. Python-like ease and Rust/C-like native performance
@@ -48,7 +48,8 @@ timings are historical; they are not a performance result for 0.13.
 | 0.18: native math (implemented; see [contracts](math.md)) | Finite `float64`, explicit conversions, square root, exact fixed formatting and Ramos math helpers | Native Mandelbrot image renderer, independently checked numerical results on both OSes |
 | 0.18.1: numerical input (implemented; see [contracts](math-input.md)) | Fallible decimal parsing with exact rounding in the Ramos math library | Streamed file/stdin statistics, independent references and long-running memory checks |
 | 0.21: collection controls (implemented; see [contracts](collections.md)) | Reservation, fallible full-capacity status, storage release, integer sorting; limits remain unchanged | Native `rsort`, alias/boundary and long-running memory checks |
-| Limits follow-up | Review live-memory and recursion budgets before changing contracts | Measured stack/live-data workloads |
+| 0.22: recursion review (implemented; see [stack policy](stack-budget.md)) | 1,024 active calls within a checked 4 MiB stack budget; heap cap stays explicit | Deep managed roots, large-frame rejection, 64-level calculator expressions |
+| Live-memory follow-up | Profile real live-data workloads before changing the 16 MiB heap budget | Measured bounded and heap-pressure workloads |
 | 0.19: portable GUI (implemented; see [contracts](gui.md)) | GTK3 Linux backend, existing native controls/events/panels, `run --gui` | The same Notes source opens/saves Unicode files and remains responsive while resizing on Windows and Linux |
 | 0.19.1: GUI helpers (implemented; see [contracts](gui.md)) | Checked rectangles, padding, rows/columns and native Open/Save path pickers | Notes opens Unicode files, cancels safely and saves new files on both OSes |
 | GUI follow-up | Explicit DPI policy and general drawing | A drawing app handles desktop scaling on both OSes |

@@ -40,7 +40,9 @@ Open/Save path pickers and Notes Open/Save As. DPI policy and general drawing
 remain follow-ups. Version **0.20** adds native monotonic timing and the
 profiled rmatrix animation improvements. Version **0.21** adds reserve/release,
 fallible full-collection handling and integer sorting with `rsort`; see
-[collections.md](collections.md).
+[collections.md](collections.md). Version **0.22** raises supported recursion
+with an independent stack budget and verifies clean native package use; see
+[stack-budget.md](stack-budget.md).
 
 The target is a useful native application language with simple APIs. See the
 [ordered application-language roadmap](roadmap-1.0.md) for the user's **simple**
