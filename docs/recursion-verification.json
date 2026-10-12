@@ -1,0 +1,69 @@
+{
+  "version": "0.22.0",
+  "compiler_source_sha256": "aaead7293071d0f8b53003dae741a3188431319e992b2f68b6ee37281a84301a",
+  "code_commit": "0562cbdbeb8d7e09966ac97e54c53f95d1ec3e8e",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38286732401",
+  "native_linux": {
+    "discovered": 295,
+    "passed": 289,
+    "skipped": 6,
+    "fixed_point": true,
+    "empty_path_rebuild": true,
+    "sha256": "a034ea48f838c056c87c085450f0e96e727247b91f098d281f9ec4fa8cc801cc"
+  },
+  "native_windows": {
+    "discovered": 231,
+    "passed": 230,
+    "skipped": 1,
+    "fixed_point": true,
+    "sha256": "b7bd3d7111579eee77dc3fc25ebbb572622e53f044639f0cb7428055100bc6f6"
+  },
+  "clean_installation": {
+    "linux": {
+      "version": "Ramos 0.22.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "linux-x64",
+      "compiler_sha256": "a034ea48f838c056c87c085450f0e96e727247b91f098d281f9ec4fa8cc801cc",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    },
+    "windows": {
+      "version": "Ramos 0.22.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "windows-x64",
+      "compiler_sha256": "b7bd3d7111579eee77dc3fc25ebbb572622e53f044639f0cb7428055100bc6f6",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    }
+  },
+  "stack_policy": {
+    "active_calls": 1024,
+    "checked_bytes": 4194304,
+    "expression_scratch_bytes": 16384,
+    "ordinary_os_stack_minimum_bytes": 8388608
+  },
+  "focused_cases": [
+    "exact call boundary and counter restoration",
+    "mutual calls with pending expression values",
+    "221 large recursive frames succeed, 301 fail with stack-budget error",
+    "managed roots preserved during collection in deep calls"
+  ],
+  "windows_utf16_constants_aligned": true,
+  "xvfb_announcement": "Complete newline-terminated pipe announcement read before close; 20 startup/connect trials passed",
+  "performance": "Fresh five-sample C/Rust/Python index plus nine paired old/new native rounds in ramos-benchmarks/benchmarks/0.22.0; no speed gain asserted.",
+  "remaining": [
+    "16 MiB live-heap cap",
+    "general GUI drawing and explicit DPI policy",
+    "broader libraries and stable 1.0 compatibility review"
+  ]
+}

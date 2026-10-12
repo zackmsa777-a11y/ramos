@@ -37,6 +37,9 @@ The scientific calculator uses it for 64 expression levels with recoverable
 limit errors. Static Windows UTF-16 constants are now explicitly aligned,
 and the Linux GUI harness reads complete Xvfb announcements. See the
 [stack policy](docs/stack-budget.md) and [compatibility guidance](docs/compatibility.md).
+Validation passes **289 Linux tests and 230 native Windows tests**, with both
+compiler fixed points. See [verification](docs/recursion-verification.json) and
+[fresh eight-task measurements](https://github.com/zackmsa777-a11y/ramos-benchmarks/blob/main/benchmarks/0.22.0/report.md).
 Native installation checks exercise Unicode paths, an empty PATH, argument
 and exit-status forwarding, and executables running without compiler/library files.
 
