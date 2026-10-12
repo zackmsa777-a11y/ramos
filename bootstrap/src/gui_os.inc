@@ -47,6 +47,15 @@
 .equ LG_cairo_paint, LG_BASE + 320
 .equ LG_gtk_text_view_set_wrap_mode, LG_BASE + 328
 .equ LG_g_get_monotonic_time, LG_BASE + 336
+.equ LG_gtk_file_chooser_dialog_new, LG_BASE + 344
+.equ LG_gtk_dialog_add_button, LG_BASE + 352
+.equ LG_gtk_dialog_set_default_response, LG_BASE + 360
+.equ LG_gtk_dialog_run, LG_BASE + 368
+.equ LG_gtk_file_chooser_set_local_only, LG_BASE + 376
+.equ LG_gtk_file_chooser_get_filename, LG_BASE + 384
+.equ LG_gtk_file_chooser_set_current_name, LG_BASE + 392
+.equ LG_gtk_file_chooser_set_filename, LG_BASE + 400
+.equ LG_g_utf8_validate, LG_BASE + 408
 .macro LG name
     mov r11d, LG_\name
     call runtime_lg_call
@@ -888,7 +897,15 @@ runtime_gui_close:
     mov rdi, [rbx]
     test rdi, rdi
     jz runtime_lg_close_done
+    mov [rsp], rdi
     mov QWORD PTR [rbx], 0           # Suppress callbacks during destruction.
+    mov rdi, [rbx + 80]
+    test rdi, rdi
+    jz runtime_lg_close_parent
+    mov QWORD PTR [rbx + 80], 0
+    LG gtk_widget_destroy
+runtime_lg_close_parent:
+    mov rdi, [rsp]
     LG gtk_widget_destroy
     mov rdi, rbx
     mov ecx, 1024
@@ -913,3 +930,166 @@ runtime_lg_clicked_name: .asciz "clicked"
 runtime_lg_changed_name: .asciz "changed"
 runtime_lg_draw_name: .asciz "draw"
 runtime_lg_insert_name: .asciz "insert-text"
+
+# Single local-file picker. Only the GUI toolkit pumps during this modal call;
+# callback data remains rooted and no Ramos callback or managed allocation runs.
+runtime_gui_choose:
+    call runtime_lg_enabled
+    jne runtime_lg_bytes_unsupported
+    push rbp
+    push rbx
+    sub rsp, 80
+    mov rbp, rsp
+    mov [rbp], rax
+    mov [rbp + 8], rcx
+    mov [rbp + 16], rdx
+    mov QWORD PTR [rbp + 32], 0
+    mov rbx, [r15 + 128]
+    cmp rdx, 1
+    ja runtime_lg_choose_invalid
+    cmp QWORD PTR [rax], 4095
+    ja runtime_lg_choose_invalid
+    cmp QWORD PTR [rcx], 4095
+    ja runtime_lg_choose_invalid
+    test rbx, rbx
+    jz runtime_lg_choose_bad
+    add rbx, 8
+    cmp QWORD PTR [rbx], 0
+    je runtime_lg_choose_bad
+    call runtime_lg_string
+    test rax, rax
+    js runtime_lg_choose_error
+    mov [rbp + 24], rax
+    mov rax, [rbp + 8]
+    call runtime_lg_string
+    test rax, rax
+    js runtime_lg_choose_error
+    mov [rbp + 8], rax
+    mov rdi, [rbp + 24]
+    add rdi, 8
+    mov rsi, [rbx]
+    mov rdx, [rbp + 16]
+    xor ecx, ecx                      # End the varargs button list immediately.
+    xor eax, eax                      # SysV variadic vector argument count.
+    LG gtk_file_chooser_dialog_new
+    test rax, rax
+    jz runtime_lg_choose_os_error
+    mov [rbx + 80], rax
+    mov rdi, rax
+    mov esi, 1
+    LG gtk_file_chooser_set_local_only
+    mov rdi, [rbx + 80]
+    lea rsi, [rip + runtime_lg_cancel_button]
+    mov edx, -6                       # GTK_RESPONSE_CANCEL
+    LG gtk_dialog_add_button
+    mov rdi, [rbx + 80]
+    lea rsi, [rip + runtime_lg_open_button]
+    cmp QWORD PTR [rbp + 16], 0
+    je runtime_lg_choose_accept
+    lea rsi, [rip + runtime_lg_save_button]
+runtime_lg_choose_accept:
+    mov edx, -3                       # GTK_RESPONSE_ACCEPT
+    LG gtk_dialog_add_button
+    mov rdi, [rbx + 80]
+    mov esi, -3
+    LG gtk_dialog_set_default_response
+    mov rax, [rbp + 8]
+    cmp QWORD PTR [rax], 1             # Terminated copy includes the NUL byte.
+    je runtime_lg_choose_show
+    lea rsi, [rax + 8]
+    mov rdi, [rbx + 80]
+    cmp QWORD PTR [rbp + 16], 0
+    je runtime_lg_choose_filename
+    # Save initial is a suggested filename; slash finds its leaf.
+    mov rcx, rsi
+runtime_lg_choose_leaf:
+    cmp BYTE PTR [rcx], 0
+    je runtime_lg_choose_leaf_ready
+    cmp BYTE PTR [rcx], '/'
+    jne runtime_lg_choose_leaf_next
+    lea rsi, [rcx + 1]
+runtime_lg_choose_leaf_next:
+    inc rcx
+    jmp runtime_lg_choose_leaf
+runtime_lg_choose_leaf_ready:
+    LG gtk_file_chooser_set_current_name
+    jmp runtime_lg_choose_show
+runtime_lg_choose_filename:
+    LG gtk_file_chooser_set_filename
+runtime_lg_choose_show:
+    mov rdi, [rbx + 80]
+    LG gtk_dialog_run
+    cmp eax, -3
+    jne runtime_lg_choose_cancelled
+    mov rdi, [rbx + 80]
+    LG gtk_file_chooser_get_filename
+    test rax, rax
+    jz runtime_lg_choose_invalid
+    mov [rbp + 32], rax
+    mov rdi, rax
+    mov rsi, -1
+    xor edx, edx
+    LG g_utf8_validate
+    test eax, eax
+    jz runtime_lg_choose_invalid
+    mov rax, [rbp + 32]
+    xor edx, edx
+runtime_lg_choose_length:
+    cmp BYTE PTR [rax + rdx], 0
+    je runtime_lg_choose_copy
+    inc rdx
+    cmp rdx, 32767
+    ja runtime_lg_choose_big
+    jmp runtime_lg_choose_length
+runtime_lg_choose_copy:
+    mov rsi, rax
+    mov rax, rdx
+    call runtime_buffer_literal
+    mov [rbp + 48], rax
+    mov QWORD PTR [rbp + 56], 0
+    jmp runtime_lg_choose_cleanup
+runtime_lg_choose_cancelled:
+    mov eax, 1
+    jmp runtime_lg_choose_error
+runtime_lg_choose_big:
+    mov rax, -27
+    jmp runtime_lg_choose_error
+runtime_lg_choose_os_error:
+    mov rax, -5
+    jmp runtime_lg_choose_error
+runtime_lg_choose_bad:
+    mov rax, -9
+    jmp runtime_lg_choose_error
+runtime_lg_choose_invalid:
+    mov rax, -22
+runtime_lg_choose_error:
+    mov [rbp + 56], rax
+    xor eax, eax
+    call runtime_buffer_new
+    mov [rbp + 48], rax
+runtime_lg_choose_cleanup:
+    mov rdi, [rbp + 32]
+    test rdi, rdi
+    jz runtime_lg_choose_destroy
+    LG g_free
+runtime_lg_choose_destroy:
+    mov rbx, [r15 + 128]
+    test rbx, rbx
+    jz runtime_lg_choose_done
+    add rbx, 8
+    mov rdi, [rbx + 80]
+    test rdi, rdi
+    jz runtime_lg_choose_done
+    mov QWORD PTR [rbx + 80], 0
+    LG gtk_widget_destroy
+runtime_lg_choose_done:
+    mov rax, [rbp + 56]
+    mov [r15 + 8], rax
+    mov rax, [rbp + 48]
+    add rsp, 80
+    pop rbx
+    pop rbp
+    ret
+runtime_lg_cancel_button: .asciz "Cancel"
+runtime_lg_open_button: .asciz "Open"
+runtime_lg_save_button: .asciz "Save"

@@ -1,0 +1,43 @@
+{
+  "version": "0.19.1",
+  "status": "local Linux passed; native Windows validation pending",
+  "compiler_source_sha256": "34407f0a7c959eb084d0b935b6f101704700e05cb41a484b852250420b8c1340",
+  "gui_library_sha256": "52af9aec37a49b7c71f1e6e0d040a04e0be7224878ca0f7536798d5982b5db7c",
+  "linux_discovered": 282,
+  "linux_skipped": 6,
+  "linux_passed": 276,
+  "linux_stage2_equals_stage3": true,
+  "linux_isolated_path_rebuild_matches": true,
+  "linux_compiler_sha256": "1da8f6e6f28144cdad98ab6a2fe8cea138d7c3f02191175c191933964324007b",
+  "windows_compiler_sha256": "dda862f14f4c6d9cea41875ed4aa60f7a101bbbc1cd56c66c3c861fa94a9e222",
+  "shared_cases": [
+    "exact layout fill for counts 1..64",
+    "invalid geometry and forged mutable rectangles",
+    "intrinsic type checking and inactive backend status"
+  ],
+  "linux_desktop_cases": [
+    "Unicode Open and Save selection",
+    "cancel returns status 1 and empty path",
+    "invalid mode/UTF-8 status",
+    "Save selection does not create a file",
+    "picker preserves cwd",
+    "managed collection between pickers",
+    "Notes invalid Open preserves editor and path",
+    "exclusive Save As preserves existing files",
+    "resize then dialog and close"
+  ],
+  "windows_desktop_cases": [
+    "Unicode Open and Save As",
+    "cancel preserves note",
+    "invalid Open preserves editor and path",
+    "exclusive Save As preserves existing files",
+    "resize then dialog and close"
+  ],
+  "wayland_verified": false,
+  "new_performance_claim": false,
+  "follow_up": [
+    "automatic layout and DPI policy",
+    "general canvas drawing",
+    "multiple windows"
+  ]
+}

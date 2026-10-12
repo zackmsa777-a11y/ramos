@@ -935,3 +935,186 @@ runtime_gui_names:
     .asciz "GetStockObject"
     .asciz "CreateSolidBrush"
     .asciz "DeleteObject"
+
+# COMDLG32 is lazy-loaded from System32; no CRT/toolkit or application callback.
+# OPENFILENAMEW is 152 bytes on Win64, initialized completely on our stack.
+# File pickers select paths only; Save uses NOTESTFILECREATE and no overwrite
+# prompt. The caller independently decides whether/how to publish a file.
+.equ GUI_GetOpenFileNameW, 304
+.equ GUI_GetSaveFileNameW, 312
+.equ GUI_CommDlgExtendedError, 320
+runtime_gui_choose:
+    push rbp
+    push rbx
+    sub rsp, 240
+    mov rbp, rsp
+    mov [rbp], rax
+    mov [rbp + 8], rcx
+    mov [rbp + 16], rdx
+    cmp rdx, 1
+    ja runtime_gui_choose_invalid
+    cmp QWORD PTR [rax], 4095
+    ja runtime_gui_choose_invalid
+    cmp QWORD PTR [rcx], 4095
+    ja runtime_gui_choose_invalid
+    mov rbx, [r15 + 128]
+    test rbx, rbx
+    jz runtime_gui_choose_bad
+    add rbx, 8
+    cmp QWORD PTR [rbx], 0
+    je runtime_gui_choose_bad
+    call runtime_gui_utf16
+    test rax, rax
+    js runtime_gui_choose_error
+    mov [rbp + 24], rax
+    mov rax, [rbp + 8]
+    call runtime_gui_utf16
+    test rax, rax
+    js runtime_gui_choose_error
+    mov [rbp + 32], rax
+    cmp QWORD PTR [rbx + 112], 0
+    jne runtime_gui_choose_loaded
+    lea rcx, [rip + runtime_gui_comdlg_dll]
+    xor edx, edx
+    mov r8d, 0x800
+    API LoadLibraryExW
+    test rax, rax
+    jz runtime_gui_choose_os_error
+    mov [rbx + 112], rax
+    mov rcx, rax
+    lea rdx, [rip + runtime_gui_open_file_name]
+    API GetProcAddress
+    test rax, rax
+    jz runtime_gui_choose_os_error
+    mov [rbx + GUI_GetOpenFileNameW], rax
+    mov rcx, [rbx + 112]
+    lea rdx, [rip + runtime_gui_save_file_name]
+    API GetProcAddress
+    test rax, rax
+    jz runtime_gui_choose_os_error
+    mov [rbx + GUI_GetSaveFileNameW], rax
+    mov rcx, [rbx + 112]
+    lea rdx, [rip + runtime_gui_dialog_error_name]
+    API GetProcAddress
+    test rax, rax
+    jz runtime_gui_choose_os_error
+    mov [rbx + GUI_CommDlgExtendedError], rax
+runtime_gui_choose_loaded:
+    mov eax, 65536                    # 32768 UTF-16 units, including terminator.
+    call runtime_buffer_new
+    mov [rbp + 40], rax
+    lea rdi, [rax + 8]
+    mov rsi, [rbp + 32]
+    mov rcx, [rsi]
+    add rsi, 8
+    rep movsb
+    lea rdi, [rbp + 80]
+    mov ecx, 20
+    xor eax, eax
+    rep stosq
+    mov DWORD PTR [rbp + 80], 152
+    mov rax, [rbx]
+    mov [rbp + 88], rax
+    lea rax, [rip + runtime_gui_all_files]
+    mov [rbp + 104], rax
+    mov DWORD PTR [rbp + 124], 1       # nFilterIndex
+    mov rax, [rbp + 40]
+    add rax, 8
+    mov [rbp + 128], rax              # lpstrFile
+    mov DWORD PTR [rbp + 136], 32768
+    mov rax, [rbp + 24]
+    add rax, 8
+    mov [rbp + 168], rax              # lpstrTitle
+    mov DWORD PTR [rbp + 176], 0x208180c # EXPLORER, NOCHANGEDIR, FILE/PATHMUSTEXIST, no recent list
+    lea rcx, [rbp + 80]
+    cmp QWORD PTR [rbp + 16], 0
+    jne runtime_gui_choose_save
+    GUI GetOpenFileNameW
+    jmp runtime_gui_choose_returned
+runtime_gui_choose_save:
+    mov DWORD PTR [rbp + 176], 0x209080c # PATHMUSTEXIST, NOTESTFILECREATE; no overwrite prompt
+    GUI GetSaveFileNameW
+runtime_gui_choose_returned:
+    test eax, eax
+    jnz runtime_gui_choose_selected
+    GUI CommDlgExtendedError
+    test eax, eax
+    jz runtime_gui_choose_cancel
+    cmp eax, 0x3003                    # FNERR_BUFFERTOOSMALL
+    je runtime_gui_choose_big
+    mov rax, -5
+    jmp runtime_gui_choose_error
+runtime_gui_choose_selected:
+    mov r8, [rbp + 40]
+    add r8, 8
+    xor r9d, r9d
+runtime_gui_choose_wide_length:
+    cmp WORD PTR [r8 + r9*2], 0
+    je runtime_gui_choose_wide_ready
+    inc r9d
+    cmp r9d, 32768
+    jae runtime_gui_choose_big
+    jmp runtime_gui_choose_wide_length
+runtime_gui_choose_wide_ready:
+    mov [rbp + 48], r9
+    mov ecx, 65001
+    mov edx, 0x80                      # WC_ERR_INVALID_CHARS
+    xor r10d, r10d
+    xor r11d, r11d
+    xor esi, esi
+    xor edi, edi
+    API WideCharToMultiByte
+    test eax, eax
+    jz runtime_gui_choose_invalid
+    cmp eax, 32767
+    ja runtime_gui_choose_big
+    mov [rbp + 56], rax
+    call runtime_buffer_new
+    mov [rbp + 64], rax
+    lea r10, [rax + 8]
+    mov r11, [rbp + 56]
+    mov r8, [rbp + 40]
+    add r8, 8
+    mov r9, [rbp + 48]
+    mov ecx, 65001
+    mov edx, 0x80
+    xor esi, esi
+    xor edi, edi
+    API WideCharToMultiByte
+    test eax, eax
+    jz runtime_gui_choose_invalid
+    mov QWORD PTR [r15 + 8], 0
+    mov rax, [rbp + 64]
+    jmp runtime_gui_choose_done
+runtime_gui_choose_cancel:
+    mov eax, 1
+    jmp runtime_gui_choose_error
+runtime_gui_choose_big:
+    mov rax, -27
+    jmp runtime_gui_choose_error
+runtime_gui_choose_invalid:
+    mov rax, -22
+    jmp runtime_gui_choose_error
+runtime_gui_choose_bad:
+    mov rax, -9
+    jmp runtime_gui_choose_error
+runtime_gui_choose_os_error:
+    mov QWORD PTR [rbx + 112], 0
+    call runtime_errno
+    test rax, rax
+    js runtime_gui_choose_error
+    mov rax, -5
+runtime_gui_choose_error:
+    mov [r15 + 8], rax
+    xor eax, eax
+    call runtime_buffer_new
+runtime_gui_choose_done:
+    add rsp, 240
+    pop rbx
+    pop rbp
+    ret
+runtime_gui_comdlg_dll: .short 'c','o','m','d','l','g','3','2','.','d','l','l',0
+runtime_gui_open_file_name: .asciz "GetOpenFileNameW"
+runtime_gui_save_file_name: .asciz "GetSaveFileNameW"
+runtime_gui_dialog_error_name: .asciz "CommDlgExtendedError"
+runtime_gui_all_files: .short 'A','l','l',' ','f','i','l','e','s',0,'*','.','*',0,0

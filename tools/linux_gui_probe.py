@@ -29,8 +29,7 @@ class Desktop:
             ('XDestroyImage', C.c_int, [C.c_void_p]),
         ]:
             fn = getattr(self.x, name); fn.restype = result; fn.argtypes = args
-        self.display = self.x.XOpenDisplay(env['DISPLAY'].encode())
-        if not self.display: raise RuntimeError('X display unavailable')
+        self.display = wait(lambda: self.x.XOpenDisplay(env['DISPLAY'].encode()), 'X display ready')
 
     def close(self):
         self.x.XCloseDisplay(self.display)

@@ -16,6 +16,9 @@ def main():
     gdi = C.WinDLL('gdi32', use_last_error=True)
     signatures = {
         'EnumWindows': (W.BOOL, [C.c_void_p, W.LPARAM]),
+        'EnumChildWindows': (W.BOOL, [W.HWND, C.c_void_p, W.LPARAM]),
+        'GetClassNameW': (C.c_int, [W.HWND, W.LPWSTR, C.c_int]),
+        'GetDlgCtrlID': (C.c_int, [W.HWND]),
         'GetWindowThreadProcessId': (W.DWORD, [W.HWND, C.POINTER(W.DWORD)]),
         'GetDlgItem': (W.HWND, [W.HWND, C.c_int]),
         'IsWindowVisible': (W.BOOL, [W.HWND]),
@@ -49,7 +52,7 @@ def main():
             time.sleep(.02)
         raise AssertionError('Timed out: ' + label)
 
-    def find_window():
+    def find_window(title=None):
         found = []
         @C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
         def callback(window, unused):
@@ -58,7 +61,7 @@ def main():
             if pid.value == process.pid and user.IsWindowVisible(window):
                 caption = C.create_unicode_buffer(256)
                 user.GetWindowTextW(window, caption, len(caption))
-                if caption.value == ('Ramos Notes' if mode == 'notes' else 'Ramos GUI test'): found.append(window)
+                if caption.value == (title or ('Ramos Notes' if mode in ('notes','dialogs') else 'Ramos GUI test')): found.append(window)
             return True
         user.EnumWindows(callback, 0)
         return found[0] if found else None
@@ -78,11 +81,63 @@ def main():
     def control(number):
         return wait(lambda: user.GetDlgItem(hwnd, number), 'control ' + str(number))
 
+    def choose(button, title, path=None):
+        assert user.PostMessageW(control(button), 0xf5, 0, 0)
+        dialog = wait(lambda: find_window(title), 'file dialog ' + title)
+        if path is not None:
+            # Explorer-style common dialogs expose the filename edit as edt1,
+            # or as the edit child of cmb13 (ComboBoxEx32 on newer Windows).
+            edit = user.GetDlgItem(dialog, 1152)
+            if not edit:
+                combo = user.GetDlgItem(dialog, 1148)
+                children = []
+                @C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
+                def child(window, unused):
+                    name = C.create_unicode_buffer(64)
+                    user.GetClassNameW(window, name, len(name))
+                    if name.value == 'Edit': children.append(window)
+                    return True
+                if combo: user.EnumChildWindows(combo, child, 0)
+                assert children, 'filename edit missing'
+                edit = children[0]
+            assert set_text(edit, str(path))
+        assert user.PostMessageW(dialog, 0x111, 2 if path is None else 1, 0)
+        wait(lambda: not user.IsWindow(dialog), 'dismissed file dialog')
+
     try:
         hwnd = wait(find_window, 'visible native window')
         result['visible'] = True
         result['title'] = text(hwnd)
-        if mode == 'notes':
+        if mode == 'dialogs':
+            source = root / 'source-مرحبا 🌍.txt'
+            destination = root / 'saved-مرحبا 🌍.txt'
+            invalid = root / 'invalid.txt'
+            source.write_bytes('First\r\nمرحبا 🌍'.encode())
+            invalid.write_bytes(b'bad\xff')
+            destination.unlink(missing_ok=True)
+            entry, editor, status = [control(i) for i in (3, 4, 7)]
+            choose(8, 'Open a note', source)
+            wait(lambda: text(editor) == 'First\r\nمرحبا 🌍', 'opened Unicode file')
+            assert text(entry) == str(source)
+            result['unicode_open'] = True
+            choose(9, 'Save a new note')
+            wait(lambda: text(status) == 'Save As cancelled', 'cancelled Save As')
+            assert text(entry) == str(source) and text(editor) == 'First\r\nمرحبا 🌍'
+            result['cancel_preserves_note'] = True
+            choose(8, 'Open a note', invalid)
+            wait(lambda: text(status).startswith('Not opened'), 'invalid text rejected')
+            assert text(entry) == str(source) and text(editor) == 'First\r\nمرحبا 🌍'
+            result['invalid_open_preserves_note'] = True
+            choose(9, 'Save a new note', destination)
+            wait(lambda: destination.exists() and text(status) == 'Saved', 'Save As Unicode path')
+            assert destination.read_bytes() == source.read_bytes()
+            result['unicode_save_as'] = True
+            choose(9, 'Save a new note', source)
+            wait(lambda: text(status).startswith('Not saved'), 'Save As refuses existing path')
+            assert source.read_bytes() == 'First\r\nمرحبا 🌍'.encode()
+            result['existing_file_preserved'] = True
+            pane, resize_control = control(1), editor
+        elif mode == 'notes':
             path = root / 'saved-مرحبا.txt'
             path.unlink(missing_ok=True)
             entry, editor, save, clear, status = [control(i) for i in (3, 4, 5, 6, 7)]
@@ -132,13 +187,17 @@ def main():
             result['resize_expected'] = [client.right, client.bottom]
             after = W.RECT(); user.GetWindowRect(resize_control, C.byref(after))
             result['resize_observed'] = [after.right - after.left, after.bottom - after.top]
-            return client.right != original.right and after.right - after.left == max(360 if mode == 'notes' else 0, client.right) - 40
+            return client.right != original.right and after.right - after.left == max(360 if mode in ('notes','dialogs') else 0, client.right) - 40
         wait(resized, 'resize event relayout')
         result['resize'] = [client.right, client.bottom]
+        if mode == 'dialogs':
+            choose(8, 'Open a note')
+            wait(lambda: text(status) == 'Open cancelled', 'cancel after resize')
+            result['resized_dialog'] = True
         assert user.PostMessageW(hwnd, 0x10, 0, 0)
         out, err = process.communicate(timeout=12)
         result.update(status=process.returncode, stdout=out.decode('utf-8'), stderr=err.decode('utf-8'), closed=not user.IsWindow(hwnd))
-        if mode == 'notes': assert process.returncode == 0 and not err, result
+        if mode in ('notes','dialogs'): assert process.returncode == 0 and not err, result
         else:
             assert 'مرحبا 🌍!\n' in result['stdout'], result
             assert process.returncode == (7 if mode == 'exit' else 1 if mode == 'trap' else 0), result

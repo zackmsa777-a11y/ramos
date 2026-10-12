@@ -1,8 +1,8 @@
-# Desktop GUI library (Ramos 0.19)
+# Desktop GUI library (Ramos 0.19.1)
 
 `weave "stdlib/gui.ramos"` adds real desktop windows and native controls on
 **Windows x64 and Linux x64**, using the same application source. Windows uses
-system USER32/GDI32 APIs and needs no C runtime or extra toolkit. Linux GUI
+system USER32/GDI32/COMDLG32 APIs and needs no C runtime or extra toolkit. Linux GUI
 executables dynamically link system **GTK3, GObject, GLib and Cairo**, including
 their libc/platform dependencies. The library and application logic are ordinary
 Ramos; its compiler emits x86-64 instructions and ELF/PE imports directly, with
@@ -64,10 +64,13 @@ replacement. Windows GUI apps launched from Explorer should report errors in
 controls instead of relying on inherited stdout/stderr handles.
 
 The included **Ramos Notes** app supports Unicode editing, a file-path input,
-Save/Clear buttons, a colored panel and resizing. Save creates a new UTF-8 file
-atomically and refuses to overwrite an existing file. Choose a new filename for
-another save. File errors appear in the status label. It is a small example,
-not an editor with open dialogs, unsaved-change confirmation or autosave.
+Open, Save, Save As and Clear buttons, a colored panel and resizing. Open reads a
+selected UTF-8 file; cancellation, I/O failure, invalid UTF-8, embedded NUL or
+text beyond the 32767-byte setter limit leaves the current editor and path intact.
+Save and Save As create a new UTF-8 file atomically and refuse to overwrite an
+existing file. File errors appear in the status label. Opening a valid file
+replaces the current note immediately; unsaved-change confirmation and autosave
+are not implemented.
 
 ## Library API
 
@@ -85,9 +88,17 @@ installed fonts. These are native desktop controls, not terminal escape codes.
 | `gui_editor(id, x, y, w, h, text)` | Multiline editor with vertical scrolling |
 | `gui_panel(id, x, y, w, h, color)` | Solid colored rectangular panel; The toolkit repaints it automatically |
 | `gui_rgb(r, g, b) -> int64` | Construct an opaque color; each component is 0..255 |
+| `gui_set_bytes(id, text: bytes) -> int64` | Fallible UTF-8 setter; validation failure preserves current text |
 | `gui_set(id, text)` | Update a label, button or editor's text |
 | `gui_text(id) -> string` | Read label/button/editor text as validated UTF-8 |
 | `gui_move(id, x, y, w, h)` | Move or resize a control |
+| `gui_rect(x, y, w, h) -> GuiRect` | Checked explicit rectangle |
+| `gui_inset(w, h, padding) -> GuiRect` | Rectangle inside uniform padding |
+| `gui_row(bounds, index, count, gap) -> GuiRect` | One horizontal cell, indexed from zero |
+| `gui_column(bounds, index, count, gap) -> GuiRect` | One vertical cell, indexed from zero |
+| `gui_move_to(id, bounds)` | Move a control to a checked rectangle |
+| `gui_open_file(title, initial) -> GuiPath` | Select one existing local file path |
+| `gui_save_file(title, initial) -> GuiPath` | Select a local destination path; does not write it |
 | `gui_event(timeout_ms) -> GuiEvent` | Pump messages and retrieve one typed event |
 | `gui_close() -> int64` | Destroy the window and its controls; repeated close succeeds |
 | `gui_check(status)` | Close the GUI and exit 1 with a diagnostic on failure |
@@ -112,7 +123,7 @@ There are no arbitrary callbacks into Ramos or exposed native handles.
 
 Text inputs consume normal editing keys themselves; kind 4 is not a global
 keyboard hook. Native controls handle mouse input and activation; raw pointer
-motion, canvas drawing, images, menus, file dialogs and multiple windows are not
+motion, canvas drawing, images, menus and multiple windows are not
 part of this first API. Colored panels provide basic rectangular drawing.
 Resize events include the initial layout; Windows also reports minimization as zero dimensions.
 Control layout is explicit; there is no automatic layout manager or DPI scaling.
@@ -125,6 +136,63 @@ Timeouts are `-1` for indefinite wait, `0` for immediate polling, or
 than spinning. Calling poll after close is an error. Resize/paint/focus events
 can exist before user input; don't assume the first event is a button press.
 
+## Simple layout
+
+`GuiRect` has integer `x`, `y`, `width`, `height` fields. For a resize event:
+
+```ramos
+let bounds = gui_inset(360, 180, 20)
+let first = gui_row(bounds, 0, 2, 12)
+let second = gui_row(bounds, 1, 2, 12)
+gui_move_to(1, first)
+gui_move_to(2, second)
+```
+
+Use the actual client dimensions, with a sensible minimum as Notes does. Rows
+and columns split the available axis equally after gaps and distribute remainder
+pixels at cell boundaries: the cells and gaps exactly fill that axis. Indices
+are `0..count-1`, count is `1..64`, and gap/padding is `0..8192`. Every cell must
+have positive dimensions. Rectangles have nonnegative origins, dimensions
+`1..8192`, and right/bottom extents at most 8192. Helpers recheck mutable structs.
+Invalid geometry exits 1 with a layout diagnostic. Pure geometry helpers need no
+active window. They provide explicit pixel geometry; automatic layout and DPI
+scaling remain application responsibilities.
+
+## Open and Save paths
+
+```ramos
+let chosen = gui_open_file(s"Open a document", s"")
+if chosen.status == 0 {
+    let contents = read_file(to_bytes(chosen.path))
+    if io_error() == 0 {
+        let status = gui_set_bytes(4, contents)
+        // Handle status without losing the previous editor text on validation failure.
+    }
+}
+```
+
+`GuiPath` has `path: string` and `status: int64`. Status **0** means an absolute
+UTF-8 path was selected, **1** means cancellation, and a **negative** value means
+failure. Cancellation/failure returns an empty path. Handle these statuses
+explicitly; cancellation is not an error to pass to `gui_check`.
+
+The window must already be open. Both pickers select a single local path and
+pump native modal dialog events until selection or cancellation; Ramos code
+resumes afterwards. Parent events can be queued meanwhile. Pickers do not read,
+create or overwrite files. Save has no overwrite confirmation because it only
+returns a path: use `write_file` or stream APIs with an explicit publication
+policy. Notes keeps exclusive creation even when an existing path is selected.
+
+Title and initial hint are valid UTF-8 without NUL, at most 4095 bytes each.
+An empty hint uses the platform default. Hints are best effort: Linux Open can
+preselect an absolute file; Linux Save suggests the leaf filename, while Windows
+can use the supplied path. The toolkit chooses the starting folder. Selected
+paths are limited to 32767 UTF-8 bytes; Windows uses a 32768-unit UTF-16 native
+buffer. Linux filenames that are not UTF-8 return `-22`, preserving the raw path
+contract rather than changing filename bytes. No file filters, multiple
+selection or directory picker are exposed. A selection does not guarantee a
+later I/O operation will succeed. Pickers preserve the process working directory.
+
 ## Limits, statuses and lifetime
 
 Window titles are at most 4095 UTF-8 bytes. Text passed to controls is at most
@@ -136,9 +204,10 @@ empty labels and edits are allowed. Initial client width is 160..4096 and height
 by the native client area. There are at most 64 controls and 64 queued events.
 A full queue fails explicitly instead of silently losing user actions.
 
-`gui_open` and `gui_close` return fallible statuses. Widget/event helpers call
+`gui_open` and `gui_close` return fallible statuses. Creation/event helpers call
 `gui_check`, so they fail with a diagnostic and exit 1. Low-level `_gui_*`
-intrinsics are reserved library machinery; they return negative statuses (or
+intrinsics are reserved library machinery; file selection additionally reports
+cancellation as `io_error() == 1`. Other failures return negative statuses (or
 empty bytes with `io_error`) and validate every property independently:
 `-9` inactive window/unknown control, `-19` unavailable Linux display, `-16` second active window, `-17` duplicate
 ID, `-22` invalid argument/encoding, `-27` oversized read, `-38` missing platform
@@ -156,19 +225,20 @@ abrupt termination. GUI calls run on the program's single main thread.
 
 ## Validation
 
-0.19 tests the same Notes source on Linux and Windows. The Linux desktop corpus
-creates real GTK widgets, checks panel pixels, pastes Arabic/emoji via the native
-clipboard, types an editing key, activates Save/Clear, resizes and closes through
-WM_DELETE_WINDOW. It verifies exact saved bytes, exclusive overwrite refusal,
-empty saves after resize, 12 open/close cycles, GC after 40 MiB cumulative
-allocations, queue overflow, timeout/headless errors and cleanup on return/exit/trap.
-It also exercises `run --gui` with real windows and temporary-file cleanup.
-ELF checks validate loader/import segments, ordering, alignment and W^X.
-Test-only tools: `Xvfb`, `xdotool`, `xclip`, Python and libX11; none are application
-runtime dependencies. CI installs them and runs the corpus against stages 2/3.
-Native CI passed **271 Linux tests** (276 discovered, five platform skips)
-and **212 Windows tests** (213 discovered, one Linux fixture skip), with both
-compiler fixed points matching. See [0.19 verification](portable-gui-verification.json) and the current
+0.19.1 exercises exact row/column fill for all counts 1..64, invalid geometry,
+mutated rectangles, private intrinsic typing, and inactive/static GUI behavior.
+Real GTK and native Windows Notes tests open Arabic/emoji filenames, cancel
+pickers, reject invalid text without losing the note, save to new Unicode paths,
+refuse existing destinations, resize and open another dialog. The GTK fixture
+also verifies cancellation/error statuses, managed collection between pickers,
+unchanged working directory and that Save selection creates no file.
+
+The retained desktop corpus covers native keyboard/clipboard editing, colored
+panel pixels, lifecycle/GC, queue limits, headless errors and process cleanup.
+Linux `run --gui` is tested with a real window and temporary-file cleanup; ELF
+checks validate imports, ordering, alignment and W^X. Test-only tools are Xvfb,
+xdotool, xclip, Python and libX11; none implement application behavior. See
+[0.19.1 verification](gui-dialogs-verification.json) and the current
 [Linux/Windows self-hosting proofs](bootstrap-proof.json). No new speed claim.
 
 ### Retained Windows acceptance (introduced in 0.13)

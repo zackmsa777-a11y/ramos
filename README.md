@@ -1,4 +1,4 @@
-# Ramos 0.19.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.19.1 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -16,6 +16,13 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.19.1 adds **simple GUI layout and native file pickers** on Linux and
+Windows. Use checked row/column/padding helpers and `gui_open_file` /
+`gui_save_file` to choose paths with explicit success, cancellation and error
+statuses. Notes now opens UTF-8 files and offers Save As while preserving its
+exclusive save policy. See [API and examples](docs/gui.md) and
+[release verification](docs/gui-dialogs-verification.json).
 
 Version 0.19 adds **Linux desktop GUI support** through GTK3. The same Notes
 source now runs on Linux and Windows: Unicode editing, native controls, colored

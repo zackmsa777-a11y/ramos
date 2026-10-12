@@ -6,6 +6,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import time
 import unittest
 import test_ramos as support
 from test_libraries import BOOTSTRAP
@@ -183,3 +184,84 @@ while gui_event(-1).kind != 2 {}
         self.assertEqual(stdout,b'')
         self.assertEqual(list(temp.iterdir()),[])
         self.assertFalse(self.output.exists())
+
+    def picker(self, title, path=None):
+        window=self.desktop.window(title)
+        if path is None:
+            self.desktop.command('windowfocus',window,'key','Escape')
+        else:
+            self.desktop.command('windowfocus',window,'key','ctrl+l')
+            time.sleep(.15)
+            self.desktop.command('key','ctrl+a')
+            subprocess.run(['xclip','-selection','clipboard'],input=str(path).encode(),env=self.env,
+                           check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=5)
+            self.desktop.command('key','ctrl+v')
+            time.sleep(.2)
+            self.desktop.command('key','Return')
+        wait(lambda: not subprocess.run(['xdotool','search','--onlyvisible','--name','^'+title+'$'],
+                                        env=self.env,capture_output=True).stdout,'dialog dismissal')
+
+    def test_native_file_picker_open_save_cancel_validation_and_no_file_write(self):
+        self.standard_library()
+        existing=self.directory/'existing-مرحبا 🌍.txt';existing.write_text('original')
+        destination=self.directory/'new-مرحبا 🌍.txt'
+        self.gui_build('''weave "stdlib/gui.ramos"
+fn main() {
+gui_check(gui_open(s"Pickers",320,240))
+let before = cwd()
+let bad = buffer(1)
+buffer_set(bad,0,255)
+print(buffer_len(_gui_choose("x","",2)))
+print(io_error())
+print(buffer_len(_gui_choose(bad,"",0)))
+print(io_error())
+let cancelled = gui_open_file(s"Cancel picker",s"")
+print(cancelled.status)
+print(cancelled.path)
+let opened = gui_open_file(s"Open picker",s"")
+print(opened.status)
+print(opened.path)
+collect()
+let saved = gui_save_file(s"Save picker",s"suggested.txt")
+print(saved.status)
+print(saved.path)
+print(buffer_len(read_file(to_bytes(saved.path))))
+print(io_error())
+print(gui_choose_file(s"bad",s"",-1).status)
+print(string(cwd()) == string(before))
+gui_check(gui_close())
+}''')
+        proc=self.launch()
+        self.picker('Cancel picker')
+        self.picker('Open picker',existing)
+        self.picker('Save picker',destination)
+        out,err=proc.communicate(timeout=5)
+        self.assertEqual(proc.returncode,0,err)
+        self.assertEqual(out,('0\n-22\n0\n-22\n1\n\n0\n'+str(existing)+'\n0\n'+str(destination)+'\n0\n-2\n-22\ntrue\n').encode())
+        self.assertEqual(existing.read_text(),'original')
+        self.assertFalse(destination.exists())
+
+    def test_notes_open_save_as_cancel_and_invalid_text_preservation(self):
+        self.standard_library()
+        existing=self.directory/'source-مرحبا 🌍.txt'; content='First\nمرحبا 🌍'
+        existing.write_text(content)
+        invalid=self.directory/'invalid.txt';invalid.write_bytes(b'bad\xff')
+        destination=self.directory/'saved-مرحبا 🌍.txt'
+        self.gui_build((support.ROOT/'examples/notes.ramos').read_text().replace('../stdlib/','stdlib/'))
+        proc=self.launch();window=self.desktop.window('Ramos Notes')
+        wait(lambda:self.desktop.pixel(window,2,2)==0x3778dc,'Notes painting')
+        self.desktop.click(window,450,32);self.picker('Open a note',existing)
+        self.desktop.click(window,550,32);self.picker('Save a new note')
+        self.assertFalse(destination.exists())
+        self.desktop.click(window,450,32);self.picker('Open a note',invalid)
+        self.desktop.click(window,550,32);self.picker('Save a new note',destination)
+        wait(destination.exists,'save after invalid Open')
+        self.assertEqual(destination.read_text(),content)
+        self.assertEqual(existing.read_text(),content)
+        self.desktop.click(window,550,32);self.picker('Save a new note',existing)
+        self.assertEqual(existing.read_text(),content)
+        self.desktop.resize(window,800,600)
+        self.desktop.click(window,610,32);self.picker('Open a note')
+        self.desktop.request_close(window)
+        out,err=proc.communicate(timeout=5)
+        self.assertEqual(proc.returncode,0,err)

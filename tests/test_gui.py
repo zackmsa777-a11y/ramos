@@ -80,6 +80,64 @@ print(gui_number(p,48))
             self.assertEqual(self.output.read_bytes(),b'preserve')
 
 
+    def test_layout_geometry_and_exact_fill(self):
+        self.standard_library()
+        self.build_ok('''weave "stdlib/gui.ramos"
+fn main() {
+let area = gui_inset(360,180,20)
+print(area.x)
+print(area.y)
+print(area.width)
+print(area.height)
+let bounds = gui_rect(10,20,101,60)
+let first = gui_row(bounds,0,3,4)
+let last = gui_row(bounds,2,3,4)
+print(first.x)
+print(first.width)
+print(last.x)
+print(last.width)
+let bottom = gui_column(bounds,1,2,6)
+print(bottom.y)
+print(bottom.height)
+for count in 1..65 {
+let box = gui_rect(0,0,8192,100)
+var edge = 0
+for i in 0..count {
+let cell = gui_row(box,i,count,3)
+if cell.width < 1 || cell.x != edge { exit(1) }
+edge = cell.x + cell.width
+if i + 1 < count { edge += 3 }
+}
+if edge != 8192 { exit(1) }
+}
+print("filled")
+}''')
+        result=self.run_native()
+        self.assertEqual((result.returncode,result.stdout),(0,b'20\n20\n320\n140\n10\n31\n80\n31\n53\n27\nfilled\n'),result.stderr)
+
+    def test_layout_rejects_bad_bounds_spacing_and_mutated_rectangles(self):
+        self.standard_library()
+        for call in ['gui_rect(-1,0,1,1)','gui_rect(8192,0,1,1)','gui_rect(0,0,0,1)',
+                     'gui_inset(10,10,5)','gui_inset(9223372036854775807,10,1)',
+                     'gui_row(GuiRect(0,0,10,10),0,0,0)','gui_row(GuiRect(0,0,10,10),2,2,0)',
+                     'gui_column(GuiRect(0,0,10,10),0,2,10)',
+                     'gui_row(GuiRect(0,0,10,10),0,65,0)',
+                     'gui_row(GuiRect(0,0,9223372036854775807,10),0,1,0)']:
+            self.build_ok('weave "stdlib/gui.ramos"\nfn main() { '+call+' }')
+            result=self.run_native()
+            self.assertEqual(result.returncode,1,call)
+            self.assertIn(b'invalid layout',result.stderr)
+
+    def test_file_picker_raw_types_and_inactive_status(self):
+        for call in ['_gui_choose(s"x","",0)','_gui_choose("x",s"",0)',
+                     '_gui_choose("x","",false)','_gui_choose("x","",0,0)']:
+            self.assertNotEqual(self.build('fn main() { '+call+' }','--force').returncode,0)
+        self.build_ok('fn main() { print(buffer_len(_gui_choose("x","",0)))\nprint(io_error()) }')
+        result=self.run_native()
+        expected=b'0\n-9\n' if os.name=='nt' or os.environ.get('RAMOS_WINDOWS_COMPILER') else b'0\n-38\n'
+        self.assertEqual((result.returncode,result.stdout),(0,expected),result.stderr)
+
+
 @unittest.skipIf(BOOTSTRAP or not (os.name == 'nt' or os.environ.get('RAMOS_GUI_WINE_PYTHON')), 'requires Windows desktop or explicit Wine desktop harness')
 class WindowsGUITests(unittest.TestCase):
     setUp = support.RamosTests.setUp
@@ -88,7 +146,7 @@ class WindowsGUITests(unittest.TestCase):
 
     def gui_probe(self, mode):
         shutil.copytree(support.ROOT/'stdlib',self.directory/'stdlib',dirs_exist_ok=True)
-        if mode == 'notes':
+        if mode in ('notes','dialogs'):
             code=(support.ROOT/'examples/notes.ramos').read_text(encoding='utf-8').replace('../stdlib/','stdlib/')
         else:
             ending='exit(7)' if mode=='exit' else 'print(9223372036854775807 + 1)' if mode=='trap' else ''
@@ -142,7 +200,7 @@ print(gui_close())
         self.assertEqual(result.returncode,0,(result.stdout,result.stderr))
         evidence=json.loads(report.read_text(encoding='utf-8'))
         self.assertTrue(evidence['visible'] and evidence['closed'],evidence)
-        if mode!='notes':
+        if mode not in ('notes','dialogs'):
             self.assertTrue(evidence['stdout'].startswith('-16\n-17\n-9\n-22\n-22\n-22\ninitial\n'),evidence)
         return evidence
 
@@ -152,3 +210,6 @@ print(gui_close())
 
     def test_native_notes_app_save_preservation_and_clear(self):
         self.gui_probe('notes')
+
+    def test_native_notes_file_dialogs_unicode_cancel_and_preservation(self):
+        self.gui_probe('dialogs')

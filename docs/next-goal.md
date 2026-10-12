@@ -35,7 +35,9 @@ renderer. See [math.md](math.md). Version **0.18.1** adds fallible decimal input
 and the streamed `rstats` app; see [math-input.md](math-input.md). Collection growth and reviewed memory/recursion
 limits remain a separate follow-up. Version **0.19** adds Linux GTK3 desktop
 windows with the same Notes source and `run --gui`; see [gui.md](gui.md).
-Layout/DPI helpers, file dialogs and general drawing remain follow-ups.
+Version **0.19.1** adds checked rectangle/row/column/padding helpers, native
+Open/Save path pickers and Notes Open/Save As. DPI policy and general drawing
+remain follow-ups.
 
 The target is a useful native application language with simple APIs. See the
 [ordered application-language roadmap](roadmap-1.0.md) for the user's **simple**

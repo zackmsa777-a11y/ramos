@@ -4,13 +4,49 @@ weave "../stdlib/numbers.ramos"
 fn notes_layout(width: int64, height: int64) {
     let w = num_max(360, width)
     let h = num_max(240, height)
-    gui_move(1, 0, 0, w, 6)
-    gui_move(2, 20, 20, w - 40, 26)
-    gui_move(3, 20, 52, w - 40, 28)
-    gui_move(4, 20, 96, w - 40, h - 168)
-    gui_move(5, 20, h - 56, 100, 32)
-    gui_move(6, 132, h - 56, 100, 32)
-    gui_move(7, 246, h - 50, w - 266, 28)
+    let content = gui_inset(w, h, 20)
+    gui_move_to(1, gui_rect(0, 0, w, 6))
+    gui_move_to(2, gui_rect(content.x, content.y, w - 260, 26))
+    gui_move_to(3, gui_rect(content.x, 52, content.width, 28))
+    gui_move_to(4, gui_rect(content.x, 96, content.width, h - 168))
+    let footer = gui_rect(content.x, h - 56, 212, 32)
+    gui_move_to(5, gui_row(footer, 0, 2, 12))
+    gui_move_to(6, gui_row(footer, 1, 2, 12))
+    gui_move_to(7, gui_rect(246, h - 50, w - 266, 28))
+    let actions = gui_rect(w - 220, 20, 200, 28)
+    gui_move_to(8, gui_row(actions, 0, 2, 12))
+    gui_move_to(9, gui_row(actions, 1, 2, 12))
+}
+fn notes_save() {
+    let path = to_bytes(gui_text(3))
+    let content = to_bytes(gui_text(4))
+    // Create a new file; refuse to overwrite an existing note.
+    let result = write_file(path, content, 0)
+    if result == 0 { gui_set(7, s"Saved") }
+    else { gui_set(7, s"Not saved (existing file or I/O error)") }
+}
+fn notes_open() {
+    let chosen = gui_open_file(s"Open a note", gui_text(3))
+    if chosen.status == 1 { gui_set(7, s"Open cancelled")
+        return }
+    if chosen.status != 0 { gui_set(7, s"File picker failed")
+        return }
+    let raw = read_file(to_bytes(chosen.path))
+    if io_error() != 0 { gui_set(7, s"Not opened (I/O error)")
+        return }
+    if gui_set_bytes(4, raw) != 0 { gui_set(7, s"Not opened (invalid text or text limit)")
+        return }
+    gui_set(3, chosen.path)
+    gui_set(7, s"Opened")
+}
+fn notes_save_as() {
+    let chosen = gui_save_file(s"Save a new note", gui_text(3))
+    if chosen.status == 1 { gui_set(7, s"Save As cancelled")
+        return }
+    if chosen.status != 0 { gui_set(7, s"File picker failed")
+        return }
+    gui_set(3, chosen.path)
+    notes_save()
 }
 fn main() {
     let status = gui_open(s"Ramos Notes", 640, 440)
@@ -21,26 +57,23 @@ fn main() {
         exit(1)
     }
     gui_panel(1, 0, 0, 640, 6, gui_rgb(55, 120, 220))
-    gui_label(2, 20, 20, 600, 26, s"A desktop app written in Ramos — file path:")
+    gui_label(2, 20, 20, 380, 26, s"Ramos Notes — file path:")
     gui_input(3, 20, 52, 600, 28, s"ramos-note.txt")
     gui_editor(4, 20, 96, 600, 272, s"Write a note here. Unicode text works too: 🌍")
     gui_button(5, 20, 384, 100, 32, s"Save")
     gui_button(6, 132, 384, 100, 32, s"Clear")
     gui_label(7, 246, 390, 374, 28, s"Ready")
+    gui_button(8, 420, 20, 94, 28, s"Open")
+    gui_button(9, 526, 20, 94, 28, s"Save As")
     var running = true
     while running {
         let event = gui_event(-1)
         if event.kind == 1 { running = false }
         if event.kind == 3 { notes_layout(event.width, event.height) }
         if event.kind == 2 {
-            if event.id == 5 {
-                let path = to_bytes(gui_text(3))
-                let content = to_bytes(gui_text(4))
-                // Create a new file; refuse to overwrite an existing note.
-                let result = write_file(path, content, 0)
-                if result == 0 { gui_set(7, s"Saved") }
-                else { gui_set(7, s"Not saved (existing file or I/O error)") }
-            }
+            if event.id == 5 { notes_save() }
+            if event.id == 8 { notes_open() }
+            if event.id == 9 { notes_save_as() }
             if event.id == 6 { gui_set(4, s"")
                 gui_set(7, s"Cleared") }
         }
