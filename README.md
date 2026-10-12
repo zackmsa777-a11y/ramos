@@ -31,6 +31,15 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
+Version 0.22 adds **checked deeper recursion**: up to 1,024 active calls,
+with a separate 4 MiB stack budget checked before each local frame allocation.
+The scientific calculator uses it for 64 expression levels with recoverable
+limit errors. Static Windows UTF-16 constants are now explicitly aligned,
+and the Linux GUI harness reads complete Xvfb announcements. See the
+[stack policy](docs/stack-budget.md) and [compatibility guidance](docs/compatibility.md).
+Native installation checks exercise Unicode paths, an empty PATH, argument
+and exit-status forwarding, and executables running without compiler/library files.
+
 Version 0.21 adds **collection capacity and release controls** in the Ramos
 standard library: reserve list/map storage, handle full collections with explicit
 statuses, clear map references, release owned arrays and sort integer lists
