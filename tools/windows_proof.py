@@ -344,6 +344,16 @@ if os.name == 'nt' or os.environ.get('RAMOS_GUI_WINE_PYTHON'):
             setattr(WindowsTests, name, getattr(test_gui.WindowsGUITests, name))
 
 
+import test_canvas
+for name in dir(test_canvas.CanvasTests):
+    if name.startswith('test_'):
+        setattr(WindowsTests, name, getattr(test_canvas.CanvasTests, name))
+if os.name == 'nt':
+    for name in dir(test_canvas.WindowsCanvasTests):
+        if name.startswith('test_'):
+            setattr(WindowsTests, name, getattr(test_canvas.WindowsCanvasTests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')

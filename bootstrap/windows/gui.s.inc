@@ -24,6 +24,17 @@
 .equ GUI_GetStockObject, 280
 .equ GUI_CreateSolidBrush, 288
 .equ GUI_DeleteObject, 296
+.equ GUI_SelectObject, 304
+.equ GUI_SetDCPenColor, 312
+.equ GUI_SetDCBrushColor, 320
+.equ GUI_Rectangle, 328
+.equ GUI_MoveToEx, 336
+.equ GUI_LineTo, 344
+.equ GUI_Ellipse, 352
+.equ GUI_SaveDC, 360
+.equ GUI_IntersectClipRect, 368
+.equ GUI_RestoreDC, 376
+.equ GUI_InvalidateRect, 384
 .macro GUI name
     mov rax, [rbx + GUI_\name]
     call runtime_api
@@ -162,6 +173,8 @@ runtime_gui_open:
     mov QWORD PTR [rbp + 32], 0
 runtime_gui_open_resolve:
     mov rcx, [rbx + 56]
+    cmp QWORD PTR [rbp + 32], 32
+    je runtime_gui_open_resolve_user
     cmp QWORD PTR [rbp + 32], 19
     jb runtime_gui_open_resolve_user
     mov rcx, [rbx + 64]
@@ -177,7 +190,7 @@ runtime_gui_open_next_name:
     lea rdi, [rdi + 1]
     jne runtime_gui_open_next_name
     inc QWORD PTR [rbp + 32]
-    cmp QWORD PTR [rbp + 32], 22
+    cmp QWORD PTR [rbp + 32], 33
     jb runtime_gui_open_resolve
 runtime_gui_open_loaded:
     cmp QWORD PTR [rbx + 8], 0
@@ -307,7 +320,7 @@ runtime_gui_control:
     mov rcx, [rax]
     cmp rcx, 1
     jl runtime_gui_control_invalid
-    cmp rcx, 7
+    cmp rcx, 9
     jg runtime_gui_control_invalid
     mov rbx, [r15 + 128]
     test rbx, rbx
@@ -323,6 +336,8 @@ runtime_gui_control:
     mov rcx, [rbp]
     cmp QWORD PTR [rcx], 6
     je runtime_gui_control_update
+    cmp QWORD PTR [rcx], 9
+    je runtime_gui_control_present
     mov edx, 16
 runtime_gui_control_geometry:
     mov rax, [rcx + rdx]
@@ -356,6 +371,8 @@ runtime_gui_control_geometry_next:
     cmp rcx, 1
     je runtime_gui_control_class
     cmp rcx, 5
+    je runtime_gui_control_panel
+    cmp rcx, 8
     je runtime_gui_control_panel
     or QWORD PTR [rbp + 72], 0x10000     # WS_TABSTOP
     lea rax, [rip + runtime_gui_button]
@@ -399,6 +416,8 @@ runtime_gui_control_class:
     mov rdx, [rbp]
     mov r8, [rdx]
     mov [rcx + 8], r8
+    cmp r8, 8
+    je runtime_gui_control_move
     cmp r8, 5
     je runtime_gui_control_brush
     mov rcx, rax
@@ -439,7 +458,7 @@ runtime_gui_control_update:
     cmp QWORD PTR [rax], 0
     je runtime_gui_control_bad
     cmp QWORD PTR [rax + 8], 5
-    je runtime_gui_control_invalid
+    jae runtime_gui_control_invalid
     mov rax, [rbp + 8]
     call runtime_gui_utf16
     test rax, rax
@@ -451,6 +470,28 @@ runtime_gui_control_update:
     GUI SetWindowTextW
     test eax, eax
     jz runtime_gui_control_os_error
+    jmp runtime_gui_control_success
+runtime_gui_control_present:
+    mov rax, [rbp + 16]
+    cmp QWORD PTR [rax], 0
+    je runtime_gui_control_bad
+    cmp QWORD PTR [rax + 8], 8
+    jne runtime_gui_control_bad
+    mov rax, [rbp + 8]
+    call runtime_canvas_copy
+    test rax, rax
+    js runtime_gui_control_done
+    mov [rbp + 24], rax
+    mov rax, [rbp + 16]
+    mov rcx, [rax]
+    xor edx, edx
+    xor r8d, r8d
+    GUI InvalidateRect
+    test eax, eax
+    jz runtime_gui_control_os_error
+    mov rax, [rbp + 16]
+    mov rcx, [rbp + 24]
+    mov [rax + 16], rcx
     jmp runtime_gui_control_success
 runtime_gui_control_move:
     mov rax, [rbp + 16]
@@ -507,7 +548,7 @@ runtime_gui_text:
     test rcx, rcx
     jz runtime_gui_text_bad
     cmp QWORD PTR [rax + 8], 5
-    je runtime_gui_text_bad
+    jae runtime_gui_text_bad
     mov [rbp], rcx
     GUI GetWindowTextLengthW
     cmp eax, 32767
@@ -703,6 +744,8 @@ runtime_gui_callback_panel:
     mov rcx, [r12 + 24]
     cmp [rax], rcx
     jne runtime_gui_callback_default
+    cmp QWORD PTR [rax + 8], 8
+    je runtime_gui_callback_canvas
     cmp QWORD PTR [rax + 8], 5
     jne runtime_gui_callback_default
     mov r8, [rax + 16]
@@ -711,6 +754,9 @@ runtime_gui_callback_panel:
     mov rcx, [r12 + 32]
     lea rdx, [r12 + 40]
     GUI FillRect
+    mov eax, 1
+runtime_gui_callback_canvas:
+    call runtime_gui_canvas_paint
     mov eax, 1
 runtime_gui_callback_done:
     add rsp, 32
@@ -868,6 +914,8 @@ runtime_gui_close_brushes:
     mov QWORD PTR [rbx], 0
     lea rsi, [rbx + 512]
 runtime_gui_close_each:
+    cmp QWORD PTR [rsi + 8], 5
+    jne runtime_gui_close_clear
     mov rcx, [rsi + 16]
     test rcx, rcx
     jz runtime_gui_close_clear
@@ -941,14 +989,25 @@ runtime_gui_names:
     .asciz "GetStockObject"
     .asciz "CreateSolidBrush"
     .asciz "DeleteObject"
+    .asciz "SelectObject"
+    .asciz "SetDCPenColor"
+    .asciz "SetDCBrushColor"
+    .asciz "Rectangle"
+    .asciz "MoveToEx"
+    .asciz "LineTo"
+    .asciz "Ellipse"
+    .asciz "SaveDC"
+    .asciz "IntersectClipRect"
+    .asciz "RestoreDC"
+    .asciz "InvalidateRect"
 
 # COMDLG32 is lazy-loaded from System32; no CRT/toolkit or application callback.
 # OPENFILENAMEW is 152 bytes on Win64, initialized completely on our stack.
 # File pickers select paths only; Save uses NOTESTFILECREATE and no overwrite
 # prompt. The caller independently decides whether/how to publish a file.
-.equ GUI_GetOpenFileNameW, 304
-.equ GUI_GetSaveFileNameW, 312
-.equ GUI_CommDlgExtendedError, 320
+.equ GUI_GetOpenFileNameW, 392
+.equ GUI_GetSaveFileNameW, 400
+.equ GUI_CommDlgExtendedError, 408
 runtime_gui_choose:
     push rbp
     push rbx
@@ -1126,3 +1185,6 @@ runtime_gui_save_file_name: .asciz "GetSaveFileNameW"
 runtime_gui_dialog_error_name: .asciz "CommDlgExtendedError"
 .balign 2
 runtime_gui_all_files: .short 'A','l','l',' ','f','i','l','e','s',0,'*','.','*',0,0
+
+.include "bootstrap/src/canvas_common.inc"
+.include "bootstrap/windows/canvas.s.inc"

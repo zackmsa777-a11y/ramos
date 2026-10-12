@@ -1,0 +1,59 @@
+// Native bounded drawing. Coordinates are signed; colors use gui_rgb.
+weave "gui.ramos"
+struct Canvas { data: bytes, count: int64 }
+fn draw_error() { stderr("Ramos drawing error: invalid command, state or capacity (1024)\n")
+    exit(1) }
+fn draw_valid(canvas: Canvas) {
+    if buffer_len(canvas.data) != 49160 || canvas.count < 0 || canvas.count > 1024 { draw_error() }
+}
+// Signed little-endian encoding for the bounded command domain.
+fn draw_word(out: bytes, at: int64, value: int64) {
+    var n = value
+    for i in 0..8 {
+        var part = n % 256
+        if part < 0 { part += 256 }
+        buffer_set(out, at + i, part)
+        n = (n - part) / 256
+    }
+}
+fn draw_new() -> Canvas { return Canvas(buffer(49160), 0) }
+fn draw_reset(canvas: Canvas) { draw_valid(canvas)
+    canvas.count = 0
+    gui_word(canvas.data, 0, 0) }
+fn draw_command(canvas: Canvas, kind: int64, x: int64, y: int64, a: int64, b: int64, color: int64) {
+    draw_valid(canvas)
+    if canvas.count == 1024 || kind < 1 || kind > 6 || color < 0 || color > 16777215 { draw_error() }
+    if x < -8192 || x > 8192 || y < -8192 || y > 8192 || a < -8192 || a > 8192 || b < -8192 || b > 8192 { draw_error() }
+    if kind == 1 && (x != 0 || y != 0 || a != 0 || b != 0) { draw_error() }
+    if (kind == 2 || kind == 3) && (a < 1 || b < 1) { draw_error() }
+    if (kind == 5 || kind == 6) && (a < 1 || b != 0) { draw_error() }
+    let at = 8 + canvas.count * 48
+    draw_word(canvas.data, at, kind)
+    draw_word(canvas.data, at + 8, x)
+    draw_word(canvas.data, at + 16, y)
+    draw_word(canvas.data, at + 24, a)
+    draw_word(canvas.data, at + 32, b)
+    draw_word(canvas.data, at + 40, color)
+    canvas.count += 1
+    gui_word(canvas.data, 0, canvas.count)
+}
+fn draw_clear(canvas: Canvas, color: int64) { draw_command(canvas, 1, 0, 0, 0, 0, color) }
+fn draw_rect(canvas: Canvas, x: int64, y: int64, width: int64, height: int64, color: int64) {
+    draw_command(canvas, 2, x, y, width, height, color) }
+fn draw_box(canvas: Canvas, x: int64, y: int64, width: int64, height: int64, color: int64) {
+    draw_command(canvas, 3, x, y, width, height, color) }
+fn draw_line(canvas: Canvas, x: int64, y: int64, x2: int64, y2: int64, color: int64) {
+    draw_command(canvas, 4, x, y, x2, y2, color) }
+fn draw_circle(canvas: Canvas, x: int64, y: int64, radius: int64, color: int64) {
+    draw_command(canvas, 5, x, y, radius, 0, color) }
+fn draw_disk(canvas: Canvas, x: int64, y: int64, radius: int64, color: int64) {
+    draw_command(canvas, 6, x, y, radius, 0, color) }
+fn draw_pixel(canvas: Canvas, x: int64, y: int64, color: int64) { draw_rect(canvas, x, y, 1, 1, color) }
+fn gui_canvas(id: int64, x: int64, y: int64, width: int64, height: int64) {
+    gui_check(_gui_control(gui_properties(8, id, x, y, width, height, 0), "")) }
+// Native code validates and privately snapshots the active commands.
+// Returns 0, -9 for wrong/missing control, or -22 for an invalid packet.
+fn draw_present(id: int64, canvas: Canvas) -> int64 {
+    draw_valid(canvas)
+    gui_word(canvas.data, 0, canvas.count)
+    return _gui_control(gui_properties(9, id, 0, 0, 0, 0, 0), canvas.data) }

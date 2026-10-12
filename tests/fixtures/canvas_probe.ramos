@@ -1,0 +1,101 @@
+weave "stdlib/draw.ramos"
+fn main() {
+    let canvas = draw_new()
+    for round in 0..20 {
+        gui_check(gui_open(s"Canvas lifecycle",320,240))
+        gui_canvas(64,0,0,200,100)
+        draw_reset(canvas)
+        for i in 0..1024 { draw_pixel(canvas, i % 200, i / 200, 0) }
+        gui_check(draw_present(64,canvas))
+        gui_check(gui_close())
+        collect()
+    }
+    gui_check(gui_open(s"Ramos Canvas test",320,240))
+    gui_canvas(1,10,50,220,120)
+    gui_button(2,10,10,80,30,s"Replace")
+    gui_label(3,100,10,180,30,s"Starting")
+    gui_button(4,10,190,80,30,s"Empty")
+    gui_button(5,100,190,80,30,s"Stress")
+    gui_panel(6,0,50,10,120,gui_rgb(0,0,255))
+    draw_reset(canvas)
+    draw_rect(canvas,-10,10,50,30,gui_rgb(255,0,0))
+    draw_disk(canvas,90,30,15,gui_rgb(0,0,255))
+    draw_box(canvas,140,10,40,40,gui_rgb(0,255,0))
+    draw_line(canvas,10,80,200,80,0)
+    draw_circle(canvas,90,80,12,0)
+    draw_pixel(canvas,200,20,0)
+    draw_rect(canvas,250,10,30,30,gui_rgb(255,0,0))
+    gui_check(draw_present(1,canvas))
+    print(_gui_control(gui_properties(8,1,0,0,10,10,0),""))
+    print(draw_present(2,canvas))
+    print(draw_present(64,canvas))
+    print(gui_set_bytes(1,"text"))
+    print(buffer_len(_gui_text(1)))
+    print(io_error())
+    let p = gui_properties(9,1,0,0,0,0,0)
+    print(_gui_control(p,buffer(7)))
+    gui_word(canvas.data,0,1025)
+    print(_gui_control(p,canvas.data))
+    let short = buffer(8)
+    gui_word(short,0,1)
+    print(_gui_control(p,short))
+    gui_word(canvas.data,0,1)
+    // Reject each malformed geometry/kind/color without altering the old frame.
+    let raw = buffer(56)
+    gui_word(raw,0,1)
+    gui_word(raw,8,2)
+    gui_word(raw,32,1)
+    gui_word(raw,40,1)
+    for at in 0..6 {
+        let offset = 8 + at * 8
+        var value = 8193
+        if at == 0 { value = 7 }
+        if at == 5 { value = 16777216 }
+        let saved = gui_number(raw,offset)
+        gui_word(raw,offset,value)
+        print(_gui_control(p,raw))
+        gui_word(raw,offset,saved)
+    }
+    draw_word(raw,16,-8193)
+    print(_gui_control(p,raw))
+    draw_word(raw,16,0)
+    gui_word(raw,8,5)
+    print(_gui_control(p,raw))
+    gui_word(raw,8,1)
+    print(_gui_control(p,raw))
+    draw_reset(canvas)
+    draw_clear(canvas,gui_rgb(0,255,0))
+    for i in 0..40 { let garbage = buffer(1048576)
+        buffer_set(garbage,0,i) }
+    collect()
+    gui_set(3,s"Ready")
+    var running = true
+    while running {
+        let e = gui_event(-1)
+        if e.kind == 1 { running = false }
+        if e.kind == 3 { gui_move(1,10,50,e.width - 30,120) }
+        if e.kind == 2 && e.id == 2 {
+            gui_check(draw_present(1,canvas))
+            draw_reset(canvas)
+            draw_clear(canvas,gui_rgb(255,0,0))
+            collect()
+            gui_set(3,s"Replaced")
+        }
+        if e.kind == 2 && e.id == 4 { draw_reset(canvas)
+            gui_check(draw_present(1,canvas))
+            gui_set(3,s"Empty") }
+        if e.kind == 2 && e.id == 5 {
+            draw_reset(canvas)
+            for i in 0..1024 { draw_pixel(canvas,i % 200,i / 200,0) }
+            collect()
+            let before = memory_used()
+            for i in 0..400 { gui_check(draw_present(1,canvas)) }
+            collect()
+            if memory_used() > before + 200000 { exit(2) }
+            gui_set(3,s"Stress passed")
+        }
+    }
+    gui_check(gui_close())
+    collect()
+    print("closed")
+}

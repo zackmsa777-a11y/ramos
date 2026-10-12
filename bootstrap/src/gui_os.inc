@@ -56,6 +56,18 @@
 .equ LG_gtk_file_chooser_set_current_name, LG_BASE + 392
 .equ LG_gtk_file_chooser_set_filename, LG_BASE + 400
 .equ LG_g_utf8_validate, LG_BASE + 408
+.equ LG_gtk_widget_queue_draw, LG_BASE + 416
+.equ LG_cairo_rectangle, LG_BASE + 424
+.equ LG_cairo_move_to, LG_BASE + 432
+.equ LG_cairo_line_to, LG_BASE + 440
+.equ LG_cairo_arc, LG_BASE + 448
+.equ LG_cairo_stroke, LG_BASE + 456
+.equ LG_cairo_fill, LG_BASE + 464
+.equ LG_cairo_set_line_width, LG_BASE + 472
+.equ LG_cairo_clip, LG_BASE + 480
+.equ LG_gtk_widget_get_allocated_width, LG_BASE + 488
+.equ LG_gtk_widget_get_allocated_height, LG_BASE + 496
+.equ LG_cairo_status, LG_BASE + 504
 .macro LG name
     mov r11d, LG_\name
     call runtime_lg_call
@@ -294,7 +306,7 @@ runtime_gui_control:
     mov rdx, [rax + 8]
     cmp rdx, 1
     jl runtime_lg_control_invalid
-    cmp rdx, 7
+    cmp rdx, 9
     jg runtime_lg_control_invalid
     mov [rbp + 16], rdx
     mov rbx, [r15 + 128]
@@ -310,6 +322,8 @@ runtime_gui_control:
     mov [rbp + 24], rcx
     cmp QWORD PTR [rbp + 16], 6
     je runtime_lg_control_update
+    cmp QWORD PTR [rbp + 16], 9
+    je runtime_lg_control_present
     mov rax, [rbp]
     mov ecx, 24
 runtime_lg_geometry:
@@ -400,6 +414,10 @@ runtime_lg_created:
     mov [rcx + 32], rbx
     mov rax, [rdx + 56]
     mov [rcx + 40], rax
+    cmp QWORD PTR [rcx + 8], 8
+    jne runtime_lg_created_color
+    mov QWORD PTR [rcx + 40], 0
+runtime_lg_created_color:
     cmp QWORD PTR [rcx + 8], 4
     jne runtime_lg_add_child
     xor edi, edi
@@ -440,6 +458,8 @@ runtime_lg_add_child:
     je runtime_lg_changed_signal
     cmp eax, 5
     je runtime_lg_draw_signal
+    cmp eax, 8
+    je runtime_lg_draw_signal
     LG gtk_text_view_get_buffer
     mov rdi, rax
     mov [rbp + 48], rax
@@ -472,7 +492,7 @@ runtime_lg_control_update:
     cmp QWORD PTR [rcx], 0
     je runtime_lg_control_bad
     cmp QWORD PTR [rcx + 8], 5
-    je runtime_lg_control_invalid
+    jae runtime_lg_control_invalid
     mov rax, [rbp + 8]
     call runtime_lg_string
     test rax, rax
@@ -504,6 +524,21 @@ runtime_lg_update_button:
     jmp runtime_lg_control_success
 runtime_lg_update_input:
     LG gtk_entry_set_text
+    jmp runtime_lg_control_success
+runtime_lg_control_present:
+    mov rcx, [rbp + 24]
+    cmp QWORD PTR [rcx], 0
+    je runtime_lg_control_bad
+    cmp QWORD PTR [rcx + 8], 8
+    jne runtime_lg_control_bad
+    mov rax, [rbp + 8]
+    call runtime_canvas_copy
+    test rax, rax
+    js runtime_lg_control_done
+    mov rcx, [rbp + 24]
+    mov [rcx + 40], rax
+    mov rdi, [rcx]
+    LG gtk_widget_queue_draw
     jmp runtime_lg_control_success
 runtime_lg_control_move:
     mov rcx, [rbp + 24]
@@ -758,6 +793,8 @@ runtime_lg_insert_done:
     leave
     ret
 runtime_lg_draw_cb:
+    cmp QWORD PTR [rdx + 8], 8
+    je runtime_lg_canvas_cb
     push rbp
     mov rbp, rsp
     sub rsp, 16
@@ -1093,3 +1130,6 @@ runtime_lg_choose_done:
 runtime_lg_cancel_button: .asciz "Cancel"
 runtime_lg_open_button: .asciz "Open"
 runtime_lg_save_button: .asciz "Save"
+
+.include "bootstrap/src/canvas_common.inc"
+.include "bootstrap/src/canvas_linux.inc"

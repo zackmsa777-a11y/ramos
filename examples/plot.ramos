@@ -1,0 +1,53 @@
+// Interactive integer plot. No new syntax or foreign application code.
+weave "../stdlib/draw.ramos"
+fn plot_scene(canvas: Canvas, width: int64, height: int64, alternate: bool) {
+    draw_reset(canvas)
+    draw_clear(canvas,gui_rgb(245,247,250))
+    let left = 30
+    let top = 20
+    let span = width - 60
+    let high = height - 40
+    draw_box(canvas,left,top,span,high,gui_rgb(80,90,100))
+    draw_line(canvas,left,top + high / 2,left + span,top + high / 2,gui_rgb(150,160,170))
+    var last_x = left
+    var last_y = top + high / 2
+    for i in 0..201 {
+        let x = left + span * i / 200
+        let t = i - 100
+        var offset = t * t * high / 20000 - high / 4
+        if alternate { offset = t * high / 200 }
+        let y = top + high / 2 - offset
+        if i > 0 { draw_line(canvas,last_x,last_y,x,y,gui_rgb(40,110,220)) }
+        last_x = x
+        last_y = y
+    }
+    draw_disk(canvas,last_x,last_y,4,gui_rgb(220,70,40))
+    gui_check(draw_present(1,canvas))
+}
+fn main() {
+    gui_check(gui_open(s"Ramos Plot",640,440))
+    gui_canvas(1,0,50,640,390)
+    gui_button(2,10,10,120,30,s"Change curve")
+    gui_label(3,145,10,480,30,s"Integer plot: parabola / line. Resize the window.")
+    let canvas = draw_new()
+    var width = 640
+    var height = 390
+    var alternate = false
+    plot_scene(canvas,width,height,alternate)
+    var running = true
+    while running {
+        let e = gui_event(-1)
+        if e.kind == 1 { running = false }
+        if e.kind == 2 && e.id == 2 { alternate = !alternate
+            plot_scene(canvas,width,height,alternate) }
+        if e.kind == 3 {
+            if e.width >= 100 && e.width <= 8192 && e.height >= 150 && e.height <= 8192 {
+                width = e.width
+                height = e.height - 50
+                gui_move(1,0,50,width,height)
+                plot_scene(canvas,width,height,alternate)
+            }
+        }
+    }
+    gui_check(gui_close())
+}
