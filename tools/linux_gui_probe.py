@@ -37,8 +37,12 @@ class Desktop:
     def command(self, *args):
         return subprocess.check_output(['xdotool', *map(str, args)], env=self.env, stderr=subprocess.DEVNULL, timeout=5)
 
-    def window(self, title):
+    def window(self, title, process=None):
         def find():
+            if process is not None and process.poll() is not None:
+                out, err = process.communicate(timeout=5)
+                raise AssertionError(f'Window {title!r} never appeared: app exit '
+                                     f'{process.returncode}, stdout={out!r}, stderr={err!r}')
             try: return int(self.command('search', '--onlyvisible', '--name', '^'+title+'$').splitlines()[0])
             except (subprocess.CalledProcessError, IndexError): return None
         return wait(find, 'window '+title)
