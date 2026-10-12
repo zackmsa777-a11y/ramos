@@ -673,6 +673,7 @@ runtime_write_return:
     pop rbx
     pop rbp
     ret
+.balign 2
 temporary_prefix: .short '.', 'r', 'a', 'm', 'o', 's', '-', 't', 'm', 'p', '-'
 .include "bootstrap/src/text_runtime.inc"
 .include "bootstrap/windows/stdin.s.inc"

@@ -906,11 +906,17 @@ runtime_gui_cleanup:
     pop rcx
     pop rax
     ret
+.balign 2
 runtime_gui_user_dll: .short 'u','s','e','r','3','2','.','d','l','l',0
+.balign 2
 runtime_gui_gdi_dll: .short 'g','d','i','3','2','.','d','l','l',0
+.balign 2
 runtime_gui_class: .short 'R','a','m','o','s','W','i','n','d','o','w',0
+.balign 2
 runtime_gui_static: .short 'S','T','A','T','I','C',0
+.balign 2
 runtime_gui_button: .short 'B','U','T','T','O','N',0
+.balign 2
 runtime_gui_edit: .short 'E','D','I','T',0
 runtime_gui_names:
     .asciz "RegisterClassExW"
@@ -1113,8 +1119,10 @@ runtime_gui_choose_done:
     pop rbx
     pop rbp
     ret
+.balign 2
 runtime_gui_comdlg_dll: .short 'c','o','m','d','l','g','3','2','.','d','l','l',0
 runtime_gui_open_file_name: .asciz "GetOpenFileNameW"
 runtime_gui_save_file_name: .asciz "GetSaveFileNameW"
 runtime_gui_dialog_error_name: .asciz "CommDlgExtendedError"
+.balign 2
 runtime_gui_all_files: .short 'A','l','l',' ','f','i','l','e','s',0,'*','.','*',0,0

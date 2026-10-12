@@ -132,6 +132,11 @@ def generated():
         '-e', 'runtime_entry', '-o', 'build/windows-runtime.elf', 'build/windows-runtime.o', 'build/windows-imports.o')
     run('objcopy', '--dump-section', '.text=build/windows-runtime.bin', 'build/windows-runtime.elf')
     sym = symbols('build/windows-runtime.elf')
+    for name in ('temporary_prefix', 'runtime_gui_user_dll', 'runtime_gui_gdi_dll',
+                 'runtime_gui_class', 'runtime_gui_static', 'runtime_gui_button',
+                 'runtime_gui_edit', 'runtime_gui_comdlg_dll', 'runtime_gui_all_files',
+                 'runtime_system_kernel'):
+        assert sym[name] % 2 == 0, f'Unaligned Windows UTF-16 constant: {name}'
     code = (ROOT / 'build/windows-runtime.bin').read_bytes()
     end = sym['runtime_end'] - 4096
     result.update(windows_runtime=code[:end], windows_entry=code[end:sym['entry_end'] - 4096],

@@ -538,6 +538,7 @@ runtime_system_process_return:
     pop rbx
     pop rbp
     ret
+.balign 2
 runtime_system_kernel: .short 'K','E','R','N','E','L','3','2','.','d','l','l',0
 runtime_system_names:
     .asciz "GetCurrentDirectoryW", "GetEnvironmentVariableW", "SetLastError"
