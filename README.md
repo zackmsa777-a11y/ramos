@@ -11,7 +11,7 @@ delegated compiler backend.
 | --- | --- |
 | [ramos](https://github.com/zackmsa777-a11y/ramos) | Compiler source, runtime, standard library and releases |
 | [ramos-docs](https://github.com/zackmsa777-a11y/ramos-docs) | Markdown book for agents and readable HTML for people |
-| [ramos-examples](https://github.com/zackmsa777-a11y/ramos-examples) | Small runnable programs |
+| [ramos-examples](https://github.com/zackmsa777-a11y/ramos-examples) | Small runnable programs and terminal projects |
 | [ramos-calculator](https://github.com/zackmsa777-a11y/ramos-calculator) | Scientific calculator with native CLI, REPL and Linux/Windows GUI |
 | [ramos-benchmarks](https://github.com/zackmsa777-a11y/ramos-benchmarks) | Reproducible benchmarks and historical raw evidence |
 
@@ -36,7 +36,10 @@ Version 0.20 adds **native monotonic timing** for Linux and Windows:
 terminal/GUI setup or managed allocations. The rmatrix port uses changed-cell
 rendering, cached HUD text and idle pause handling. Its workload measurements
 are documented separately; this is not a new general language speed index.
-See [timing contracts](docs/timing.md).
+See [timing contracts](docs/timing.md), [verification](docs/timing-verification.json)
+and the [rmatrix project](https://github.com/zackmsa777-a11y/ramos-examples/tree/main/projects/rmatrix).
+Validation passes **278 Linux tests and 218 native Windows tests**, with matching
+compiler fixed points on both targets.
 
 Version 0.19.1 adds **simple GUI layout and native file pickers** on Linux and
 Windows. Use checked row/column/padding helpers and `gui_open_file` /

@@ -1,0 +1,22 @@
+{
+  "version": "0.20.0",
+  "source_commit": "5778cee06f3e95d5bd178ac7aa5a44c6cd19bc4e",
+  "ci_run": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38239731271",
+  "linux": {
+    "passed": 278,
+    "skipped": 6,
+    "discovered": 284,
+    "compiler_sha256": "47458291597a36eae9ddbbed0268cf3bab5480d6238ecef00f1e96ae733f39ba",
+    "selfhost_fixed_point": true,
+    "empty_path_rebuild_matches": true
+  },
+  "windows": {
+    "passed": 218,
+    "skipped": 1,
+    "discovered": 219,
+    "compiler_sha256": "0f14383b16e541b71e0606df262848e14bc0269bd0e3dee84ba914ab9a90c353",
+    "selfhost_fixed_point": true
+  },
+  "application": "https://github.com/zackmsa777-a11y/ramos-examples/tree/main/projects/rmatrix",
+  "app_windows_validation": "Cross-compilation and native noninteractive/reference-render tests; real interactive Windows app controls remain unverified."
+}

@@ -16,7 +16,7 @@ the book keeps its existing Pages URL. No organization transfer is required.
 ## Start using Ramos
 
 1. Download a native compiler from the
-   [0.19.1 release](https://github.com/zackmsa777-a11y/ramos/releases/tag/v0.19.1).
+   [0.20.0 release](https://github.com/zackmsa777-a11y/ramos/releases/tag/v0.20.0).
 2. Read the [HTML book](https://zackmsa777-a11y.github.io/ramos-docs/), or the
    [Markdown agent guide](https://github.com/zackmsa777-a11y/ramos-docs/blob/main/book/16-agent-guide.md).
 3. Clone [examples](https://github.com/zackmsa777-a11y/ramos-examples) for small
@@ -63,3 +63,11 @@ and fallible I/O. Measure speed before claiming it. Shared ownership and copies
 of this project's examples do not count as independent language adoption.
 
 [ecosystem.json](ecosystem.json) provides the same repository map for tooling.
+
+## Terminal animation project
+
+[rmatrix](https://github.com/zackmsa777-a11y/ramos-examples/tree/main/projects/rmatrix)
+is a larger example based on Rust nmatrix. Ramos 0.20 supplies its native clock;
+the port uses changed-cell rendering and deadline pacing. See its documented
+platform limits and the separately published application measurements. Other
+application repositories keep their own reviewed compiler pins.
