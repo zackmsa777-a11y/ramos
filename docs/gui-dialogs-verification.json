@@ -1,6 +1,6 @@
 {
   "version": "0.19.1",
-  "status": "local Linux passed; native Windows validation pending",
+  "status": "passed on native Linux and Windows CI",
   "compiler_source_sha256": "34407f0a7c959eb084d0b935b6f101704700e05cb41a484b852250420b8c1340",
   "gui_library_sha256": "52af9aec37a49b7c71f1e6e0d040a04e0be7224878ca0f7536798d5982b5db7c",
   "linux_discovered": 282,
@@ -39,5 +39,11 @@
     "automatic layout and DPI policy",
     "general canvas drawing",
     "multiple windows"
-  ]
+  ],
+  "ci_run": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38232480707",
+  "ci_commit": "ea5392ea7a312f125cd219783024a807cac626c2",
+  "windows_discovered": 217,
+  "windows_skipped": 1,
+  "windows_passed": 216,
+  "windows_seed_equals_stage2_equals_stage3": true
 }

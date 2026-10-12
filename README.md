@@ -22,13 +22,14 @@ Windows. Use checked row/column/padding helpers and `gui_open_file` /
 `gui_save_file` to choose paths with explicit success, cancellation and error
 statuses. Notes now opens UTF-8 files and offers Save As while preserving its
 exclusive save policy. See [API and examples](docs/gui.md) and
-[release verification](docs/gui-dialogs-verification.json).
+[release verification](docs/gui-dialogs-verification.json). Validation passes
+**276 Linux tests and 216 native Windows tests**, with both compiler fixed points.
 
 Version 0.19 adds **Linux desktop GUI support** through GTK3. The same Notes
 source now runs on Linux and Windows: Unicode editing, native controls, colored
 panels, resize events and atomic exclusive file saves. Use `ramos run app.ramos
 --gui`, or build a distributable executable with `--gui`. Linux GUI apps require
-GTK3 and a display. Validation passes **271 Linux tests and 212 native Windows
+GTK3 and a display. Its milestone validation passed **271 Linux tests and 212 native Windows
 tests**, with both compiler fixed points. See [0.19 evidence](docs/portable-gui-verification.json).
 The Linux compiler and ordinary Linux CLI programs remain
 static; Windows programs still require no C runtime. See [GUI setup, API and limits](docs/gui.md).

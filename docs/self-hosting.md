@@ -142,3 +142,11 @@ alive. Both compiler fixed points and the actual desktop interactions are
 release prerequisites; see [the GUI contracts](gui.md) and
 [0.19 evidence](portable-gui-verification.json). Wayland, dialogs, automatic
 layout/DPI policy and general drawing are not claimed as verified features.
+
+Version 0.19.1 appends private native slot 68 (compiler intrinsic 324) for
+single-file path selection. The Windows boundary uses system COMDLG32; Linux
+adds fixed GTK modal chooser imports. The typed path/status result and checked
+geometry helpers are Ramos library code. File publication remains separate.
+See [0.19.1 evidence](gui-dialogs-verification.json); dialogs are now verified
+on native Windows and Linux X11. Automatic DPI/layout policy and general
+canvas drawing remain follow-ups.

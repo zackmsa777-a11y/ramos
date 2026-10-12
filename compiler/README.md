@@ -220,3 +220,27 @@ Both process entries initialize MXCSR to 0x1f80 (nearest/even, gradual underflow
 `float_runtime.inc` implements shared checked conversion and exact decimal
 rounding using bounded integer limbs, without libc or new OS imports.
 See [math contracts](../docs/math.md) and independent shared numerical tests.
+
+## Portable GUI and file selection (0.19 / 0.19.1)
+
+Linux `--gui` now emits seven ELF program headers, a fixed interpreter path,
+GTK3/GLib/GObject/Cairo dynamic imports and eager GLOB_DAT relocations. The
+Ramos ELF writer emits all metadata directly; CLI/compiler output remains
+static. The Linux GUI root points to an 8192-byte native state buffer. GTK
+callbacks only enqueue bounded event data; native objects and toolkit worker
+threads live outside the managed heap. All Linux termination paths use
+exit_group so worker threads cannot keep a completed program alive.
+
+Intrinsic 324 is `_gui_choose(bytes, bytes, int64) -> bytes`, native slot 68
+(after the three private float helpers). It selects a single local Open/Save
+path and reports success 0, cancellation 1 or a negative failure through
+io_error. Windows lazily resolves COMDLG32 from System32 and converts paths
+strictly between UTF-8/UTF-16. Linux modal GTK dialogs return exact native
+filename bytes only when they are valid UTF-8. Neither backend publishes a
+file. Native modal loops run no Ramos callbacks or managed allocations;
+argument/result buffers remain rooted on the Ramos stack.
+
+`gui_rect`, `gui_inset`, `gui_row`, `gui_column`, `gui_move_to` and typed picker
+results are ordinary library source. Runtime bytes, import slots and both
+compiler fixed points remain audited by the existing proof tools. See the
+[current GUI contract](../docs/gui.md).
