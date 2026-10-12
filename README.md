@@ -37,6 +37,10 @@ statuses, clear map references, release owned arrays and sort integer lists
 without recursion or auxiliary arrays. The native `rsort` CLI sorts signed
 integers from stdin or a streamed file. See [contracts and commands](docs/collections.md).
 Existing list/map APIs remain available; live memory and array limits stay checked.
+Validation passes **285 Linux tests and 225 native Windows tests**, with both
+compiler fixed points. See [verification](docs/collections-verification.json) and
+[measured collection evidence](https://github.com/zackmsa777-a11y/ramos-benchmarks/blob/main/benchmarks/0.21.0/collections/report.md);
+reservation is not presented as an established speed gain.
 
 Version 0.20 adds **native monotonic timing** for Linux and Windows:
 `monotonic_ms()` supports elapsed-time animation and frame deadlines without

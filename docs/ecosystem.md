@@ -16,7 +16,7 @@ the book keeps its existing Pages URL. No organization transfer is required.
 ## Start using Ramos
 
 1. Download a native compiler from the
-   [0.20.0 release](https://github.com/zackmsa777-a11y/ramos/releases/tag/v0.20.0).
+   [0.21.0 release](https://github.com/zackmsa777-a11y/ramos/releases/tag/v0.21.0).
 2. Read the [HTML book](https://zackmsa777-a11y.github.io/ramos-docs/), or the
    [Markdown agent guide](https://github.com/zackmsa777-a11y/ramos-docs/blob/main/book/16-agent-guide.md).
 3. Clone [examples](https://github.com/zackmsa777-a11y/ramos-examples) for small

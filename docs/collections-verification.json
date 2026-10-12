@@ -1,0 +1,32 @@
+{
+  "version": "0.21.0",
+  "source_commit": "0091e4ec850ea97eda36982a570b13a0f23dea3e",
+  "ci_run": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38282496547",
+  "linux": {
+    "discovered": 291,
+    "skipped": 6,
+    "passed": 285,
+    "selfhost_fixed_point": true,
+    "empty_path_rebuild_matches": true,
+    "compiler_sha256": "e240393b8783023c6cc3a123a9961c98f2e3bfc74ef51d2df5de9914f8344e5b"
+  },
+  "windows": {
+    "discovered": 226,
+    "skipped": 1,
+    "passed": 225,
+    "selfhost_fixed_point": true,
+    "compiler_sha256": "82eb517d4a703cd515a6ffdc5d8817d3030cea4a86a1a82105c045cdbcd1065a"
+  },
+  "checked_contracts": [
+    "reserve no-shrink and unchanged-on-rejection",
+    "odd capacities grow up to existing 131072 bound",
+    "full map replaces existing keys but rejects new keys",
+    "shared handles and independently retained array aliases remain valid",
+    "sort matches independent signed integer reference and retains capacity/tail",
+    "repeat clear/release cycles exceeding cumulative heap budget remain bounded",
+    "rsort stdin/file Unicode paths and exact/excess input bounds"
+  ],
+  "runtime_change": "None; compiler version string and Ramos libraries/example only; 16 MiB live heap and 131072 array element cap retained",
+  "measurements": "https://github.com/zackmsa777-a11y/ramos-benchmarks/blob/main/benchmarks/0.21.0/collections/report.md",
+  "performance_claim": "Reservation reduced observed allocated bytes but did not improve the measured workload median; no new language-wide speed claim"
+}
