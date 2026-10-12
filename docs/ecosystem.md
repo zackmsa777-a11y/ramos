@@ -16,7 +16,7 @@ the book keeps its existing Pages URL. No organization transfer is required.
 ## Start using Ramos
 
 1. Download a native compiler from the
-   [0.22.0 release](https://github.com/zackmsa777-a11y/ramos/releases/tag/v0.22.0).
+   [0.23.0 release](https://github.com/zackmsa777-a11y/ramos/releases/tag/v0.23.0).
 2. Read the [HTML book](https://zackmsa777-a11y.github.io/ramos-docs/), or the
    [Markdown agent guide](https://github.com/zackmsa777-a11y/ramos-docs/blob/main/book/16-agent-guide.md).
 3. Clone [examples](https://github.com/zackmsa777-a11y/ramos-examples) for small
@@ -72,17 +72,22 @@ the port uses changed-cell rendering and deadline pacing. See its documented
 platform limits and the separately published application measurements. Other
 application repositories keep their own reviewed compiler pins.
 
-## Current application checks (0.22)
+## Current application checks (0.23)
 
-The book, examples and calculator target the 0.22 release. The calculator
+The book, examples and calculator target the 0.23 release. The calculator
 supports 64 recursive expression levels; its 471 numerical/error/REPL checks
-and native GUI interactions pass on Linux and Windows. The examples build 44
+and native GUI interactions pass on Linux and Windows. The examples build 46
 target variants, execute 15 CLI acceptance checks and retain the rmatrix
 reference frames and Linux interaction checks. Interactive Windows rmatrix
 controls remain unverified; its renderer and CLI checks pass natively.
 
-[Calculator CI](https://github.com/zackmsa777-a11y/ramos-calculator/actions/runs/38287441380)
-and [examples CI](https://github.com/zackmsa777-a11y/ramos-examples/actions/runs/38287439688)
+[Calculator CI](https://github.com/zackmsa777-a11y/ramos-calculator/actions/runs/38291386370)
+and [examples CI](https://github.com/zackmsa777-a11y/ramos-examples/actions/runs/38291386287)
 record the native application evidence. The benchmark repository retains its
-0.20 default for historical terminal reproduction and separately checks and
-[measures 0.22](https://github.com/zackmsa777-a11y/ramos-benchmarks/blob/main/benchmarks/0.22.0/report.md).
+0.20 default for historical terminal reproduction, separately validates 0.23
+outputs and retains historical
+[0.22 measurements](https://github.com/zackmsa777-a11y/ramos-benchmarks/blob/main/benchmarks/0.22.0/report.md).
+
+The [drawing library](canvas.md) and [interactive plot](../examples/plot.ramos)
+are verified on native Linux and Windows. The [book drawing chapter](https://zackmsa777-a11y.github.io/ramos-docs/27-canvas.html)
+has matching Markdown and HTML editions. Per-monitor DPI policy remains future work.
