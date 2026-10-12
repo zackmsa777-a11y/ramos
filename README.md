@@ -5,6 +5,20 @@ parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
 native Linux and Windows executables directly. There is no interpreter or
 delegated compiler backend.
 
+## Ramos project family
+
+| Repository | Purpose |
+| --- | --- |
+| [ramos](https://github.com/zackmsa777-a11y/ramos) | Compiler source, runtime, standard library and releases |
+| [ramos-docs](https://github.com/zackmsa777-a11y/ramos-docs) | Markdown book for agents and readable HTML for people |
+| [ramos-examples](https://github.com/zackmsa777-a11y/ramos-examples) | Small runnable programs |
+| [ramos-calculator](https://github.com/zackmsa777-a11y/ramos-calculator) | Scientific calculator with native CLI, REPL and Linux/Windows GUI |
+| [ramos-benchmarks](https://github.com/zackmsa777-a11y/ramos-benchmarks) | Reproducible benchmarks and historical raw evidence |
+
+Visit the [project hub](docs/ecosystem.md) or browse the shared
+[`ramos` topic](https://github.com/topics/ramos). Existing release assets and
+source/book URLs stay available. Application repos pin their compiler and stdlib.
+
 **Self-hosting is verified:** the assembly bootstrap builds stage 1; stage 1
 compiles the Ramos compiler into stage 2; stage 2 recompiles it into a byte-for-byte
 identical stage 3. The full test suite runs against self-hosted stages 2 and 3; the retained

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "topic": "ramos",
+  "owner": "zackmsa777-a11y",
+  "compiler_version": "0.19.1",
+  "compiler_source_commit": "6c263c5023bc8a71c036d9b8151b82dc558adfde",
+  "book_url": "https://zackmsa777-a11y.github.io/ramos-docs/",
+  "repositories": [
+    {
+      "name": "ramos",
+      "role": "source",
+      "url": "https://github.com/zackmsa777-a11y/ramos",
+      "purpose": "Compiler, runtime, standard library, tests and language releases"
+    },
+    {
+      "name": "ramos-docs",
+      "role": "book",
+      "url": "https://github.com/zackmsa777-a11y/ramos-docs",
+      "purpose": "Canonical Markdown and generated human-readable HTML"
+    },
+    {
+      "name": "ramos-examples",
+      "role": "examples",
+      "url": "https://github.com/zackmsa777-a11y/ramos-examples",
+      "purpose": "Small runnable programs and portable application patterns"
+    },
+    {
+      "name": "ramos-calculator",
+      "role": "showcase",
+      "url": "https://github.com/zackmsa777-a11y/ramos-calculator",
+      "purpose": "Scientific calculator: shared native CLI, REPL and desktop GUI"
+    },
+    {
+      "name": "ramos-benchmarks",
+      "role": "benchmarks",
+      "url": "https://github.com/zackmsa777-a11y/ramos-benchmarks",
+      "purpose": "Four-language workloads, raw results and historical performance evidence"
+    }
+  ]
+}
