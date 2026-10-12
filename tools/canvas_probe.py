@@ -94,7 +94,10 @@ def main():
         assert pixel(canvas,20,80)!=0xffffff,'line stroke'
         assert any(pixel(canvas,x,15)!=0xffffff for x in (139,140,141)),'box stroke'
         assert any(pixel(canvas,x,75)!=0xffffff for x in range(99,104)),'circle stroke'
-        assert pixel(user.GetDlgItem(hwnd,6),5,15)==0xff0000,'clip left negative shape'
+        neighbor=user.GetDlgItem(hwnd,6)
+        wait(lambda:pixel(neighbor,5,15)==0xff0000,'neighbor panel painted')
+        assert user.RedrawWindow(canvas,None,None,0x105)
+        assert pixel(neighbor,5,15)==0xff0000,'forced canvas repaint clips negative shape'
         result['snapshot_gc']=True
         assert user.SetWindowPos(hwnd,None,0,0,530,280,0x16)
         wait(lambda:pixel(canvas,260,20)==0x0000ff,'resize reveals retained frame')

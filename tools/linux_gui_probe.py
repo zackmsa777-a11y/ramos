@@ -45,7 +45,20 @@ class Desktop:
                                      f'{process.returncode}, stdout={out!r}, stderr={err!r}')
             try: return int(self.command('search', '--onlyvisible', '--name', '^'+title+'$').splitlines()[0])
             except (subprocess.CalledProcessError, IndexError): return None
-        return wait(find, 'window '+title)
+        # Cold GTK/font/display initialization on shared CI can exceed five seconds.
+        # Wait for the observable window; do not introduce a fixed startup sleep.
+        try:
+            return wait(find, 'window '+title, seconds=15)
+        except AssertionError as error:
+            details = ''
+            if process is not None:
+                details = f'; process status={process.poll()!r}'
+                try:
+                    windows = self.command('search', '--pid', process.pid).decode().strip()
+                    details += f'; process X windows={windows!r}'
+                except subprocess.CalledProcessError:
+                    details += '; no process X windows'
+            raise AssertionError(str(error)+details) from error
 
     def click(self, window, x, y):
         self.command('windowfocus', window, 'mousemove', '--window', window, x, y, 'click', '1')
