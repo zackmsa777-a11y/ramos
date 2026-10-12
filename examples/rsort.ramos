@@ -1,0 +1,64 @@
+weave "../stdlib/lists.ramos"
+weave "../stdlib/io.ramos"
+
+// Sort signed integers, one per line, from stdin or one streamed input file.
+fn sort_error(line: int64, message: bytes) {
+    stderr("rsort: line ")
+    stderr(int_to_text(line))
+    stderr(": ")
+    stderr(message)
+    stderr("\n")
+    exit(2)
+}
+fn sort_read(values: IntList, line: bytes) -> int64 {
+    let number = text_to_int(line)
+    if parse_error() != 0 { return -22 }
+    return list_try_push(values, number)
+}
+fn sort_status(values: IntList, status: int64) {
+    if status == -27 { sort_error(list_len(values) + 1, "input limit is 131072 integers") }
+    sort_error(list_len(values) + 1, "invalid int64")
+}
+fn main() {
+    if arg_count() > 2 {
+        stderr("usage: rsort [FILE]\nOne signed int64 per line; no argument reads stdin.\n")
+        exit(2)
+    }
+    let values = list_new()
+    if arg_count() == 1 {
+        while true {
+            let line = read_line()
+            if io_error() != 0 { stderr("rsort: stdin failed\n")
+                exit(2) }
+            if stdin_eof() && buffer_len(line) == 0 { break }
+            let status = sort_read(values, line)
+            if status != 0 { sort_status(values, status) }
+        }
+    } else {
+        let reader = io_reader(arg(1))
+        if reader.status != 0 { stderr("rsort: cannot open input\n")
+            exit(2) }
+        while true {
+            let line = io_line(reader)
+            if reader.status != 0 {
+                io_close(reader)
+                stderr("rsort: input failed\n")
+                exit(2)
+            }
+            if reader.eof && buffer_len(line) == 0 { break }
+            let status = sort_read(values, line)
+            if status != 0 { io_close(reader)
+                sort_status(values, status) }
+        }
+        if io_close(reader) != 0 { stderr("rsort: closing input failed\n")
+            exit(2) }
+    }
+    list_sort(values)
+    for i in 0..list_len(values) {
+        if stdout(int_to_text(list_get(values, i))) != 0 || stdout("\n") != 0 {
+            stderr("rsort: output failed\n")
+            exit(2)
+        }
+    }
+    list_release(values)
+}

@@ -54,6 +54,7 @@ library-demo: ramos
 	./ramos build examples/library_demo.ramos -o build/library-demo --force
 	./build/library-demo
 cli-tools: ramos
+	./ramos build examples/rsort.ramos -o build/rsort --force
 	./ramos build examples/rstats.ramos -o build/rstats --force
 	./ramos build examples/rnumber.ramos -o build/rnumber --force
 	./ramos build examples/rfind.ramos -o build/rfind --force

@@ -28,8 +28,8 @@ class LibraryTests(unittest.TestCase):
 
     native_path = staticmethod(str)
 
-    def run_native(self, *args):
-        return subprocess.run([str(self.output), *args], capture_output=True, timeout=10)
+    def run_native(self, *args, **kwargs):
+        return subprocess.run([str(self.output), *args], capture_output=True, timeout=20, **kwargs)
 
     def test_nested_relative_paths_forward_types_and_calls(self):
         self.library('lib/models.ramos', 'weave "helpers/math.ramos"\nstruct Point { x: int64 }\nfn total(p: Point) -> int64 { return double(p.x) }')
@@ -328,3 +328,228 @@ print(memory_used() < 65536)
                 result = self.run_native()
                 self.assertEqual(result.returncode, 1, result.stderr)
                 self.assertIn(message, result.stderr)
+
+    def test_collection_reserve_aliases_clear_release_and_reuse(self):
+        self.standard_library()
+        self.assert_runs('''weave "stdlib/lists.ramos"
+weave "stdlib/maps.ramos"
+fn main() {
+let list = list_new()
+let alias = list
+print(list_reserve(list, 3))
+for i in 0..3 { list_push(list, i + 7) }
+let old_data = list.data
+list_push(alias, 10)
+print(list_capacity(list))
+print(array_len(old_data))
+print(old_data[2])
+print(list_len(list))
+list_clear(alias)
+print(list_capacity(list))
+list_push(list, 42)
+list_release(alias)
+print(list_len(list))
+print(list_capacity(list))
+print(old_data[0])
+list_push(list, -1)
+print(list_get(alias, 0))
+let map = map_new()
+let other = map
+print(map_reserve(map, 3))
+map_set(map, s"a", s"é")
+map_set(map, s"b", s"🌍")
+map_set(map, s"c", s"three")
+let old_keys = map.keys
+map_set(other, s"d", s"four")
+print(map_capacity(map))
+print(array_len(old_keys))
+print(old_keys[0])
+let current_values = map.values
+map_clear(other)
+print(map_len(map))
+print(map_capacity(map))
+print(len(current_values[0]))
+print(old_keys[0])
+map_set(map, s"new", s"value")
+let saved = map.values
+map_release(other)
+print(map_len(map))
+print(map_capacity(map))
+print(saved[0])
+map_set(map, s"last", s"مرحبا")
+collect()
+print(map_get(other, s"last", s"missing"))
+}''', '0\n6\n3\n9\n4\n6\n0\n0\n7\n-1\n0\n6\n3\na\n0\n6\n0\na\n0\n0\nvalue\nمرحبا\n'.encode())
+
+    def test_collection_capacity_rejections_are_atomic_and_odd_growth_is_capped(self):
+        self.standard_library()
+        self.assert_runs('''weave "stdlib/lists.ramos"
+weave "stdlib/maps.ramos"
+fn main() {
+let list = list_new()
+list_push(list, 42)
+print(list_reserve(list, -1))
+print(list_reserve(list, 131073))
+print(list_reserve(list, 9223372036854775807))
+print(list_reserve(list, 0))
+print(list_len(list))
+print(list_capacity(list))
+print(list_get(list, 0))
+list_reserve(list, 65537)
+for i in 1..65537 { list_push(list, i) }
+print(list_try_push(list, -7))
+print(list_capacity(list))
+for i in 65538..131072 { list_push(list, i) }
+print(list_try_push(list, 99))
+print(list_len(list))
+print(list_get(list, 65537))
+print(list_pop(list))
+print(list_try_push(list, 123))
+print(list_get(list, 131071))
+list_release(list)
+let map = map_new()
+map_set(map, s"key", s"value")
+print(map_reserve(map, -1))
+print(map_reserve(map, 131073))
+print(map_reserve(map, 0))
+print(map_len(map))
+print(map_capacity(map))
+print(map_get(map, s"key", s"missing"))
+map_reserve(map, 3)
+}''', b'-22\n-27\n-27\n0\n1\n4\n42\n0\n131072\n-27\n131072\n-7\n131071\n0\n123\n-22\n-27\n0\n1\n4\nvalue\n')
+
+    def test_full_map_can_replace_but_rejects_new_key_without_mutation(self):
+        self.standard_library()
+        # Construct unique keys linearly: populating via linear map lookup would
+        # obscure this capacity boundary behind an O(n^2) setup workload.
+        self.assert_runs('''weave "stdlib/maps.ramos"
+weave "stdlib/numbers.ramos"
+fn main() {
+let map = map_new()
+print(map_reserve(map, 65537))
+for i in 0..65537 { map.keys[i] = num_text(i) }
+map.count = 65537
+print(map_try_set(map, s"growth key", s"grown"))
+print(map_capacity(map))
+for i in 65538..131072 { map.keys[i] = num_text(i) }
+map.count = 131072
+print(map_try_set(map, s"new key", s"value"))
+print(map_len(map))
+print(map_try_set(map, s"131071", s"updated"))
+print(map_get(map, s"131071", s"missing"))
+print(map_has(map, s"new key"))
+print(map_remove(map, s"0"))
+print(map_try_set(map, s"new key", s"ok"))
+print(map_get(map, s"new key", s"missing"))
+map_release(map)
+}''', b'0\n0\n131072\n-27\n131072\n0\nupdated\nfalse\ntrue\n0\nok\n')
+
+    def test_collection_metadata_and_infallible_limit_errors(self):
+        self.standard_library()
+        for body, message in [
+            ('let a = list_new()\na.count = -1\nlist_sort(a)', b'invalid list state'),
+            ('let a = list_new()\na.count = 1\nlist_release(a)', b'invalid list state'),
+            ('let a = map_new()\na.values = array(string, 1, s"")\nmap_clear(a)', b'invalid map state'),
+            ('let a = map_new()\na.count = -1\nmap_reserve(a, 0)', b'invalid map state'),
+            ('let a = list_new()\nlist_reserve(a, 131072)\na.count = 131072\nlist_push(a, 0)', b'list capacity limit'),
+        ]:
+            with self.subTest(body=body):
+                result = self.build('weave "stdlib/lists.ramos"\nweave "stdlib/maps.ramos"\nfn main() {\n'+body+'\n}', '--force')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                result = self.run_native()
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(message, result.stderr)
+
+    def test_integer_sort_matches_independent_reference_and_preserves_tail(self):
+        import random
+        self.standard_library()
+        values = [-(2**63), 2**63-1, 0, -1, 0, 42, -42]
+        values += [random.Random(42+i).randrange(-1000000, 1000000) for i in range(700)]
+        statements = '\n'.join(f'list_push(values, {v})' for v in values)
+        source = '''weave "stdlib/lists.ramos"
+fn main() {
+let values = list_new()
+list_sort(values)
+list_push(values, 1)
+list_sort(values)
+list_clear(values)
+'''+statements+'''
+list_reserve(values, 1000)
+values.data[999] = 12345
+let alias = values
+list_sort(alias)
+for i in 0..list_len(values) { print(list_get(values, i)) }
+print(values.data[999])
+print(list_capacity(values))
+}'''
+        expected = b''.join(str(v).encode()+b'\n' for v in sorted(values)) + b'12345\n1024\n'
+        self.assert_runs(source, expected)
+
+    def test_collection_repeated_release_and_clear_reclaims_references(self):
+        self.standard_library()
+        self.assert_runs('''weave "stdlib/lists.ramos"
+weave "stdlib/maps.ramos"
+weave "stdlib/numbers.ramos"
+fn fill(map: StringMap) {
+for i in 0..64 { map_set(map, num_text(i), string(buffer(4096))) }
+}
+fn cycle(values: IntList, map: StringMap) {
+list_reserve(values, 131072)
+list_push(values, 42)
+fill(map)
+map_clear(map)
+collect()
+if memory_used() > 2000000 { exit(2) }
+fill(map)
+map_release(map)
+list_release(values)
+collect()
+if memory_used() > 65536 { exit(3) }
+}
+fn main() {
+let values = list_new()
+let map = map_new()
+for round in 0..80 { cycle(values, map) }
+print(list_len(values))
+print(list_capacity(values))
+print(map_len(map))
+print(map_capacity(map))
+print(memory_used() < 65536)
+}''', b'0\n0\n0\n0\ntrue\n')
+
+    def test_rsort_cli_stdin_file_limits_errors_and_native_targets(self):
+        import random
+        values = [random.Random(99+i).randrange(-2**63, 2**63) for i in range(500)]
+        values += [-2**63, 2**63-1, 0, 0]
+        self.standard_library()
+        source = (support.ROOT/'examples/rsort.ramos').read_text().replace('../stdlib/', 'stdlib/')
+        result = self.build(source, '--force')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        expected = b''.join(str(v).encode()+b'\n' for v in sorted(values))
+        data = b'\r\n'.join(str(v).encode() for v in values)
+        result = self.run_native(input=data)
+        self.assertEqual((result.returncode,result.stdout), (0,expected),result.stderr)
+        path = self.directory/'numbers é ملف.txt'
+        path.write_bytes(data)
+        result = self.run_native(self.native_path(path))
+        self.assertEqual((result.returncode,result.stdout), (0,expected),result.stderr)
+        result = self.run_native(input=b'')
+        self.assertEqual((result.returncode,result.stdout), (0,b''),result.stderr)
+        for bad in [b'1\nbad\n', b'9223372036854775808\n', b'\n']:
+            result = self.run_native(input=bad)
+            self.assertEqual(result.returncode,2,result.stderr)
+            self.assertEqual(result.stdout,b'')
+            self.assertIn(b'invalid int64',result.stderr)
+        result = self.run_native(self.native_path(self.directory/'missing'))
+        self.assertEqual(result.returncode,2,result.stderr)
+        for count in [131072,131073]:
+            result = self.run_native(input=b'0\n'*count)
+            self.assertEqual(result.returncode,0 if count==131072 else 2,result.stderr)
+            self.assertEqual(result.stdout,b'0\n'*count if count==131072 else b'')
+            if count==131073:
+                self.assertIn(b'line 131073',result.stderr)
+                self.assertNotIn(b'Ramos runtime error',result.stderr)
+        for target in ['linux','windows']:
+            result = self.build(source, '--force', '--target', target)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertTrue(self.output.read_bytes().startswith(b'MZ' if target=='windows' else b'\x7fELF'))

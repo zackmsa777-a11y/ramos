@@ -1,15 +1,44 @@
-// Growable integer list with checked logical bounds and doubling capacity.
+// Integer list. Handles alias; reserved arrays detach when capacity grows.
 struct IntList { data: [int64], count: int64 }
 fn list_new() -> IntList { return IntList(array_empty(int64), 0) }
+fn list_valid(list: IntList) {
+    if list.count < 0 || list.count > array_len(list.data) {
+        stderr("Ramos library error: invalid list state\n")
+        exit(1)
+    }
+}
 fn list_len(list: IntList) -> int64 { return list.count }
-fn list_push(list: IntList, value: int64) {
-    if list.count == array_len(list.data) {
-        var capacity = array_len(list.data) * 2
-        if capacity == 0 { capacity = 4 }
+fn list_capacity(list: IntList) -> int64 { list_valid(list)
+    return array_len(list.data) }
+// Minimum capacity, never shrink: -22 for negative; -27 above 131072.
+// A rejected request leaves the list unchanged; allocation can still trap.
+fn list_reserve(list: IntList, capacity: int64) -> int64 {
+    list_valid(list)
+    if capacity < 0 { return -22 }
+    if capacity > 131072 { return -27 }
+    if capacity > array_len(list.data) {
         list.data = array_resize(list.data, capacity, 0)
     }
+    return 0
+}
+fn list_push(list: IntList, value: int64) {
+    if list.count == array_len(list.data) {
+        if list.count == 131072 {
+            stderr("Ramos library error: list capacity limit (131072)\n")
+            exit(1)
+        }
+        var capacity = array_len(list.data) * 2
+        if capacity == 0 { capacity = 4 }
+        if capacity > 131072 { capacity = 131072 }
+        list_reserve(list, capacity)
+    }
     list.data[list.count] = value
-    list.count = list.count + 1
+    list.count += 1
+}
+fn list_try_push(list: IntList, value: int64) -> int64 {
+    if list.count == 131072 { return -27 }
+    list_push(list, value)
+    return 0
 }
 fn list_get(list: IntList, index: int64) -> int64 {
     if index < 0 || index >= list.count {
@@ -28,7 +57,43 @@ fn list_set(list: IntList, index: int64, value: int64) {
 fn list_pop(list: IntList) -> int64 {
     if list.count == 0 { stderr("Ramos library error: pop from empty list\n")
         exit(1) }
-    list.count = list.count - 1
+    list.count -= 1
     return list.data[list.count]
 }
+// Clear retains capacity; release detaches storage without invalidating aliases.
 fn list_clear(list: IntList) { list.count = 0 }
+fn list_release(list: IntList) {
+    list_valid(list)
+    list.data = array_empty(int64)
+    list.count = 0
+}
+// Implementation helper: sift a max heap within [0, end).
+fn list_sort_down(list: IntList, start: int64, end: int64) {
+    var root = start
+    while root * 2 + 1 < end {
+        var child = root * 2 + 1
+        if child + 1 < end && list.data[child] < list.data[child + 1] { child += 1 }
+        if list.data[root] >= list.data[child] { return }
+        let value = list.data[root]
+        list.data[root] = list.data[child]
+        list.data[child] = value
+        root = child
+    }
+}
+// Ascending signed order, in place; O(n log n), constant extra storage, no recursion.
+fn list_sort(list: IntList) {
+    list_valid(list)
+    var start = list.count / 2
+    while start > 0 {
+        start -= 1
+        list_sort_down(list, start, list.count)
+    }
+    var end = list.count
+    while end > 1 {
+        end -= 1
+        let value = list.data[0]
+        list.data[0] = list.data[end]
+        list.data[end] = value
+        list_sort_down(list, 0, end)
+    }
+}

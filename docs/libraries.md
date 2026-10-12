@@ -92,6 +92,7 @@ operation. String conversions and byte copies produce independent storage.
 
 Lists hold integers, enforce logical bounds, and grow capacity by doubling
 starting at four. `list_pop` rejects an empty list; `list_clear` retains capacity.
+Version 0.21 adds [capacity/status/release and sorting helpers](collections.md).
 The array limit bounds capacity at 131072 elements, subject to the live heap.
 List handles alias, so changes through one alias are visible through another.
 

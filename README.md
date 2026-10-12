@@ -1,4 +1,4 @@
-# Ramos 0.20.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.21.0 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -30,6 +30,13 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.21 adds **collection capacity and release controls** in the Ramos
+standard library: reserve list/map storage, handle full collections with explicit
+statuses, clear map references, release owned arrays and sort integer lists
+without recursion or auxiliary arrays. The native `rsort` CLI sorts signed
+integers from stdin or a streamed file. See [contracts and commands](docs/collections.md).
+Existing list/map APIs remain available; live memory and array limits stay checked.
 
 Version 0.20 adds **native monotonic timing** for Linux and Windows:
 `monotonic_ms()` supports elapsed-time animation and frame deadlines without

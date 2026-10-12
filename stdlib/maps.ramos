@@ -1,14 +1,37 @@
-// String-to-string map. Lookup is linear; capacity grows by doubling.
+// String-to-string map. Lookup is linear; handles share mutable state.
 struct StringMap { keys: [string], values: [string], count: int64 }
 fn map_new() -> StringMap {
     return StringMap(array_empty(string), array_empty(string), 0)
 }
-fn map_len(map: StringMap) -> int64 { return map.count }
+fn map_valid(map: StringMap) {
+    if map.count < 0 || map.count > array_len(map.keys) || array_len(map.keys) != array_len(map.values) {
+        stderr("Ramos library error: invalid map state\n")
+        exit(1)
+    }
+}
+fn map_len(map: StringMap) -> int64 { map_valid(map)
+    return map.count }
+fn map_capacity(map: StringMap) -> int64 { map_valid(map)
+    return array_len(map.keys) }
+// Minimum capacity, never shrink: -22 for negative; -27 above 131072.
+fn map_reserve(map: StringMap, capacity: int64) -> int64 {
+    map_valid(map)
+    if capacity < 0 { return -22 }
+    if capacity > 131072 { return -27 }
+    if capacity > array_len(map.keys) {
+        let keys = array_resize(map.keys, capacity, s"")
+        let values = array_resize(map.values, capacity, s"")
+        map.keys = keys
+        map.values = values
+    }
+    return 0
+}
 fn map_index(map: StringMap, key: string) -> int64 {
+    map_valid(map)
     var i = 0
     while i < map.count {
         if map.keys[i] == key { return i }
-        i = i + 1
+        i += 1
     }
     return -1
 }
@@ -18,29 +41,53 @@ fn map_get(map: StringMap, key: string, fallback: string) -> string {
     if index < 0 { return fallback }
     return map.values[index]
 }
-fn map_set(map: StringMap, key: string, value: string) {
+fn map_try_set(map: StringMap, key: string, value: string) -> int64 {
     let index = map_index(map, key)
     if index >= 0 { map.values[index] = value
-        return }
+        return 0 }
+    if map.count == 131072 { return -27 }
     if map.count == array_len(map.keys) {
         var capacity = array_len(map.keys) * 2
         if capacity == 0 { capacity = 4 }
-        let keys = array_resize(map.keys, capacity, s"")
-        let values = array_resize(map.values, capacity, s"")
-        map.keys = keys
-        map.values = values
+        if capacity > 131072 { capacity = 131072 }
+        let status = map_reserve(map, capacity)
+        if status != 0 { return status }
     }
     map.keys[map.count] = key
     map.values[map.count] = value
-    map.count = map.count + 1
+    map.count += 1
+    return 0
+}
+fn map_set(map: StringMap, key: string, value: string) {
+    if map_try_set(map, key, value) != 0 {
+        stderr("Ramos library error: map capacity limit (131072)\n")
+        exit(1)
+    }
 }
 fn map_remove(map: StringMap, key: string) -> bool {
     let index = map_index(map, key)
     if index < 0 { return false }
-    map.count = map.count - 1
+    map.count -= 1
     map.keys[index] = map.keys[map.count]
     map.values[index] = map.values[map.count]
     map.keys[map.count] = s""
     map.values[map.count] = s""
     return true
+}
+// Drop every active string reference, retaining the two backing arrays for reuse.
+fn map_clear(map: StringMap) {
+    map_valid(map)
+    let empty = s""
+    for i in 0..map.count { map.keys[i] = empty
+        map.values[i] = empty }
+    map.count = 0
+}
+// Detach storage. Other array/string aliases stay valid until no longer reachable.
+fn map_release(map: StringMap) {
+    map_valid(map)
+    let keys = array_empty(string)
+    let values = array_empty(string)
+    map.keys = keys
+    map.values = values
+    map.count = 0
 }
