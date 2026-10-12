@@ -21,7 +21,7 @@ BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'cwd', 'env_get', 'dir_open', 'dir_next', 'dir_kind', 'dir_close', 'process_run', 'dir_create', 'run_file', 'float_from_int', 'float_to_int', 'float_to_text', 'float_sqrt', 'float_check', 'float_error', 'float_print', 'gui_choose', 'monotonic_ms']
 LINUX_GUI = ['gtk_init_check', 'gtk_window_new', 'gtk_window_set_title', 'gtk_window_set_default_size', 'gtk_layout_new', 'gtk_container_add', 'gtk_widget_show_all', 'gtk_widget_destroy', 'g_signal_connect_data', 'gtk_label_new', 'gtk_label_set_xalign', 'gtk_button_new_with_label', 'gtk_entry_new', 'gtk_entry_set_max_length', 'gtk_entry_set_text', 'gtk_text_view_new', 'gtk_text_view_get_buffer', 'gtk_text_buffer_set_text', 'gtk_scrolled_window_new', 'gtk_scrolled_window_set_policy', 'gtk_drawing_area_new', 'gtk_widget_set_size_request', 'gtk_layout_put', 'gtk_layout_move', 'gtk_label_set_text', 'gtk_button_set_label', 'gtk_entry_get_text', 'gtk_label_get_text', 'gtk_button_get_label', 'gtk_text_buffer_get_bounds', 'gtk_text_buffer_get_text', 'g_free', 'gtk_main_iteration_do', 'g_timeout_add', 'g_source_remove', 'gtk_widget_grab_focus', 'gtk_text_buffer_get_char_count', 'g_utf8_strlen', 'g_signal_stop_emission_by_name', 'cairo_set_source_rgb', 'cairo_paint', 'gtk_text_view_set_wrap_mode', 'g_get_monotonic_time', 'gtk_file_chooser_dialog_new', 'gtk_dialog_add_button', 'gtk_dialog_set_default_response', 'gtk_dialog_run', 'gtk_file_chooser_set_local_only', 'gtk_file_chooser_get_filename', 'gtk_file_chooser_set_current_name', 'gtk_file_chooser_set_filename', 'g_utf8_validate']
 
-ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print']
+ADDRESSES = ['arithmetic_error', 'call_depth_error', 'buffer_literal', 'integer', 'boolean', 'buffer_print', 'stack_budget_error']
 
 
 def run(*args):
@@ -114,7 +114,7 @@ def generated():
         'linux_gui_imports': linux_gui_imports(),
     }
     for fn, label in zip(['math_address', 'depth_address', 'literal_address', 'integer_address',
-                          'boolean_address', 'print_buffer_address'], ADDRESSES):
+                          'boolean_address', 'print_buffer_address', 'stack_address'], ADDRESSES):
         result[fn] = 4096 + sym['runtime_' + label] - sym['runtime_writer']
     # The source names the Linux exit intrinsic runtime_process_exit.
     result['builtin_address'] = [4096 + sym['runtime_' + n] - sym['runtime_writer'] for n in BUILTINS]

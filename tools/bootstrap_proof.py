@@ -50,7 +50,7 @@ def check_runtime():
         expected = 4096 + symbols['runtime_' + name] - symbols['runtime_writer']
         if value != expected:
             raise SystemExit(f'Runtime intrinsic offset mismatch: {name}')
-    for fn, const in [('math_address', 'RUNTIME_ERROR_FILE'), ('depth_address', 'RUNTIME_DEPTH_FILE'),
+    for fn, const in [('math_address', 'RUNTIME_ERROR_FILE'), ('stack_address', 'RUNTIME_STACK_FILE'), ('depth_address', 'RUNTIME_DEPTH_FILE'),
                       ('literal_address', 'RUNTIME_BUFFER_LITERAL_FILE'), ('integer_address', 'RUNTIME_INTEGER_FILE'),
                       ('boolean_address', 'RUNTIME_BOOLEAN_FILE'), ('print_buffer_address', 'RUNTIME_BUFFER_PRINT_FILE')]:
         value = int(re.search(r'fn ' + fn + r'\(\) -> int64 \{ return (\d+)', source)[1])
@@ -80,6 +80,8 @@ def main():
     report['tests_discovered_per_stage'] = unittest.TestLoader().discover(str(ROOT / 'tests')).countTestCases()
     report['bootstrap_skips_linux_only_target_selection_tests'] = 4
     sys.path.insert(0, str(ROOT / 'tests'))
+    from test_stack import StackTests
+    report['bootstrap_skips_stack_budget_tests'] = unittest.TestLoader().loadTestsFromTestCase(StackTests).countTestCases()
     from test_usability import UsabilityTests
     report['bootstrap_skips_post_0_7_grammar_tests'] = unittest.TestLoader().loadTestsFromTestCase(UsabilityTests).countTestCases()
     from test_values import ValueTests

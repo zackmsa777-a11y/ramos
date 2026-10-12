@@ -1,4 +1,4 @@
-# Ramos 0.21.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.22.0 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -410,11 +410,11 @@ checked conservatively, so even a `while true` needs a return after it for a
 value function. Unreachable statements are still type-checked. Void calls may
 be statements; value calls used as statements discard their result.
 
-Every call has its own local frame. At most 64 Ramos calls may be active,
+Every call has its own local frame. At most 1,024 Ramos calls may be active,
 including `main`; attempting the next call reports a runtime error and exits 1.
-Normal returns release the frame and restore the active-call counter. This
-check assumes an ordinary Linux process stack; it cannot compensate for an
-unusually small stack limit selected by the caller.
+Normal returns release the frame and restore the active-call counter. A second guard checks a 4 MiB stack
+budget before allocating each frame. Use an OS stack of at least 8 MiB; see
+[the full stack policy](docs/stack-budget.md).
 
 Run `make functions` for factorial, a digit classifier and a void helper.
 See [the native calling convention](docs/functions.md) for compiler details.
@@ -597,7 +597,7 @@ The self-hosted compiler accepts up to 64 regular source files totaling 1 MiB
 tokens including EOF, 4,096 total declarations including parameters and ended
 blocks and hidden range-bound slots, 256 functions and 16 parameters per function. Structs are limited to 64
 types with 16 fields each; array type nesting to 16. Expression and block
-depth remain bounded at 128; generated programs allow 64 active calls.
+depth remain bounded at 128; generated programs allow 1,024 active calls within a checked 4 MiB stack budget.
 Its output and decoded string-data arenas are each 1 MiB; labels and fixups each
 have a 40,000-entry bound. These are checked limits. The retained bootstrap has
 the older 4 MiB output and IR limits. See [compiler representation limits](compiler/README.md).

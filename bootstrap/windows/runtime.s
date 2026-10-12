@@ -90,6 +90,10 @@ runtime_arithmetic_error:
     lea rsi, [rip + math_message]
     mov edx, math_message_end - math_message
     jmp runtime_error
+runtime_stack_budget_error:
+    lea rsi, [rip + stack_message]
+    mov edx, stack_message_end - stack_message
+    jmp runtime_error
 runtime_call_depth_error:
     lea rsi, [rip + depth_message]
     mov edx, depth_message_end - depth_message
@@ -119,6 +123,8 @@ runtime_error:
     ud2
 math_message: .ascii "Ramos runtime error: arithmetic overflow or division by zero\n"
 math_message_end:
+stack_message: .ascii "Ramos runtime error: stack budget exceeded\n"
+stack_message_end:
 depth_message: .ascii "Ramos runtime error: call depth limit exceeded\n"
 depth_message_end:
 size_message: .ascii "Ramos runtime error: buffer size must be between 0 and 1048576\n"

@@ -72,6 +72,7 @@ class WindowsTests(unittest.TestCase):
         optional = nt + 24
         self.assertEqual(struct.unpack_from('<H', binary, optional)[0], 0x20b)
         self.assertEqual(struct.unpack_from('<H', binary, optional + 68)[0], 3)
+        self.assertEqual(struct.unpack_from('<Q', binary, optional + 72)[0], 8 * 1024 * 1024)
         protections = struct.unpack_from('<H', binary, optional + 70)[0]
         self.assertEqual(protections & 0x160, 0x160)  # NX, ASLR, high entropy
         start = optional + 240
@@ -195,7 +196,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.21.0', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.22.0', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -213,6 +214,7 @@ for name in (
     'test_nested_loops_target_innermost_loop', 'test_block_scope_shadowing_and_reinitialization',
     'test_control_flow_and_type_errors', 'test_shadow_initializer_and_type_restore',
     'test_control_flow_crlf_and_newline_lookahead', 'test_functions_forward_calls_and_typed_returns',
+    'test_function_call_limit_and_counter_restoration',
     'test_function_recursion_and_mutual_recursion', 'test_void_functions_early_return_and_discarded_value',
     'test_argument_evaluation_and_expression_stack_survive_calls',
     'test_functions_have_independent_frames_and_lexical_scope',
@@ -220,6 +222,14 @@ for name in (
     'test_nested_calls_in_assignment_rhs', 'test_native_arithmetic_matches_seeded_integer_cases',
 ):
     setattr(WindowsTests, name, getattr(test_ramos.RamosTests, name))
+
+
+import test_stack
+for name in dir(test_stack.StackTests):
+    if name.startswith("test_"):
+        setattr(WindowsTests, name, getattr(test_stack.StackTests, name))
+WindowsTests.stack_run = lambda self: execute(self.output)
+WindowsTests.wide_source = staticmethod(test_stack.StackTests.wide_source)
 
 
 import test_optimization

@@ -1,7 +1,7 @@
-# Ramos function semantics and ABI (0.5)
+# Ramos function semantics and ABI (current self-hosted compiler)
 
-The language supports top-level functions with explicitly typed int64/bool/bytes
-parameters, optional int64/bool/bytes/void return annotations, and inferred local
+The language supports top-level functions with explicitly typed parameters and optional
+return annotations (including current string, float64, struct and array types), and inferred local
 bindings. An omitted result annotation is void. Main must take no parameters
 and return void. No closures, overloads or foreign function interface exist.
 
@@ -50,12 +50,13 @@ source is still checked for type/scope errors.
   r13/r14 persist across all functions and runtime helpers; only the buffer
   allocator updates them. bytes results occupy one opaque eight-byte handle.
 
-The active-call limit is 64 including main. A deeper attempt writes a stderr
+The active-call limit is 1,024 including main. The self-hosted compiler also
+checks a 4 MiB stack budget before reserving each complete local frame; see
+[the stack policy and platform assumptions](stack-budget.md). A deeper attempt writes a stderr
 call-depth diagnostic and exits 1 before allocating another local frame.
 Arithmetic failures keep the existing checked behavior and exit 1. These paths
-terminate the process rather than unwinding. The limit bounds ordinary stack
-use with the existing 4096-declaration and expression-depth limits; programs
-may still fail if the caller supplies an unusually small operating-system stack.
+terminate the process rather than unwinding. Normal returns restore both the counter and frame. Use an OS stack of at least
+8 MiB; a smaller caller-selected OS stack may fail before the language guard.
 
 This ABI is internal to Ramos and does not claim System V/C interoperability.
 All code and fixups remain statically generated, within the bounded output arena.

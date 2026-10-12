@@ -430,10 +430,13 @@ class RamosTests(unittest.TestCase):
     def test_function_call_limit_and_counter_restoration(self):
         prefix = 'fn recurse(n: int64) -> int64 {\n'
         prefix += 'if n == 0 { return 0 } else { return recurse(n - 1) }\n}\n'
-        self.assert_runs(prefix + 'fn main() {\nvar i = 0\nwhile i < 10000 {\n'
-                         'recurse(62)\ni = i + 1\n}\nprint(i)\n}', b'10000\n')
+        bootstrap = (os.name != 'nt' and not os.environ.get('RAMOS_WINDOWS_COMPILER')
+                     and b'native assembly bootstrap' in subprocess.check_output([str(COMPILER), '--version']))
+        depth = 62 if bootstrap else 1022
+        self.assert_runs(prefix + f'fn main() {{\nvar i = 0\nwhile i < 100 {{\n'
+                         f'recurse({depth})\ni = i + 1\n}}\nprint(i)\n}}', b'100\n')
         self.output.unlink()
-        result = self.build(prefix + 'fn main() { print(recurse(63)) }')
+        result = self.build(prefix + f'fn main() {{ print(recurse({depth + 1})) }}')
         self.assertEqual(result.returncode, 0, result.stderr)
         result = subprocess.run([str(self.output)], capture_output=True, timeout=5)
         self.assertEqual(result.returncode, 1)
