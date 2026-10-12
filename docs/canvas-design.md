@@ -1,4 +1,4 @@
-# Portable canvas design (in progress; not released)
+# Portable canvas implementation design
 
 Implement native canvas controls and an ordinary Ramos drawing-command library.
 No new language syntax. `weave "stdlib/draw.ramos"` supplies a reusable `Canvas`
@@ -10,12 +10,12 @@ stretch coordinates or recompute app geometry. Apps may redraw on resize events.
 
 Library/native contracts:
 
-- At most1,024 ordered commands in a reusable49,160-byte buffer.
-- Signed coordinates -8192..8192; rectangle dimensions1..8192; circle radius
+- At most 1,024 ordered commands in a reusable 49,160-byte buffer.
+- Signed coordinates -8192..8192; rectangle dimensions 1..8192; circle radius
   1..8192; opaque `gui_rgb` colors. Native code revalidates all packet fields.
 - Negative coordinates and shapes extending beyond the canvas are clipped.
-- Malformed packets, unsupported operations/invalid dimensions return-22;
-  absent/wrong control IDs return-9. A rejected present retains the prior frame.
+- Malformed packets, unsupported operations/invalid dimensions return -22;
+  absent/wrong control IDs return -9. A rejected present retains the prior frame.
 - A private active-prefix copy prevents later buffer mutation or reset from
   changing the displayed scene. It remains a managed root while the control
   exists; replacing/closing permits normal reclamation. Allocation failures
@@ -28,10 +28,10 @@ Library/native contracts:
 - Use the existing coordinate policy for this first slice: GTK coordinates are
   logical widget units; Windows remains in its default DPI-virtualized units.
   Do not claim per-monitor DPI support. Explicit DPI events/control policy is
-  the next slice. Verify GTK scaling withGDK_SCALE2 as well as its default.
+  the next slice. Verify GTK scaling with GDK_SCALE=2 as well as its default.
 
-Native boundary: extend `_gui_control` operations8(create canvas) and9(present).
-The packet payload is count followed by six signed64-bit words per command:
+Native boundary: extend `_gui_control` operations 8 (create canvas) and 9 (present).
+The packet payload is count followed by six signed 64-bit words per command:
 operation, x, y, width-or-x2, height-or-y2, color. Circle uses third coordinate
 as radius and a reserved zero fourth coordinate; clear uses all-zero geometry.
 Public library helpers own this encoding; application code should not edit it.

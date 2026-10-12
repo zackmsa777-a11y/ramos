@@ -123,8 +123,8 @@ There are no arbitrary callbacks into Ramos or exposed native handles.
 
 Text inputs consume normal editing keys themselves; kind 4 is not a global
 keyboard hook. Native controls handle mouse input and activation; raw pointer
-motion, canvas drawing, images, menus and multiple windows are not
-part of this first API. Colored panels provide basic rectangular drawing.
+motion, images, menus and multiple windows are not
+part of this first API. Colored panels provide basic rectangular drawing. The 0.23 [drawing library](canvas.md) adds native canvas shapes and pixels.
 Resize events include the initial layout; Windows also reports minimization as zero dimensions.
 Control layout is explicit; there is no automatic layout manager or DPI scaling.
 Apps should handle small dimensions without requesting zero-sized controls.
