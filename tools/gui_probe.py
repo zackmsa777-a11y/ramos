@@ -87,8 +87,9 @@ def main():
         if path is not None:
             # Explorer-style common dialogs expose the filename edit as edt1,
             # or as the edit child of cmb13 (ComboBoxEx32 on newer Windows).
-            edit = user.GetDlgItem(dialog, 1152)
-            if not edit:
+            def filename_edit():
+                edit = user.GetDlgItem(dialog, 1152)
+                if edit: return edit
                 combo = user.GetDlgItem(dialog, 1148)
                 children = []
                 @C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
@@ -98,8 +99,8 @@ def main():
                     if name.value == 'Edit': children.append(window)
                     return True
                 if combo: user.EnumChildWindows(combo, child, 0)
-                assert children, 'filename edit missing'
-                edit = children[0]
+                return children[0] if children else None
+            edit = wait(filename_edit, 'filename edit ready')
             assert set_text(edit, str(path))
         assert user.PostMessageW(dialog, 0x111, 2 if path is None else 1, 0)
         wait(lambda: not user.IsWindow(dialog), 'dismissed file dialog')
