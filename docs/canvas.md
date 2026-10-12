@@ -66,8 +66,8 @@ snapshot. Reusing/resetting the caller's buffer, editing its bytes or collecting
 garbage does not change the published scene. Replacing a frame or closing the
 window releases that snapshot's root for normal managed reclamation. Painting
 uses no Ramos allocation or application callback. GDI stock objects are borrowed
-and the device context is restored; Cairo/GDI drawing failures use the event
-error channel. Out-of-memory still follows the checked managed-heap trap.
+and the device context is restored; Cairo/GDI drawing failures use status -5 in the event
+error channel (queue overflow retains -75). Out-of-memory still follows the checked managed-heap trap.
 
 Public `Canvas` handles alias like other structs. Sharing the handle shares its
 recorded commands. Native display snapshots are independent. Applications should

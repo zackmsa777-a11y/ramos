@@ -636,7 +636,7 @@ runtime_gui_enqueue:
 runtime_gui_enqueue_done:
     ret
 runtime_gui_enqueue_overflow:
-    mov QWORD PTR [rbx + 40], 1
+    mov QWORD PTR [rbx + 40], -75
     ret
 # Win64 callback, preserving every nonvolatile register. Application-defined
 # events are queued; DefWindowProc owns painting/focus/native control behavior.
@@ -866,8 +866,8 @@ runtime_gui_poll_success:
     mov rax, [rbp + 8]
     jmp runtime_gui_poll_done
 runtime_gui_poll_overflow:
+    mov rax, [rbx + 40]
     mov QWORD PTR [rbx + 40], 0
-    mov rax, -75
     jmp runtime_gui_poll_error
 runtime_gui_poll_os_error:
     call runtime_errno

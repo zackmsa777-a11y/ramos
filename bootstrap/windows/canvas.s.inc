@@ -147,7 +147,7 @@ runtime_gui_canvas_check:
     dec r14
     jmp runtime_gui_canvas_next
 runtime_gui_canvas_error:
-    mov QWORD PTR [rbx + 40], 1
+    mov QWORD PTR [rbx + 40], -5
 runtime_gui_canvas_restore:
     mov rcx, [rbp + 8]
     mov edx, [rbp + 16]
@@ -155,7 +155,7 @@ runtime_gui_canvas_restore:
     test eax, eax
     jnz runtime_gui_canvas_done
 runtime_gui_canvas_error_no_restore:
-    mov QWORD PTR [rbx + 40], 1
+    mov QWORD PTR [rbx + 40], -5
 runtime_gui_canvas_done:
     add rsp, 48
     pop r14

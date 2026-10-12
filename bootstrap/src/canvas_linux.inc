@@ -94,7 +94,7 @@ runtime_lg_canvas_done:
     jz runtime_lg_canvas_return
     mov rax, [rbp + 16]
     mov rax, [rax + 32]
-    mov QWORD PTR [rax + 32], 1
+    mov QWORD PTR [rax + 32], -5
 runtime_lg_canvas_return:
     xor eax, eax
     add rsp, 32

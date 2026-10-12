@@ -891,8 +891,8 @@ runtime_lg_poll_success:
     mov [r15 + 8], rax
     jmp runtime_lg_poll_remove
 runtime_lg_poll_overflow:
+    mov rax, [rbx + 32]
     mov QWORD PTR [rbx + 32], 0
-    mov rax, -75
     jmp runtime_lg_poll_error
 runtime_lg_poll_invalid:
     mov rax, -22
