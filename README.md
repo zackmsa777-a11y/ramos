@@ -1,4 +1,4 @@
-# Ramos 0.22.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.23.0 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -30,6 +30,16 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.23 adds a **native drawing library**: reusable canvas commands for
+lines, rectangles, circles and pixels on Linux and Windows. Displayed frames
+remain stable when the app resets its buffer or garbage collection runs.
+The [interactive plot](examples/plot.ramos) changes curves with a button and
+redraws on resize. See [drawing contracts](docs/canvas.md).
+Validation passes **293 Linux tests and 234 native Windows tests**, with both
+compiler fixed points, native displayed pixels, snapshot/GC/resource checks,
+and GTK at 1× and 2× scale. See [verification](docs/canvas-verification.json).
+Per-monitor DPI policy remains future work. No new graphics-speed claim.
 
 Version 0.22 adds **checked deeper recursion**: up to 1,024 active calls,
 with a separate 4 MiB stack budget checked before each local frame allocation.
@@ -618,7 +628,7 @@ The compiler is self-hosted; namespaces, more library types, wrapping arithmetic
 broader optimization and additional targets remain future work. Performance claims need
 new repeatable measurements. The runtime provides checked arithmetic and bounded
 buffers, but generated programs execute with the caller's operating-system
-permissions. General canvas graphics, file dialogs, automatic layout/DPI policy, games and
+permissions. Images, menus, multiple windows, automatic layout/DPI policy, games and
 browser support need further work. Linux GUI is verified on X11; Wayland is not yet verified.
 
 ## Benchmarks

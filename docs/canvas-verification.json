@@ -1,0 +1,90 @@
+{
+  "version": "0.23.0",
+  "compiler_source_sha256": "4c76d883f8fc9bb24ec8ee611b1391e45b480d535e91ba7a5ff7076f0c97da8e",
+  "code_commit": "0b0caaa2f20c61faac50481d7edeefa8bf248086",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38290557729",
+  "native_linux": {
+    "discovered": 301,
+    "passed": 293,
+    "skipped": 8,
+    "fixed_point": true,
+    "empty_path_rebuild": true,
+    "sha256": "42ccaa638cd3815f31e1447b3c1d70c32351dfeccfdace9a9cba7eb71e8d87f7",
+    "drawing_scales": [
+      1,
+      2
+    ]
+  },
+  "native_windows": {
+    "discovered": 235,
+    "passed": 234,
+    "skipped": 1,
+    "fixed_point": true,
+    "sha256": "d013e13370443f46bfd3d9ecde490374327ebcad972970685b190849dac0b4d5"
+  },
+  "clean_installation": {
+    "linux": {
+      "version": "Ramos 0.23.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "linux-x64",
+      "compiler_sha256": "42ccaa638cd3815f31e1447b3c1d70c32351dfeccfdace9a9cba7eb71e8d87f7",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    },
+    "windows": {
+      "version": "Ramos 0.23.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "windows-x64",
+      "compiler_sha256": "d013e13370443f46bfd3d9ecde490374327ebcad972970685b190849dac0b4d5",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    }
+  },
+  "focused_cases": [
+    "signed packet encoding, alias reset, exact 1024-command boundary",
+    "library and native raw-packet rejection preserving previous frame",
+    "actual native rectangle/disk interiors, box/line/circle strokes and single pixel",
+    "negative clipping, retained snapshot after source mutation and GC, resize reveal",
+    "frame replacement, empty white scene, 400 maximum-size snapshots and heap recovery",
+    "20 window lifecycles, native GDI object stability, close cleanup",
+    "interactive plot button, resize reflow and clean close on both native desktops",
+    "existing Notes text controls, dialogs, GC and process cleanup"
+  ],
+  "book_sample": {
+    "both_targets_compile": true,
+    "native_linux_pixels_and_close": true
+  },
+  "limits": {
+    "commands_per_canvas": 1024,
+    "buffer_bytes": 49160,
+    "coordinates": [
+      -8192,
+      8192
+    ],
+    "positive_extent_or_radius": [
+      1,
+      8192
+    ]
+  },
+  "painting_errors": {
+    "native_paint_failure": -5,
+    "event_queue_overflow": -75
+  },
+  "scaling": "GTK logical units verified with GDK_SCALE=1 and 2; Windows default DPI virtualization. Explicit per-monitor DPI is not implemented or claimed.",
+  "performance": "No new general execution index or graphics speed claim. The 0.22 measurements remain historical.",
+  "remaining": [
+    "per-monitor DPI policy/events",
+    "16 MiB live-heap workload review",
+    "broader libraries, benchmark categories and stable 1.0 compatibility review"
+  ]
+}
