@@ -103,6 +103,21 @@ class LinuxCanvasTests(unittest.TestCase):
                 self.assertEqual(proc.returncode,0,err)
                 self.assertEqual(out.decode(),EXPECTED)
 
+    def test_interactive_plot_changes_curve_resizes_and_closes(self):
+        self.standard_library()
+        code=(support.ROOT/'examples/plot.ramos').read_text().replace('../stdlib/','stdlib/')
+        self.gui_build(code)
+        proc=self.launch(); w=self.desktop.window('Ramos Plot',proc)
+        blue=lambda x,y: ((self.desktop.pixel(w,x,y)&255) - (self.desktop.pixel(w,x,y)>>16)) > 50
+        wait(lambda:any(blue(320,y) for y in range(330,336)),'parabola')
+        self.desktop.click(w,50,25)
+        wait(lambda:any(blue(320,y) for y in range(243,248)),'line after button')
+        self.desktop.resize(w,800,600)
+        wait(lambda:any(blue(400,y) for y in range(323,328)),'reflow after resize')
+        self.desktop.request_close(w)
+        out,err=proc.communicate(timeout=5)
+        self.assertEqual((proc.returncode,out),(0,b''),err)
+
 @unittest.skipIf(BOOTSTRAP or os.name != 'nt','requires native Windows desktop')
 class WindowsCanvasTests(unittest.TestCase):
     setUp = support.RamosTests.setUp
@@ -121,3 +136,14 @@ class WindowsCanvasTests(unittest.TestCase):
         evidence=json.loads(report.read_text())
         self.assertEqual(evidence['stdout'],EXPECTED,evidence)
         self.assertTrue(evidence['closed'] and evidence['gc_stress'],evidence)
+
+    def test_interactive_plot_changes_curve_resizes_and_closes(self):
+        self.standard_library()
+        code=(support.ROOT/'examples/plot.ramos').read_text().replace('../stdlib/','stdlib/')
+        result=self.build(code,'--gui','--force')
+        self.assertEqual(result.returncode,0,result.stderr)
+        report=self.directory/'plot.json'
+        result=subprocess.run([sys.executable,self.native_path(support.ROOT/'tools/canvas_probe.py'),
+                               self.native_path(self.output),self.native_path(report),'plot'],capture_output=True,timeout=90)
+        self.assertEqual(result.returncode,0,(result.stdout,result.stderr,report.read_text() if report.exists() else 'no report'))
+        self.assertTrue(json.loads(report.read_text())['closed'])

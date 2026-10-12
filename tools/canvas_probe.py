@@ -10,7 +10,8 @@ import time
 
 
 def main():
-    binary, report = sys.argv[1:]
+    binary, report = sys.argv[1:3]
+    plot = len(sys.argv)>3 and sys.argv[3]=="plot"
     user=C.WinDLL('user32',use_last_error=True)
     gdi=C.WinDLL('gdi32',use_last_error=True)
     kernel=C.WinDLL('kernel32',use_last_error=True)
@@ -23,6 +24,7 @@ def main():
         ('GetDlgItem',W.HWND,[W.HWND,C.c_int]),
         ('PostMessageW',W.BOOL,[W.HWND,W.UINT,W.WPARAM,W.LPARAM]),
         ('GetDC',W.HDC,[W.HWND]),
+        ('GetClientRect',W.BOOL,[W.HWND,C.POINTER(W.RECT)]),
         ('ReleaseDC',C.c_int,[W.HWND,W.HDC]),
         ('SetWindowPos',W.BOOL,[W.HWND,W.HWND,C.c_int,C.c_int,C.c_int,C.c_int,W.UINT]),
         ('GetGuiResources',W.DWORD,[W.HANDLE,W.DWORD]),
@@ -50,7 +52,7 @@ def main():
         def cb(hwnd,unused):
             pid=W.DWORD();user.GetWindowThreadProcessId(hwnd,C.byref(pid))
             caption=C.create_unicode_buffer(256);user.GetWindowTextW(hwnd,caption,256)
-            if pid.value==proc.pid and user.IsWindowVisible(hwnd) and caption.value=='Ramos Canvas test':found.append(hwnd)
+            if pid.value==proc.pid and user.IsWindowVisible(hwnd) and caption.value==('Ramos Plot' if plot else 'Ramos Canvas test'):found.append(hwnd)
             return True
         user.EnumWindows(cb,0)
         return found[0] if found else None
@@ -66,6 +68,24 @@ def main():
         hwnd=wait(find,'canvas window')
         status=wait(lambda:user.GetDlgItem(hwnd,3),'status label')
         canvas=wait(lambda:user.GetDlgItem(hwnd,1),'canvas control')
+        if plot:
+            def blue(x,y):
+                color=pixel(canvas,x,y)
+                return (color>>16)-(color&255)>50
+            wait(lambda:any(blue(320,y) for y in range(280,286)),'initial parabola')
+            click(2)
+            wait(lambda:any(blue(320,y) for y in range(193,198)),'button changes curve')
+            assert user.SetWindowPos(hwnd,None,0,0,830,640,0x16)
+            bounds=W.RECT()
+            assert user.GetClientRect(hwnd,C.byref(bounds))
+            x=bounds.right//2; y=20+(bounds.bottom-90)//2
+            wait(lambda:any(blue(x,row) for row in range(y-2,y+3)),'resize reflows plot')
+            assert user.PostMessageW(hwnd,0x10,0,0)
+            out,err=proc.communicate(timeout=5)
+            assert proc.returncode==0 and out==b'',(proc.returncode,out,err)
+            assert not user.IsWindow(hwnd)
+            result.update(closed=True,curve_button=True,resize=True)
+            return
         wait(lambda:text(status)=='Ready','validation and GC before paint')
         wait(lambda:pixel(canvas,15,20)==0x0000ff,'red snapshot')
         assert pixel(canvas,90,30)==0xff0000,'blue disk'
