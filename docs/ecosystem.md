@@ -71,3 +71,18 @@ is a larger example based on Rust nmatrix. Ramos 0.20 supplies its native clock;
 the port uses changed-cell rendering and deadline pacing. See its documented
 platform limits and the separately published application measurements. Other
 application repositories keep their own reviewed compiler pins.
+
+## Current application checks (0.22)
+
+The book, examples and calculator target the 0.22 release. The calculator
+supports 64 recursive expression levels; its 471 numerical/error/REPL checks
+and native GUI interactions pass on Linux and Windows. The examples build 44
+target variants, execute 15 CLI acceptance checks and retain the rmatrix
+reference frames and Linux interaction checks. Interactive Windows rmatrix
+controls remain unverified; its renderer and CLI checks pass natively.
+
+[Calculator CI](https://github.com/zackmsa777-a11y/ramos-calculator/actions/runs/38287441380)
+and [examples CI](https://github.com/zackmsa777-a11y/ramos-examples/actions/runs/38287439688)
+record the native application evidence. The benchmark repository retains its
+0.20 default for historical terminal reproduction and separately checks and
+[measures 0.22](https://github.com/zackmsa777-a11y/ramos-benchmarks/blob/main/benchmarks/0.22.0/report.md).

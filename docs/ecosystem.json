@@ -2,8 +2,8 @@
   "schema_version": 1,
   "topic": "ramos",
   "owner": "zackmsa777-a11y",
-  "compiler_version": "0.21.0",
-  "compiler_source_commit": "0091e4ec850ea97eda36982a570b13a0f23dea3e",
+  "compiler_version": "0.22.0",
+  "compiler_source_commit": "c01b06eaae2df2b6879f87c911fbebbc7a140237",
   "book_url": "https://zackmsa777-a11y.github.io/ramos-docs/",
   "repositories": [
     {
