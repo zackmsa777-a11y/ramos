@@ -86,8 +86,8 @@ def main():
         assert user.PostMessageW(control(button), 0xf5, 0, 0)
         dialog = wait(lambda: find_window(title), 'file dialog ' + title)
         if path is not None:
-            # Explorer-style common dialogs expose the filename edit as edt1,
-            # or as the edit child of cmb13 (ComboBoxEx32 on newer Windows).
+            # Classic dialogs use edt1/cmb13. Current Windows Save dialogs
+            # use edit 1001 inside a ComboBox; exclude the address-bar edit.
             def filename_edit():
                 children = []
                 fields = []
@@ -99,7 +99,10 @@ def main():
                     parent = user.GetParent(window)
                     parent_id = user.GetDlgCtrlID(parent) if parent else 0
                     fields.append([number, name.value, parent_id])
-                    if name.value == 'Edit' and (number in (1152,1148) or parent_id == 1148):
+                    parent_name = C.create_unicode_buffer(64)
+                    if parent: user.GetClassNameW(parent, parent_name, len(parent_name))
+                    if name.value == 'Edit' and (number in (1152,1148) or parent_id == 1148
+                                                or (number == 1001 and parent_name.value == 'ComboBox')):
                         children.append(window)
                     return True
                 # Windows can nest the filename control inside a dialog child;
