@@ -2,8 +2,8 @@
   "schema_version": 1,
   "topic": "ramos",
   "owner": "zackmsa777-a11y",
-  "compiler_version": "0.19.1",
-  "compiler_source_commit": "6c263c5023bc8a71c036d9b8151b82dc558adfde",
+  "compiler_version": "0.20.0",
+  "compiler_source_commit": "039d8eb944d96419b0e6805ab957f80af0ef0aee",
   "book_url": "https://zackmsa777-a11y.github.io/ramos-docs/",
   "repositories": [
     {
@@ -22,7 +22,7 @@
       "name": "ramos-examples",
       "role": "examples",
       "url": "https://github.com/zackmsa777-a11y/ramos-examples",
-      "purpose": "Small runnable programs and portable application patterns"
+      "purpose": "Runnable examples, rmatrix terminal animations and portable application patterns"
     },
     {
       "name": "ramos-calculator",
