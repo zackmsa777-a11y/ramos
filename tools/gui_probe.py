@@ -111,7 +111,16 @@ def main():
                 result['last_dialog_controls'] = fields
                 return children[0] if children else None
             edit = wait(filename_edit, 'filename edit ready')
-            assert set_text(edit, str(path))
+            result['filename_before'] = text(edit)
+            # WM_SETTEXT updates modern Save's edit display without necessarily
+            # sending CBN_EDITCHANGE to its model. Enter actual UTF-16 edit input.
+            user.SendMessageW(dialog, 0x28, edit, 1)
+            user.SendMessageW(edit, 0xb1, 0, -1)
+            encoded = str(path).encode('utf-16-le')
+            for at in range(0, len(encoded), 2):
+                user.SendMessageW(edit, 0x102, int.from_bytes(encoded[at:at+2], 'little'), 0)
+            result['filename_after'] = text(edit)
+            assert text(edit) == str(path), result
         assert user.PostMessageW(dialog, 0x111, 2 if path is None else 1, 0)
         wait(lambda: not user.IsWindow(dialog), 'dismissed file dialog')
 
