@@ -196,7 +196,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.24.0', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.25.0', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 

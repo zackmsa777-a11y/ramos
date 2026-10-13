@@ -3,6 +3,7 @@
 import ctypes as C
 from ctypes import wintypes as W
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -138,16 +139,21 @@ def main():
             entry, editor, status = [control(i) for i in (3, 4, 7)]
             choose(8, 'Open a note', source)
             wait(lambda: text(editor) == 'First\r\nمرحبا 🌍', 'opened Unicode file')
-            # Ramos sets the editor and path in separate native operations.
-            wait(lambda: text(entry) == str(source), 'opened Unicode path')
+            # Windows dialogs expand 8.3 aliases (e.g. RUNNER~1). Verify
+            # filesystem identity, then preserve the returned display spelling.
+            def opened_source():
+                try: return os.path.samefile(text(entry), source)
+                except OSError: return False
+            wait(opened_source, 'opened Unicode path')
+            opened_path = text(entry)
             result['unicode_open'] = True
             choose(9, 'Save a new note')
             wait(lambda: text(status) == 'Save As cancelled', 'cancelled Save As')
-            assert text(entry) == str(source) and text(editor) == 'First\r\nمرحبا 🌍'
+            assert text(entry) == opened_path and text(editor) == 'First\r\nمرحبا 🌍'
             result['cancel_preserves_note'] = True
             choose(8, 'Open a note', invalid)
             wait(lambda: text(status).startswith('Not opened'), 'invalid text rejected')
-            assert text(entry) == str(source) and text(editor) == 'First\r\nمرحبا 🌍'
+            assert text(entry) == opened_path and text(editor) == 'First\r\nمرحبا 🌍'
             result['invalid_open_preserves_note'] = True
             choose(9, 'Save a new note', destination)
             wait(lambda: destination.exists() and text(status) == 'Saved', 'Save As Unicode path')
