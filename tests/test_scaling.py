@@ -90,6 +90,14 @@ class LinuxScalingTests(unittest.TestCase):
         self.assertEqual(output.line(),'true')
         self.assertEqual(proc.wait(timeout=5),0,proc.stderr.read())
         self.assertEqual(proc.stderr.read(),b'')
+        report = {'genuine_gtk_scale_sequence':[96,192,96],
+                  'native_panel_canvas_pixels':True,'retained_geometry_alias_safe':True,
+                  'churn_steps':200,'churn_bytes':200*1048576,
+                  'managed_live_limit_checked':262144,
+                  'resources_warm':{'file_descriptors':baseline[0],'rss_bytes':baseline[1]},
+                  'resources_after':{'file_descriptors':after[0],'rss_bytes':after[1]},
+                  'closed':True,'scope':'Bounded native GTK churn; no Windows or hours-long soak claim.'}
+        (support.ROOT/'build/linux-scaling-proof.json').write_text(json.dumps(report,indent=2)+'\n')
 
 @unittest.skipIf(BOOTSTRAP or os.name!='nt','requires native Windows display')
 class WindowsScalingTests(unittest.TestCase):

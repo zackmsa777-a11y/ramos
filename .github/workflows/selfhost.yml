@@ -22,6 +22,7 @@ jobs:
             build/ramos.exe
             build/bootstrap-proof.json
             build/linux-package-proof.json
+            build/linux-scaling-proof.json
   windows:
     needs: bootstrap
     runs-on: windows-latest
