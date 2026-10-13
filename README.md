@@ -1,4 +1,4 @@
-# Ramos 0.25.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.25.0 preview — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile

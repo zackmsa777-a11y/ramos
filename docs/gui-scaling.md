@@ -1,6 +1,7 @@
-# Explicit GUI scaling — implementation contract
+# Explicit GUI scaling — 0.25 preview
 
-This milestone adds an opt-in scaling API. `gui_open` keeps its existing policy:
+This preview adds an opt-in scaling API. Genuine Windows display-transition
+acceptance remains pending a native adjustable-display report. `gui_open` keeps its existing policy:
 GTK logical units on Linux, default DPI virtualization on Windows. No existing
 program is silently opted into per-monitor Windows awareness.
 
