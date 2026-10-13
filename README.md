@@ -1,4 +1,4 @@
-# Ramos 0.23.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.24.0 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -30,6 +30,13 @@ make                         # build the self-hosted compiler as ./ramos
 make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
+
+Version 0.24 adds **exact scientific and compact numerical output** in the Ramos
+math library. `math_scientific(value, places)` selects fractional mantissa digits;
+`math_format(value, digits)` selects significant digits and preserves tiny values.
+Seventeen significant digits round-trip finite binary64 values, including signed
+zero. Fixed-decimal `math_text` and `print` keep their existing behavior.
+See [output contracts](docs/math-output.md). No new syntax or speed claim.
 
 Version 0.23 adds a **native drawing library**: reusable canvas commands for
 lines, rectangles, circles and pixels on Linux and Windows. Displayed frames

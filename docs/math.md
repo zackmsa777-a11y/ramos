@@ -105,6 +105,10 @@ Weave `stdlib/math.ramos`. Its helpers use ordinary Ramos code:
 - `math_clamp(value, low, high)` rejects reversed bounds with a library error/exit 1.
 - `math_sqrt(value)` wraps the checked intrinsic.
 - `math_text(value, places)` returns an immutable string with fixed decimal digits.
+- `math_scientific(value, places)` returns scientific notation with 0..18 fractional mantissa digits.
+- `math_format(value, digits)` returns compact notation with 1..17 significant digits.
+  Seventeen digits round-trip finite binary64 values, including signed zero.
+  See [exact numerical output](math-output.md) for rounding and notation rules.
 
 All numerical arguments above are float64; formatting precision is int64.
 There are thirteen bundled libraries in 0.18.

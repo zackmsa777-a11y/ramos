@@ -196,7 +196,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.23.0', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.24.0', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -319,6 +319,11 @@ import test_math_input
 for name in dir(test_math_input.MathInputTests):
     if name.startswith('test_'):
         setattr(WindowsTests, name, getattr(test_math_input.MathInputTests, name))
+
+import test_math_output
+for name in dir(test_math_output.MathOutputTests):
+    if name.startswith('test_'):
+        setattr(WindowsTests, name, getattr(test_math_output.MathOutputTests, name))
 
 import test_tui
 for name in dir(test_tui.TUITests):

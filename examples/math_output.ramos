@@ -1,0 +1,10 @@
+weave "../stdlib/math.ramos"
+fn main() {
+    print(math_scientific(1e-100, 5))
+    print(math_format(1e-100, 17))
+    print(math_format(3.5, 17))
+    print(math_scientific(2.5, 0))
+    print(math_scientific(3.5, 0))
+    print(math_format(9999.5, 4))
+    print(math_format(5e-324, 17))
+}

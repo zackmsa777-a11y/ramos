@@ -218,3 +218,158 @@ fn math_parse_bytes(text: bytes) -> FloatResult {
     return FloatResult(result, 0)
 }
 fn math_parse(text: string) -> FloatResult { return math_parse_bytes(to_bytes(text)) }
+
+// Exact decimal output uses the same bounded base-65536 work as decimal input.
+fn math_decimal_div10(value: MathMagnitude) -> int64 {
+    var carry = 0
+    var i = value.count
+    while i > 0 {
+        i -= 1
+        let part = carry * 65536 + value.limbs[i]
+        value.limbs[i] = part / 10
+        carry = part % 10
+    }
+    math_decimal_trim(value)
+    return carry
+}
+// retained is checked by the public wrappers before reaching this helper.
+fn math_decimal_output(value: float64, retained: int64, compact: bool) -> string {
+    if value == 0.0 {
+        if compact { return string(float_to_text(value, 0)) }
+        return math_text(value, retained - 1) + s"e+0"
+    }
+    let negative = value < 0.0
+    var normalized = math_abs(value)
+    var power = 0
+    // Powers of two preserve the exact binary significand, including subnormals.
+    while normalized >= 2.0 { normalized = normalized / 2.0
+        power += 1 }
+    while normalized < 1.0 { normalized = normalized * 2.0
+        power -= 1 }
+    var significand = float_to_int(normalized * 4503599627370496.0)
+    let coefficient = math_decimal_new(0)
+    coefficient.count = 0
+    while significand > 0 {
+        coefficient.limbs[coefficient.count] = significand % 65536
+        coefficient.count += 1
+        significand = significand / 65536
+    }
+    power -= 52
+    var scale = 0
+    if power >= 0 { math_decimal_shift(coefficient, power) }
+    else { scale = -power
+        for i in 0..scale { math_decimal_mul(coefficient, 5, 0) } }
+    // Every finite binary64 exact coefficient fits within 900 decimal digits.
+    let reverse = buffer(900)
+    var count = 0
+    while coefficient.count != 1 || coefficient.limbs[0] != 0 {
+        buffer_set(reverse, count, math_decimal_div10(coefficient) + 48)
+        count += 1
+    }
+    var exponent = count - scale - 1
+    let kept = buffer(retained)
+    for i in 0..retained {
+        var digit = 48
+        if i < count { digit = buffer_get(reverse, count - i - 1) }
+        buffer_set(kept, i, digit)
+    }
+    if count > retained {
+        let discarded = count - retained
+        let first = buffer_get(reverse, discarded - 1)
+        var sticky = false
+        for i in 0..discarded - 1 {
+            if buffer_get(reverse, i) != 48 { sticky = true }
+        }
+        if first > 53 || (first == 53 && (sticky || buffer_get(kept, retained - 1) % 2 == 1)) {
+            var i = retained
+            var carry = true
+            while i > 0 && carry {
+                i -= 1
+                let digit = buffer_get(kept, i)
+                if digit == 57 { buffer_set(kept, i, 48) }
+                else { buffer_set(kept, i, digit + 1)
+                    carry = false }
+            }
+            if carry { buffer_set(kept, 0, 49)
+                exponent += 1 }
+        }
+    }
+    var digits = retained
+    if compact {
+        while digits > 1 && buffer_get(kept, digits - 1) == 48 { digits -= 1 }
+    }
+    var scientific = true
+    if compact { scientific = exponent < -4 || exponent >= retained }
+    var prefix = 0
+    if negative { prefix = 1 }
+    var total = prefix
+    var exponent_text = ""
+    if scientific {
+        exponent_text = int_to_text(exponent)
+        total += digits + 1 + buffer_len(exponent_text)
+        if digits > 1 { total += 1 }
+        if exponent >= 0 { total += 1 }
+    } else if exponent >= 0 {
+        total += exponent + 1
+        if digits > exponent + 1 { total += digits - exponent }
+    } else { total += 2 + (-exponent - 1) + digits }
+    let out = buffer(total)
+    var at = 0
+    if negative { buffer_set(out, at, 45)
+        at += 1 }
+    if scientific {
+        buffer_set(out, at, buffer_get(kept, 0))
+        at += 1
+        if digits > 1 { buffer_set(out, at, 46)
+            at += 1 }
+        for i in 1..digits { buffer_set(out, at, buffer_get(kept, i))
+            at += 1 }
+        buffer_set(out, at, 101)
+        at += 1
+        if exponent >= 0 { buffer_set(out, at, 43)
+            at += 1 }
+        for i in 0..buffer_len(exponent_text) {
+            buffer_set(out, at, buffer_get(exponent_text, i))
+            at += 1
+        }
+    } else if exponent >= 0 {
+        for i in 0..exponent + 1 {
+            var digit = 48
+            if i < digits { digit = buffer_get(kept, i) }
+            buffer_set(out, at, digit)
+            at += 1
+        }
+        if digits > exponent + 1 {
+            buffer_set(out, at, 46)
+            at += 1
+            for i in exponent + 1..digits { buffer_set(out, at, buffer_get(kept, i))
+                at += 1 }
+        }
+    } else {
+        buffer_set(out, at, 48)
+        buffer_set(out, at + 1, 46)
+        at += 2
+        for i in 0..-exponent - 1 { buffer_set(out, at, 48)
+            at += 1 }
+        for i in 0..digits { buffer_set(out, at, buffer_get(kept, i))
+            at += 1 }
+    }
+    return string(out)
+}
+// One leading digit, exactly places fractional digits, and an explicit exponent.
+fn math_scientific(value: float64, places: int64) -> string {
+    if places < 0 || places > 18 {
+        stderr("Ramos library error: scientific places must be 0..18\n")
+        exit(1)
+    }
+    return math_decimal_output(value, places + 1, false)
+}
+// Significant digits, trimmed zeros; plain notation for -4 <= exponent < digits.
+// Seventeen digits round-trip finite binary64 values; this is not shortest output.
+fn math_format(value: float64, digits: int64) -> string {
+    if digits < 1 || digits > 17 {
+        stderr("Ramos library error: significant digits must be 1..17\n")
+        exit(1)
+    }
+    return math_decimal_output(value, digits, true)
+}
