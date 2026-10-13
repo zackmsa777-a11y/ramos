@@ -1,18 +1,18 @@
 {
-  "version": "0.23.0",
+  "version": "0.24.0",
   "target": "x86_64-linux",
   "compiler_source": "compiler/ramos.ramos",
-  "source_sha256": "4c76d883f8fc9bb24ec8ee611b1391e45b480d535e91ba7a5ff7076f0c97da8e",
+  "source_sha256": "d6123b6d70c03ef17b75f11b23235f004a51b788d7d5939de00911509b278e08",
   "executables": {
     "stage0": "0bf16ae720a00dd90185e821f3cc21c6920bc3de5acae699568fe64247ab7b44",
-    "stage1": "012a33406d0a8f3fc7209070f78720568f78304fa2882d7a17850a47d08c17b9",
-    "stage2": "42ccaa638cd3815f31e1447b3c1d70c32351dfeccfdace9a9cba7eb71e8d87f7",
-    "stage3": "42ccaa638cd3815f31e1447b3c1d70c32351dfeccfdace9a9cba7eb71e8d87f7"
+    "stage1": "058bdf8a51f35cc7131e6f71e69ddd6434378c9f21106c734202d3bef91d5a2f",
+    "stage2": "d6eb08021b352ba133f902d016937af7b7a094704eb1e2e9d92cde024b256e85",
+    "stage3": "d6eb08021b352ba133f902d016937af7b7a094704eb1e2e9d92cde024b256e85"
   },
   "stage2_equals_stage3": true,
   "isolated_path_rebuild_matches": true,
   "embedded_runtime_matches_bootstrap": true,
-  "tests_discovered_per_stage": 301,
+  "tests_discovered_per_stage": 305,
   "bootstrap_skips_linux_only_target_selection_tests": 4,
   "bootstrap_skips_stack_budget_tests": 4,
   "bootstrap_skips_post_0_7_grammar_tests": 10,
@@ -28,6 +28,7 @@
   "bootstrap_skips_text_builder_tests": 6,
   "bootstrap_skips_float_tests": 12,
   "bootstrap_skips_math_input_tests": 7,
+  "bootstrap_skips_math_output_tests": 4,
   "corpus_passed_with": [
     "stage0",
     "stage2",

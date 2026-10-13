@@ -49,5 +49,7 @@ quantization for 2,304 outputs, covering 256 binary64 inputs and nine precision
 choices. Separate tests verify 17-digit parsing round trips, signed zeros,
 subnormal/maximum values, carry transitions, invalid precisions, status
 independence, live aliases, and 6,000 iterations of allocation/recovery.
-Native platform and bootstrap evidence is recorded with the release.
+Native platform and bootstrap evidence is in
+[math-output-verification.json](math-output-verification.json): 297 Linux and
+238 native Windows tests pass, with matching compiler fixed points on each OS.
 No new comparative speed claim is made.

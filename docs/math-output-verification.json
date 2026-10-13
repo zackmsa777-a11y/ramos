@@ -1,0 +1,77 @@
+{
+  "version": "0.24.0",
+  "code_commit": "f599c9da1072997662bb5e4c45ff53a719f90007",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38429785033",
+  "compiler_source_sha256": "d6123b6d70c03ef17b75f11b23235f004a51b788d7d5939de00911509b278e08",
+  "math_library_sha256": "23cbdde007598dd0ce391029fa91daebd9c1be63b62946d8fd269289dbd0bfc6",
+  "native_linux": {
+    "discovered": 305,
+    "passed": 297,
+    "skipped": 8,
+    "fixed_point": true,
+    "empty_path_rebuild": true,
+    "sha256": "d6eb08021b352ba133f902d016937af7b7a094704eb1e2e9d92cde024b256e85"
+  },
+  "native_windows": {
+    "discovered": 239,
+    "passed": 238,
+    "skipped": 1,
+    "fixed_point": true,
+    "sha256": "280f69d2841de1411aa7030bb25b66be0644058870fc29f19a20767eff8e7c13"
+  },
+  "output_checks": {
+    "binary64_inputs": 256,
+    "independent_decimal_outputs": 2304,
+    "precisions": {
+      "scientific": [
+        0,
+        1,
+        6,
+        16,
+        18
+      ],
+      "compact": [
+        1,
+        2,
+        6,
+        17
+      ]
+    },
+    "round_trip_digits": 17,
+    "round_trip_inputs": 256,
+    "allocation_recovery_iterations": 6000,
+    "fixed_decimal_unchanged": true,
+    "signed_zero": true,
+    "status_independence": true,
+    "invalid_precision_before_arithmetic": true
+  },
+  "clean_installation": {
+    "linux": {
+      "version": "Ramos 0.24.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "linux-x64",
+      "compiler_sha256": "d6eb08021b352ba133f902d016937af7b7a094704eb1e2e9d92cde024b256e85",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    },
+    "windows": {
+      "version": "Ramos 0.24.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "windows-x64",
+      "compiler_sha256": "280f69d2841de1411aa7030bb25b66be0644058870fc29f19a20767eff8e7c13",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    }
+  },
+  "scope": "Library output only, no new compiler syntax or performance score. Calculator integration has separate app checks. Windows install checks use the native source bundle, not a downloaded ZIP."
+}

@@ -36,7 +36,9 @@ math library. `math_scientific(value, places)` selects fractional mantissa digit
 `math_format(value, digits)` selects significant digits and preserves tiny values.
 Seventeen significant digits round-trip finite binary64 values, including signed
 zero. Fixed-decimal `math_text` and `print` keep their existing behavior.
-See [output contracts](docs/math-output.md). No new syntax or speed claim.
+Validation passes **297 Linux tests and 238 native Windows tests**, with both
+compiler fixed points. See [output contracts](docs/math-output.md) and
+[verification](docs/math-output-verification.json). No new syntax or speed claim.
 
 Version 0.23 adds a **native drawing library**: reusable canvas commands for
 lines, rectangles, circles and pixels on Linux and Windows. Displayed frames
