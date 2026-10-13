@@ -40,7 +40,7 @@ and the [DPI demo](examples/scaling.ramos). The user-reported native Windows seq
 144 → 168 → 96 passed events/input/shutdown, but captures showed broken canvas
 shapes; visual acceptance and the unavailable 200% preset remain unverified. Bounded resource probes
 exercise 200 MiB of allocation churn; the 16 MiB live heap budget is unchanged.
-Native baseline proofs pass **300 Linux tests and 241 Windows tests**, with matching
+Native proofs pass **300 Linux tests and 241 Windows tests**, with matching
 compiler fixed points. See [verification](docs/gui-scaling-verification.json).
 The 0.25.1 repaint candidate completes child placement before requesting full
 parent/child redraws. A real Windows visual retest is still required.

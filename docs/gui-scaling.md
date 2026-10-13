@@ -102,8 +102,14 @@ $events
 # Set this to the exact presets you actually selected, in order.
 # For 100% -> 150% -> 175% -> 100%, use @(150, 175, 100).
 $selectedPresets = @(150, 200, 100)
-$expected = @($selectedPresets | ForEach-Object { [int](96 * $_ / 100) })
-$actual = @($events | ForEach-Object { [int](($_ -split ' ')[1]) })
+$expected = @($selectedPresets | ForEach-Object {
+    [int]$eventDpi = 96 * $_ / 100
+    $eventDpi
+})
+$actual = @($events | ForEach-Object {
+    [int]$eventDpi = ($_ -split ' ')[1]
+    $eventDpi
+})
 if (($actual -join ',') -ne ($expected -join ',')) {
     throw "DPI events differ: expected $expected; got $actual"
 }

@@ -1,16 +1,16 @@
 {
-  "version": "0.25.0",
-  "release_status": "preview: genuine 144/168/96 transitions reported; canvas visual acceptance failed; cause unconfirmed",
-  "code_commit": "7129f13a8899bc14e0ffcd2b7fe6af1633957ee2",
-  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38440218457",
-  "compiler_source_sha256": "e4d4bf331d29ff894c53045d10b064a477d4a0c4023c1334a7daa1880c3aa78b",
+  "version": "0.25.1",
+  "release_status": "preview repaint candidate: 0.25.0 user-reported canvas defects remain unconfirmed; real-display visual retest required",
+  "code_commit": "c0196d7cd204c6f7a83d28463440640a559e0ba4",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38446403913",
+  "compiler_source_sha256": "7dae7e5f999131cb8337b858f95471144397df2a4a6fa9a58803f4e10c7578e1",
   "native_linux": {
-    "discovered": 309,
+    "discovered": 310,
     "passed": 300,
-    "skipped": 9,
+    "skipped": 10,
     "fixed_point": true,
     "empty_path_rebuild": true,
-    "sha256": "8657909d52a7882c721c31c17c9d8591bb0fea6f0adc3be87adf88d0a117c90b",
+    "sha256": "50813d2cefced47922a070c1c8ae864cf4ea27381ff02c4c31328acf7f611ae1",
     "scaling": {
       "genuine_gtk_scale_sequence": [
         96,
@@ -24,22 +24,22 @@
       "managed_live_limit_checked": 262144,
       "resources_warm": {
         "file_descriptors": 7,
-        "rss_bytes": 82866176
+        "rss_bytes": 82833408
       },
       "resources_after": {
         "file_descriptors": 7,
-        "rss_bytes": 82997248
+        "rss_bytes": 82964480
       },
       "closed": true,
       "scope": "Bounded native GTK churn; no Windows or hours-long soak claim."
     }
   },
   "native_windows": {
-    "discovered": 242,
-    "passed": 240,
+    "discovered": 243,
+    "passed": 241,
     "skipped": 2,
     "fixed_point": true,
-    "sha256": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+    "sha256": "868fa98e4ab7bc7c030c6cc0f6be9bb81dedd3d1cae0178179b6b3df2f429508",
     "scaling": {
       "genuine_windows_transition": false,
       "transition_status": "pending adjustable-display manual test",
@@ -69,13 +69,26 @@
         "user": 19
       },
       "closed": true
+    },
+    "full_canvas": {
+      "pid": 9780,
+      "scope": "Native GDI pixels before/after full redraw. No DPI transition is generated.",
+      "window_handle": 197184,
+      "dpi": 96,
+      "width": 480,
+      "height": 112,
+      "before_different_pixels": 0,
+      "after_redraw_different_pixels": 0,
+      "changed_by_redraw_pixels": 0,
+      "before_sha256": "7b4471c1921a82979dab7de09d6dba18d590ddb7020312bddc547e1f9803075e",
+      "after_sha256": "7b4471c1921a82979dab7de09d6dba18d590ddb7020312bddc547e1f9803075e"
     }
   },
   "clean_installation": {
     "linux": {
-      "version": "Ramos 0.25.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "version": "Ramos 0.25.1 \u2014 compiler written in Ramos; Linux and Windows x64",
       "target": "linux-x64",
-      "compiler_sha256": "8657909d52a7882c721c31c17c9d8591bb0fea6f0adc3be87adf88d0a117c90b",
+      "compiler_sha256": "50813d2cefced47922a070c1c8ae864cf4ea27381ff02c4c31328acf7f611ae1",
       "unicode_install_path": true,
       "empty_path": true,
       "run_arguments_exit_status": true,
@@ -86,9 +99,9 @@
       "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
     },
     "windows": {
-      "version": "Ramos 0.25.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "version": "Ramos 0.25.1 \u2014 compiler written in Ramos; Linux and Windows x64",
       "target": "windows-x64",
-      "compiler_sha256": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+      "compiler_sha256": "868fa98e4ab7bc7c030c6cc0f6be9bb81dedd3d1cae0178179b6b3df2f429508",
       "unicode_install_path": true,
       "empty_path": true,
       "run_arguments_exit_status": true,
@@ -100,11 +113,19 @@
     }
   },
   "remaining_acceptance": [
-    "Intact canvas/text rendering during genuine Windows scale changes; reported capture defects need independent diagnosis",
+    "Real Windows visual retest of the 0.25.1 repaint candidate at 150%/175%, with independent captures and direct observation",
     "200% / DPI 192 genuine Windows transition: unavailable on reported display",
     "Real Windows movement between displays at different DPI",
     "Hours-long resource soak and real large live-data workloads"
   ],
   "scope": "Opt-in native GUI scaling and bounded lifetime checks. No new performance score or live-heap expansion. Windows synthetic notification checks only verify rejection, not transitions. Installation proofs use source bundles.",
-  "user_windows_report": "gui-scaling-windows-report-2026-10-13.json"
+  "user_windows_report": "gui-scaling-windows-report-2026-10-13.json",
+  "prior_initial_canvas_probe": {
+    "version": "0.25.0",
+    "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38445726802",
+    "dpi": 96,
+    "before_different_pixels": 0,
+    "after_redraw_different_pixels": 0,
+    "scope": "Baseline uses unmodified 0.25.0 runtime; initial pixels match independent GDI. No genuine transition tested."
+  }
 }
