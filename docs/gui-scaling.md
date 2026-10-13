@@ -45,3 +45,69 @@ Primary contracts: [Windows DPI messages](https://learn.microsoft.com/en-us/wind
 [thread context restoration](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext),
 [window DPI](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow),
 [GTK scale factor](https://docs.gtk.org/gtk3/property.Widget.scale-factor.html).
+
+## Real Windows test for an agent
+
+Use a Windows x64 desktop whose display scale can be adjusted. Start at **100%**.
+Use the matching compiler, `stdlib/` and `examples/` from the release bundle.
+Run in PowerShell from the extracted bundle:
+
+```powershell
+.\ramos.exe --version
+.\ramos.exe build .\examples\scaling.ramos -o .\scaling.exe --gui
+if ($LASTEXITCODE -ne 0) { throw 'Demo build failed' }
+Get-FileHash .\ramos.exe, .\scaling.exe -Algorithm SHA256
+$demo = Start-Process -FilePath "$PWD\scaling.exe" -PassThru `
+    -RedirectStandardOutput "$PWD\dpi.log" `
+    -RedirectStandardError "$PWD\dpi-error.log"
+Start-Process 'ms-settings:display'
+```
+
+Keep the same demo window open. In **Settings → System → Display → Scale**, set
+**150%**, then **200%**, then **100%**, waiting for the demo label to update each
+time. Stay on the display you changed. Do not use custom scaling that requires
+signing out; that cannot demonstrate a running-window transition. If these
+preset values are unavailable, record the actual offered values instead.
+
+At each scale, check that the input stays editable, Arabic/emoji remain intact,
+controls do not overlap, the blue box/red disk/green line remain visible, and
+text stays crisp. A geometry comparison should use client coordinates and the
+native DPI, not the outer window frame. Logical dimensions may differ slightly
+because Windows chooses the suggested rectangle and the user may resize.
+
+Close with the demo's **Close** button, then run:
+
+```powershell
+$demo.WaitForExit()
+Get-Content .\dpi.log
+Get-Content .\dpi-error.log
+if ($demo.ExitCode -ne 0) { throw "Demo exited $($demo.ExitCode)" }
+$events = Get-Content .\dpi.log | Where-Object { $_ -match '^scale ' }
+$events
+foreach ($dpi in 144, 192, 96) {
+    if (-not ($events -match "^scale $dpi ")) { throw "Missing real DPI event $dpi" }
+}
+if ((Get-Content .\dpi.log | Select-Object -Last 1) -ne 'closed -9') {
+    throw 'Window did not close cleanly'
+}
+if ((Get-Item .\dpi-error.log).Length -ne 0) { throw 'Unexpected runtime error' }
+```
+
+Return the log, compiler hash, Windows version, actual display scaling sequence,
+and visual observations. Missing genuine events or an unusable control is a
+failure, even if compilation succeeded. Record a sign-out-only setup as unable
+to perform this transition test. This test does not prove multi-monitor movement;
+that needs two real displays at different scales and the same checks while
+moving the open window between them. Never send fabricated `WM_DPICHANGED`
+messages as a substitute.
+
+## Automated resource scope
+
+The native probes exercise 200 acknowledged allocation/control-update steps
+(200 MiB of transient managed buffers with less than 256 KiB retained after
+each collection). Windows also alternates 20 scaled/default windows and checks
+native geometry, fonts, canvas/panel pixels, GDI/USER objects and process handles.
+Linux changes the real GTK XSETTINGS scale 1 → 2 → 1 and checks pixels,
+open file descriptors and resident-memory growth after warm-up. These are
+bounded churn and lifetime checks, not a claim of hours-long soak testing or
+support for more than the existing 16 MiB live managed-memory budget.

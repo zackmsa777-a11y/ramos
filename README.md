@@ -1,4 +1,4 @@
-# Ramos 0.24.0 — self-hosted compiler for Linux and Windows
+# Ramos 0.25.0 — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -31,6 +31,16 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
+Version 0.25 adds **explicit GUI scaling**: `gui_open_scaled` uses logical
+coordinates, `gui_dpi` reports native DPI, and event kind 6 reports a change.
+Windows opts into per-monitor-v2 awareness and scales control boundaries, fonts
+and canvas rendering; Linux follows GTK's native widget scale. Existing
+`gui_open` keeps its policy. See [scaling contracts and Windows test commands](docs/gui-scaling.md)
+and the [DPI demo](examples/scaling.ramos). Actual Windows display transitions
+remain pending a report from an adjustable display. Bounded resource probes
+exercise 200 MiB of allocation churn; the 16 MiB live heap budget is unchanged.
+No new performance score.
+
 Version 0.24 adds **exact scientific and compact numerical output** in the Ramos
 math library. `math_scientific(value, places)` selects fractional mantissa digits;
 `math_format(value, digits)` selects significant digits and preserves tiny values.
@@ -48,7 +58,7 @@ redraws on resize. See [drawing contracts](docs/canvas.md).
 Validation passes **293 Linux tests and 234 native Windows tests**, with both
 compiler fixed points, native displayed pixels, snapshot/GC/resource checks,
 and GTK at 1× and 2× scale. See [verification](docs/canvas-verification.json).
-Per-monitor DPI policy remains future work. No new graphics-speed claim.
+Explicit DPI policy is added in 0.25; actual Windows transition acceptance remains pending. No new graphics-speed claim.
 
 Version 0.22 adds **checked deeper recursion**: up to 1,024 active calls,
 with a separate 4 MiB stack budget checked before each local frame allocation.

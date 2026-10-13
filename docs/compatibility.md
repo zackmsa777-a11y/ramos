@@ -45,6 +45,11 @@ The practical 1.0 goal requires the [application acceptance checks](roadmap-1.0.
 installation proof, published current measurements and explicit resource limits.
 It also needs a reviewed stable-language/library compatibility policy. That
 policy is a remaining milestone; this document does not promise that all 0.x
-APIs have been frozen. General graphics/DPI work and broader practical libraries
+APIs have been frozen. Broader graphics, genuine Windows DPI-transition acceptance and practical libraries
 remain active work. A stable version would not imply all of C or Rust's APIs,
 platforms, tooling or ecosystem.
+
+Opt-in `gui_open_scaled` requires Windows per-monitor-v2 support (Windows 10
+1703 or newer). It restores the previous thread DPI context on close. Existing
+`gui_open` keeps default virtualization. Scaled coordinates are logical units;
+read [scaling contracts](gui-scaling.md) before handling event kind 6.
