@@ -49,3 +49,4 @@ jobs:
             build/windows-bootstrap-proof.json
             build/windows-package-proof.json
             build/windows-scaling-proof.json
+            build/windows-canvas-proof.json

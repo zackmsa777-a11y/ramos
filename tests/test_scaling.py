@@ -119,3 +119,36 @@ class WindowsScalingTests(unittest.TestCase):
         self.assertEqual(evidence['churn_steps'],200)
         self.assertEqual(evidence['reopen_cycles'],20)
         shutil.copyfile(report,support.ROOT/'build/windows-scaling-proof.json')
+
+    def test_native_scaling_demo_full_canvas_pixels(self):
+        # Dense stroke/edge comparison complements the flat-color pixel probes.
+        # No DPI change is generated; real transitions still need the desktop test.
+        import ctypes as C
+        from ctypes import wintypes as W
+        import time
+        from canvas_capture import capture
+        self.standard_library()
+        code=(support.ROOT/'examples/scaling.ramos').read_text(encoding='utf-8')
+        result=self.build(code.replace('../stdlib/','stdlib/'),'--gui','--force')
+        self.assertEqual(result.returncode,0,result.stderr)
+        proc=subprocess.Popen([str(self.output)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        def cleanup():
+            if proc.poll() is None:proc.kill()
+            proc.wait(timeout=5);proc.stdout.close();proc.stderr.close()
+        self.addCleanup(cleanup)
+        output=Output(proc)
+        self.assertTrue(output.line().startswith('DPI '))
+        # The status is printed before the event loop dispatches initial paints.
+        time.sleep(.5)
+        evidence=capture(proc.pid,self.directory/'canvas')
+        self.assertEqual(evidence['before_different_pixels'],0,evidence)
+        self.assertEqual(evidence['after_redraw_different_pixels'],0,evidence)
+        self.assertEqual(evidence['changed_by_redraw_pixels'],0,evidence)
+        user=C.WinDLL('user32')
+        user.PostMessageW.argtypes=[W.HWND,W.UINT,W.WPARAM,W.LPARAM]
+        user.PostMessageW.restype=W.BOOL
+        self.assertTrue(user.PostMessageW(evidence['window_handle'],0x10,0,0))
+        self.assertEqual(output.line(),'closed -9')
+        self.assertEqual(proc.wait(timeout=10),0,proc.stderr.read())
+        self.assertEqual(proc.stderr.read(),b'')
+        (support.ROOT/'build/windows-canvas-proof.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf-8')
