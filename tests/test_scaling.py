@@ -45,7 +45,7 @@ class LinuxScalingTests(unittest.TestCase):
 
     def test_genuine_gtk_scale_change_pixels_events_aliases_and_churn(self):
         self.standard_library()
-        self.gui_build((support.ROOT/'tests/fixtures/scaling_probe.ramos').read_text())
+        self.gui_build((support.ROOT/'tests/fixtures/scaling_probe.ramos').read_text(encoding='utf-8'))
         settings=Settings(self.desktop)
         self.addCleanup(settings.close)
         env=dict(self.env,NO_AT_BRIDGE='1');env.pop('GDK_SCALE',None)
@@ -100,13 +100,13 @@ class WindowsScalingTests(unittest.TestCase):
 
     def test_native_scaling_awareness_geometry_font_lifetimes_and_resources(self):
         self.standard_library()
-        result=self.build((support.ROOT/'tests/fixtures/scaling_probe.ramos').read_text(),'--gui','--force')
+        result=self.build((support.ROOT/'tests/fixtures/scaling_probe.ramos').read_text(encoding='utf-8'),'--gui','--force')
         self.assertEqual(result.returncode,0,result.stderr)
         report=self.directory/'scaling.json'
         result=subprocess.run([sys.executable,self.native_path(support.ROOT/'tools/scaling_probe.py'),
                                self.native_path(self.output),self.native_path(report)],capture_output=True,timeout=100)
-        self.assertEqual(result.returncode,0,(result.stdout,result.stderr,report.read_text() if report.exists() else 'no report'))
-        evidence=json.loads(report.read_text())
+        self.assertEqual(result.returncode,0,(result.stdout,result.stderr,report.read_text(encoding='utf-8') if report.exists() else 'no report'))
+        evidence=json.loads(report.read_text(encoding='utf-8'))
         self.assertTrue(evidence['closed'] and evidence['thread_context_restored'])
         self.assertEqual(evidence['churn_steps'],200)
         self.assertEqual(evidence['reopen_cycles'],20)

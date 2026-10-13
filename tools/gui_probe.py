@@ -138,7 +138,8 @@ def main():
             entry, editor, status = [control(i) for i in (3, 4, 7)]
             choose(8, 'Open a note', source)
             wait(lambda: text(editor) == 'First\r\nمرحبا 🌍', 'opened Unicode file')
-            assert text(entry) == str(source)
+            # Ramos sets the editor and path in separate native operations.
+            wait(lambda: text(entry) == str(source), 'opened Unicode path')
             result['unicode_open'] = True
             choose(9, 'Save a new note')
             wait(lambda: text(status) == 'Save As cancelled', 'cancelled Save As')
