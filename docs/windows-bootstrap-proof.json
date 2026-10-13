@@ -1,16 +1,16 @@
 {
-  "version": "0.24.0",
+  "version": "0.25.0",
   "target": "x86_64-windows",
   "execution_host": "windows",
-  "source_sha256": "d6123b6d70c03ef17b75f11b23235f004a51b788d7d5939de00911509b278e08",
+  "source_sha256": "e4d4bf331d29ff894c53045d10b064a477d4a0c4023c1334a7daa1880c3aa78b",
   "executables": {
-    "seed": "280f69d2841de1411aa7030bb25b66be0644058870fc29f19a20767eff8e7c13",
-    "stage2": "280f69d2841de1411aa7030bb25b66be0644058870fc29f19a20767eff8e7c13",
-    "stage3": "280f69d2841de1411aa7030bb25b66be0644058870fc29f19a20767eff8e7c13"
+    "seed": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+    "stage2": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+    "stage3": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90"
   },
   "stage2_equals_stage3": true,
   "seed_equals_stage2": true,
-  "tests_discovered": 239,
-  "tests_skipped": 1,
-  "tests_passed": 238
+  "tests_discovered": 242,
+  "tests_skipped": 2,
+  "tests_passed": 240
 }

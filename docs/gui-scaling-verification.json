@@ -1,0 +1,108 @@
+{
+  "version": "0.25.0",
+  "release_status": "preview: genuine Windows transitions pending",
+  "code_commit": "7129f13a8899bc14e0ffcd2b7fe6af1633957ee2",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38440218457",
+  "compiler_source_sha256": "e4d4bf331d29ff894c53045d10b064a477d4a0c4023c1334a7daa1880c3aa78b",
+  "native_linux": {
+    "discovered": 309,
+    "passed": 300,
+    "skipped": 9,
+    "fixed_point": true,
+    "empty_path_rebuild": true,
+    "sha256": "8657909d52a7882c721c31c17c9d8591bb0fea6f0adc3be87adf88d0a117c90b",
+    "scaling": {
+      "genuine_gtk_scale_sequence": [
+        96,
+        192,
+        96
+      ],
+      "native_panel_canvas_pixels": true,
+      "retained_geometry_alias_safe": true,
+      "churn_steps": 200,
+      "churn_bytes": 209715200,
+      "managed_live_limit_checked": 262144,
+      "resources_warm": {
+        "file_descriptors": 7,
+        "rss_bytes": 82866176
+      },
+      "resources_after": {
+        "file_descriptors": 7,
+        "rss_bytes": 82997248
+      },
+      "closed": true,
+      "scope": "Bounded native GTK churn; no Windows or hours-long soak claim."
+    }
+  },
+  "native_windows": {
+    "discovered": 242,
+    "passed": 240,
+    "skipped": 2,
+    "fixed_point": true,
+    "sha256": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+    "scaling": {
+      "genuine_windows_transition": false,
+      "transition_status": "pending adjustable-display manual test",
+      "initial_dpi": 96,
+      "initial_awareness": "per-monitor-v2",
+      "geometry": true,
+      "font": true,
+      "pixels": true,
+      "synthetic_notification_ignored": true,
+      "churn_steps": 200,
+      "churn_bytes": 209715200,
+      "resources_warm": {
+        "handles": 164,
+        "gdi": 12,
+        "user": 19
+      },
+      "resources_after_churn": {
+        "handles": 164,
+        "gdi": 12,
+        "user": 18
+      },
+      "reopen_cycles": 20,
+      "thread_context_restored": true,
+      "resources_after_reopen": {
+        "handles": 168,
+        "gdi": 11,
+        "user": 19
+      },
+      "closed": true
+    }
+  },
+  "clean_installation": {
+    "linux": {
+      "version": "Ramos 0.25.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "linux-x64",
+      "compiler_sha256": "8657909d52a7882c721c31c17c9d8591bb0fea6f0adc3be87adf88d0a117c90b",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    },
+    "windows": {
+      "version": "Ramos 0.25.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "windows-x64",
+      "compiler_sha256": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    }
+  },
+  "remaining_acceptance": [
+    "Genuine running-window scale changes on adjustable Windows display",
+    "Real Windows movement between displays at different DPI",
+    "Hours-long resource soak and real large live-data workloads"
+  ],
+  "scope": "Opt-in native GUI scaling and bounded lifetime checks. No new performance score or live-heap expansion. Windows synthetic notification checks only verify rejection, not transitions. Installation proofs use source bundles."
+}

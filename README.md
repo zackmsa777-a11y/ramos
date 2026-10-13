@@ -39,6 +39,8 @@ and canvas rendering; Linux follows GTK's native widget scale. Existing
 and the [DPI demo](examples/scaling.ramos). Actual Windows display transitions
 remain pending a report from an adjustable display. Bounded resource probes
 exercise 200 MiB of allocation churn; the 16 MiB live heap budget is unchanged.
+Native proofs pass **300 Linux tests and 240 Windows tests**, with matching
+compiler fixed points. See [verification](docs/gui-scaling-verification.json).
 No new performance score.
 
 Version 0.24 adds **exact scientific and compact numerical output** in the Ramos
