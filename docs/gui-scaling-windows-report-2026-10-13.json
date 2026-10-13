@@ -1,0 +1,64 @@
+{
+  "version": "0.25.0",
+  "date": "2026-10-13",
+  "timezone": "Asia/Riyadh",
+  "provenance": "User-supplied Windows report; listed PNG and accessibility attachments were not supplied to this workspace. No independent verification of capture defects.",
+  "windows": "Windows 11 Pro 26H2 x64 10.0.26300 build 26300.9457",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "original_scale_percent": 125,
+  "restored_scale_percent": 125,
+  "offered_presets_percent": [
+    100,
+    125,
+    150,
+    175
+  ],
+  "tested_sequence_percent": [
+    100,
+    150,
+    175,
+    100
+  ],
+  "native_event_sequence_dpi": [
+    144,
+    168,
+    96
+  ],
+  "same_process_pid": 14460,
+  "archive_sha256": "c0f3f7225d7f77d96f0ad91f5dedcb5b76eb67c7c86d9e82c1e5a47355916aff",
+  "compiler_sha256": "b6886cfe4528f9b4eec9c8922821afaf69e34c6a905b715b79bc43bc21076a90",
+  "demo_sha256": "a5f388ae75d1020e644db54b2be29ce557638716883796c76462c4f7ea75745b",
+  "passed": [
+    "Archive checksum, fresh installation, CLI hello and demo compilation",
+    "Genuine Settings changes with matching DPI labels and native events",
+    "Editable Arabic/emoji input and separated controls throughout",
+    "Close button, exit 0, empty stderr and final closed -9",
+    "Original display scale restored"
+  ],
+  "visual_acceptance": "failed in reported automation captures; underlying cause unconfirmed",
+  "visual_observations": [
+    "Missing blue-box segments, fragmented/duplicated red disk, broken/duplicated green line at 150% and 175%",
+    "Disk and line looked whole after return to 100%; blue box still had top/left gaps",
+    "Some text partly clipped at 150%; accessibility contents intact"
+  ],
+  "unverified": [
+    "Direct human screen observation and independent capture",
+    "200% / DPI 192: preset unavailable",
+    "Multi-monitor movement",
+    "Physical-pixel geometry measurements",
+    "Long-duration resource stress"
+  ],
+  "log": [
+    "DPI 96 | client 520 x 320",
+    "scale 144 521 322",
+    "DPI 144 | client 521 x 322",
+    "scale 168 522 322",
+    "DPI 168 | client 522 x 322",
+    "scale 96 520 320",
+    "DPI 96 | client 520 x 320",
+    "closed -9"
+  ]
+}

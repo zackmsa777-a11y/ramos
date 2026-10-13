@@ -1,4 +1,4 @@
-# Ramos 0.25.0 preview — self-hosted compiler for Linux and Windows
+# Ramos 0.25.1 preview — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -36,11 +36,14 @@ coordinates, `gui_dpi` reports native DPI, and event kind 6 reports a change.
 Windows opts into per-monitor-v2 awareness and scales control boundaries, fonts
 and canvas rendering; Linux follows GTK's native widget scale. Existing
 `gui_open` keeps its policy. See [scaling contracts and Windows test commands](docs/gui-scaling.md)
-and the [DPI demo](examples/scaling.ramos). Actual Windows display transitions
-remain pending a report from an adjustable display. Bounded resource probes
+and the [DPI demo](examples/scaling.ramos). The user-reported native Windows sequence
+144 → 168 → 96 passed events/input/shutdown, but captures showed broken canvas
+shapes; visual acceptance and the unavailable 200% preset remain unverified. Bounded resource probes
 exercise 200 MiB of allocation churn; the 16 MiB live heap budget is unchanged.
-Native proofs pass **300 Linux tests and 240 Windows tests**, with matching
+Native baseline proofs pass **300 Linux tests and 241 Windows tests**, with matching
 compiler fixed points. See [verification](docs/gui-scaling-verification.json).
+The 0.25.1 repaint candidate completes child placement before requesting full
+parent/child redraws. A real Windows visual retest is still required.
 No new performance score.
 
 Version 0.24 adds **exact scientific and compact numerical output** in the Ramos
@@ -60,7 +63,7 @@ redraws on resize. See [drawing contracts](docs/canvas.md).
 Validation passes **293 Linux tests and 234 native Windows tests**, with both
 compiler fixed points, native displayed pixels, snapshot/GC/resource checks,
 and GTK at 1× and 2× scale. See [verification](docs/canvas-verification.json).
-Explicit DPI policy is added in 0.25; actual Windows transition acceptance remains pending. No new graphics-speed claim.
+Explicit DPI policy is added in 0.25; Windows canvas transition acceptance remains incomplete. No new graphics-speed claim.
 
 Version 0.22 adds **checked deeper recursion**: up to 1,024 active calls,
 with a separate 4 MiB stack budget checked before each local frame allocation.

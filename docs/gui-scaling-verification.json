@@ -1,6 +1,6 @@
 {
   "version": "0.25.0",
-  "release_status": "preview: genuine Windows transitions pending",
+  "release_status": "preview: genuine 144/168/96 transitions reported; canvas visual acceptance failed; cause unconfirmed",
   "code_commit": "7129f13a8899bc14e0ffcd2b7fe6af1633957ee2",
   "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38440218457",
   "compiler_source_sha256": "e4d4bf331d29ff894c53045d10b064a477d4a0c4023c1334a7daa1880c3aa78b",
@@ -100,9 +100,11 @@
     }
   },
   "remaining_acceptance": [
-    "Genuine running-window scale changes on adjustable Windows display",
+    "Intact canvas/text rendering during genuine Windows scale changes; reported capture defects need independent diagnosis",
+    "200% / DPI 192 genuine Windows transition: unavailable on reported display",
     "Real Windows movement between displays at different DPI",
     "Hours-long resource soak and real large live-data workloads"
   ],
-  "scope": "Opt-in native GUI scaling and bounded lifetime checks. No new performance score or live-heap expansion. Windows synthetic notification checks only verify rejection, not transitions. Installation proofs use source bundles."
+  "scope": "Opt-in native GUI scaling and bounded lifetime checks. No new performance score or live-heap expansion. Windows synthetic notification checks only verify rejection, not transitions. Installation proofs use source bundles.",
+  "user_windows_report": "gui-scaling-windows-report-2026-10-13.json"
 }

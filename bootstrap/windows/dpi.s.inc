@@ -315,7 +315,10 @@ runtime_gui_callback_dpi_each:
     call runtime_gui_to_pixels
     sub rax, r8
     mov r10, rax
-    mov r11d, 1
+    # Finish the complete layout before repainting. MoveWindow can preserve
+    # client pixels from the old scale; painting each child during the loop
+    # can also clip against siblings that have not yet moved.
+    xor r11d, r11d                   # bRepaint = FALSE
     GUI MoveWindow
     test eax, eax
     jz runtime_gui_callback_dpi_native_error
@@ -324,6 +327,31 @@ runtime_gui_callback_dpi_next:
     lea rax, [rbx + 2560]
     cmp r12, rax
     jb runtime_gui_callback_dpi_each
+    # All geometry now uses the new DPI. Repaint the entire parent and every
+    # child, including unchanged areas that otherwise retain old-scale pixels.
+    # NULL rectangles invalidate full client areas. Paints run after this OS
+    # callback returns; no managed allocation or Ramos callback is required.
+    mov rcx, [rbp]
+    xor edx, edx
+    mov r8d, 1
+    GUI InvalidateRect
+    test eax, eax
+    jz runtime_gui_callback_dpi_native_error
+    lea r12, [rbx + 512]
+runtime_gui_callback_dpi_invalidate_each:
+    mov rcx, [r12]
+    test rcx, rcx
+    jz runtime_gui_callback_dpi_invalidate_next
+    xor edx, edx
+    mov r8d, 1
+    GUI InvalidateRect
+    test eax, eax
+    jz runtime_gui_callback_dpi_native_error
+runtime_gui_callback_dpi_invalidate_next:
+    add r12, 32
+    lea rax, [rbx + 2560]
+    cmp r12, rax
+    jb runtime_gui_callback_dpi_invalidate_each
     mov rcx, [rbp]
     lea rdx, [rbp + 32]               # Private callback stack RECT.
     GUI GetClientRect
