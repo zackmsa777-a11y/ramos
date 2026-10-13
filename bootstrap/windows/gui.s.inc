@@ -128,6 +128,11 @@ runtime_gui_create_stack:
     pop rbp
     ret
 runtime_gui_open:
+    xor r8d, r8d
+    jmp runtime_gui_open_common
+runtime_gui_open_scaled:
+    mov r8d, 1
+runtime_gui_open_common:
     push rbp
     push rbx
     sub rsp, 240
@@ -135,6 +140,8 @@ runtime_gui_open:
     mov [rbp], rax
     mov [rbp + 8], rcx
     mov [rbp + 16], rdx
+    mov [rbp + 144], r8
+    mov QWORD PTR [rbp + 160], 0
     cmp rcx, 160
     jl runtime_gui_open_invalid
     cmp rcx, 4096
@@ -224,20 +231,39 @@ runtime_gui_open_loaded:
     GUI GetStockObject
     mov [rbx + 72], rax
 runtime_gui_open_registered:
+    call runtime_gui_scaled_end           # Retry any earlier restoration failure.
+    test rax, rax
+    jnz runtime_gui_open_done
+    cmp QWORD PTR [rbp + 144], 0
+    je runtime_gui_open_mode_ready
+    call runtime_gui_scaled_begin
+    test rax, rax
+    jnz runtime_gui_open_done
+    mov QWORD PTR [rbp + 160], 1
+runtime_gui_open_mode_ready:
     mov QWORD PTR [rbx + 24], 0
     mov QWORD PTR [rbx + 32], 0
     mov QWORD PTR [rbx + 40], 0
     mov QWORD PTR [rbx + 48], 0
     mov QWORD PTR [rbp + 48], 0
-    mov eax, [rbp + 8]
+    mov rax, [rbp + 8]
+    call runtime_gui_to_pixels
     mov [rbp + 56], eax
-    mov eax, [rbp + 16]
+    mov rax, [rbp + 16]
+    call runtime_gui_to_pixels
     mov [rbp + 60], eax
     lea rcx, [rbp + 48]
     mov edx, 0xcf0000                   # WS_OVERLAPPEDWINDOW
     xor r8d, r8d
     xor r9d, r9d
+    cmp QWORD PTR [rbx + GUI_SCALED], 0
+    je runtime_gui_open_adjust_legacy
+    mov r10, [rbx + GUI_DPI]
+    GUI AdjustWindowRectExForDpi
+    jmp runtime_gui_open_adjusted
+runtime_gui_open_adjust_legacy:
     GUI AdjustWindowRectEx
+runtime_gui_open_adjusted:
     test eax, eax
     jz runtime_gui_open_os_error
     movsxd rax, DWORD PTR [rbp + 56]
@@ -267,7 +293,15 @@ runtime_gui_open_registered:
     test rax, rax
     jz runtime_gui_open_os_error
     mov [rbx], rax
-    mov rcx, rax
+    cmp QWORD PTR [rbx + GUI_SCALED], 0
+    je runtime_gui_open_show
+    mov rax, [rbp + 8]
+    mov rcx, [rbp + 16]
+    call runtime_gui_scaled_initial
+    test rax, rax
+    jnz runtime_gui_open_done
+runtime_gui_open_show:
+    mov rcx, [rbx]
     mov edx, 5
     GUI ShowWindow
     xor eax, eax
@@ -287,6 +321,22 @@ runtime_gui_open_os_error:
     js runtime_gui_open_done
     mov rax, -5
 runtime_gui_open_done:
+    test rax, rax
+    jns runtime_gui_open_return
+    cmp QWORD PTR [rbp + 160], 0
+    je runtime_gui_open_return
+    mov [rbp + 152], rax
+    cmp QWORD PTR [rbx], 0
+    je runtime_gui_open_cleanup_no_parent
+    call runtime_gui_close
+    jmp runtime_gui_open_cleanup_result
+runtime_gui_open_cleanup_no_parent:
+    call runtime_gui_scaled_end
+runtime_gui_open_cleanup_result:
+    test rax, rax
+    jnz runtime_gui_open_return
+    mov rax, [rbp + 152]
+runtime_gui_open_return:
     mov [r15 + 8], rax
     add rsp, 240
     pop rbx
@@ -313,6 +363,7 @@ runtime_gui_control:
     mov rbp, rsp
     mov [rbp], rax
     mov [rbp + 8], rcx
+    mov QWORD PTR [rbp + 144], 0
     cmp QWORD PTR [rax], 56
     jne runtime_gui_control_invalid
     add rax, 8
@@ -353,6 +404,18 @@ runtime_gui_control_geometry_next:
     jb runtime_gui_control_geometry
     cmp QWORD PTR [rcx + 48], 0xffffff
     ja runtime_gui_control_invalid
+    cmp QWORD PTR [rbx + GUI_SCALED], 0
+    je runtime_gui_control_geometry_ready
+    mov eax, 32
+    call runtime_buffer_new
+    mov [rbp + 144], rax
+    lea rdi, [rax + 8]
+    mov rsi, [rbp]
+    add rsi, 16
+    mov ecx, 4
+    rep movsq
+    mov rcx, [rbp]
+runtime_gui_control_geometry_ready:
     cmp QWORD PTR [rcx], 7
     je runtime_gui_control_move
     mov rax, [rbp + 16]
@@ -393,12 +456,20 @@ runtime_gui_control_class:
     add rax, 8
     mov [rbp + 64], rax
     mov rax, [rdx + 16]
+    call runtime_gui_to_pixels
     mov [rbp + 80], rax
     mov rax, [rdx + 24]
+    call runtime_gui_to_pixels
     mov [rbp + 88], rax
     mov rax, [rdx + 32]
+    add rax, [rdx + 16]
+    call runtime_gui_to_pixels
+    sub rax, [rbp + 80]
     mov [rbp + 96], rax
     mov rax, [rdx + 40]
+    add rax, [rdx + 24]
+    call runtime_gui_to_pixels
+    sub rax, [rbp + 88]
     mov [rbp + 104], rax
     mov rax, [rbx]
     mov [rbp + 112], rax
@@ -423,6 +494,10 @@ runtime_gui_control_class:
     mov rcx, rax
     mov edx, 0x30                     # WM_SETFONT
     mov r8, [rbx + 72]
+    cmp QWORD PTR [rbx + GUI_SCALED], 0
+    je runtime_gui_control_font_ready
+    mov r8, [rbx + GUI_OWNED_FONT]
+runtime_gui_control_font_ready:
     mov r9d, 1
     GUI SendMessageW
     mov rdx, [rbp]
@@ -499,15 +574,38 @@ runtime_gui_control_move:
     je runtime_gui_control_bad
     mov rcx, [rax]
     mov rax, [rbp]
-    mov rdx, [rax + 16]
-    mov r8, [rax + 24]
-    mov r9, [rax + 32]
-    mov r10, [rax + 40]
+    mov rax, [rax + 16]
+    call runtime_gui_to_pixels
+    mov rdx, rax
+    mov rax, [rbp]
+    mov rax, [rax + 24]
+    call runtime_gui_to_pixels
+    mov r8, rax
+    mov rax, [rbp]
+    mov r9, [rax + 16]
+    add r9, [rax + 32]
+    mov rax, r9
+    call runtime_gui_to_pixels
+    sub rax, rdx
+    mov r9, rax
+    mov rax, [rbp]
+    mov rax, [rax + 40]
+    mov r10, [rbp]
+    add rax, [r10 + 24]
+    call runtime_gui_to_pixels
+    sub rax, r8
+    mov r10, rax
     mov r11d, 1
     GUI MoveWindow
     test eax, eax
     jz runtime_gui_control_os_error
 runtime_gui_control_success:
+    mov rax, [rbp + 144]
+    test rax, rax
+    jz runtime_gui_control_success_done
+    mov rcx, [rbp + 16]
+    mov [rcx + 24], rax
+runtime_gui_control_success_done:
     xor eax, eax
     jmp runtime_gui_control_done
 runtime_gui_control_exists:
@@ -649,7 +747,7 @@ runtime_gui_callback:
     push r13
     push r14
     push r15
-    sub rsp, 32
+    sub rsp, 48
     mov rbp, rsp
     mov [rbp], rcx
     mov [rbp + 8], rdx
@@ -660,6 +758,8 @@ runtime_gui_callback:
     add rbx, 8
     cmp edx, 0x10                     # WM_CLOSE: application closes explicitly
     je runtime_gui_callback_close
+    cmp edx, 0x2e0                    # WM_DPICHANGED
+    je runtime_gui_callback_dpi
     cmp edx, 5                        # WM_SIZE
     je runtime_gui_callback_resize
     cmp edx, 0x111                    # WM_COMMAND
@@ -687,6 +787,12 @@ runtime_gui_callback_resize:
     movzx edx, r9w
     shr r9, 16
     movzx r8d, r9w
+    mov rax, rdx
+    call runtime_gui_from_pixels
+    mov rdx, rax
+    mov rax, r8
+    call runtime_gui_from_pixels
+    mov r8, rax
     mov [rbx + 96], rdx
     mov [rbx + 104], r8
     mov eax, 3
@@ -760,7 +866,7 @@ runtime_gui_callback_canvas:
     call runtime_gui_canvas_paint
     mov eax, 1
 runtime_gui_callback_done:
-    add rsp, 32
+    add rsp, 48
     pop r15
     pop r14
     pop r13
@@ -901,7 +1007,7 @@ runtime_gui_close:
     jz runtime_gui_close_done
     add rbx, 8
     cmp QWORD PTR [rbx], 0
-    je runtime_gui_close_done
+    je runtime_gui_close_scaled_end
     mov QWORD PTR [rbx + 48], 1
     mov rcx, [rbx]
     GUI DestroyWindow
@@ -925,6 +1031,7 @@ runtime_gui_close_clear:
     mov QWORD PTR [rsi], 0
     mov QWORD PTR [rsi + 8], 0
     mov QWORD PTR [rsi + 16], 0
+    mov QWORD PTR [rsi + 24], 0
     add rsi, 32
     lea rax, [rbx + 2560]
     cmp rsi, rax
@@ -932,6 +1039,11 @@ runtime_gui_close_clear:
     mov QWORD PTR [rbx + 24], 0
     mov QWORD PTR [rbx + 32], 0
     mov QWORD PTR [rbx + 40], 0
+runtime_gui_close_scaled_end:
+    call runtime_gui_scaled_end
+    test rax, rax
+    jz runtime_gui_close_done
+    mov [rbp], rax
 runtime_gui_close_done:
     mov rax, [rbp]
     mov [r15 + 8], rax
@@ -1189,3 +1301,5 @@ runtime_gui_all_files: .short 'A','l','l',' ','f','i','l','e','s',0,'*','.','*',
 
 .include "bootstrap/src/canvas_common.inc"
 .include "bootstrap/windows/canvas.s.inc"
+
+.include "bootstrap/windows/dpi.s.inc"

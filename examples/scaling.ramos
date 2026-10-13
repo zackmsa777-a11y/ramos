@@ -1,0 +1,41 @@
+weave "../stdlib/draw.ramos"
+
+fn status(dpi: int64, width: int64, height: int64) {
+    let message = s"DPI " + string(int_to_text(dpi)) + s" | client " + string(int_to_text(width)) + s" x " + string(int_to_text(height))
+    gui_set(1, message)
+    print(message)
+}
+
+fn main() {
+    gui_check(gui_open_scaled(s"Ramos DPI demo", 520, 320))
+    gui_label(1, 16, 12, 480, 28, s"Starting")
+    gui_label(2, 16, 48, 480, 28, s"Change Windows display scale while this window stays open.")
+    gui_input(3, 16, 88, 480, 32, s"Edit me: Ramos مرحبا 🌍")
+    gui_canvas(4, 16, 136, 480, 112)
+    let frame = draw_new()
+    draw_clear(frame, gui_rgb(235, 240, 250))
+    draw_box(frame, 16, 16, 112, 80, gui_rgb(40, 80, 220))
+    draw_disk(frame, 224, 56, 36, gui_rgb(220, 60, 40))
+    draw_line(frame, 304, 20, 448, 92, gui_rgb(20, 100, 50))
+    gui_check(draw_present(4, frame))
+    gui_button(5, 16, 268, 120, 32, s"Close")
+    status(gui_dpi(), 520, 320)
+    var running = true
+    while running {
+        let event = gui_event(-1)
+        if event.kind == 1 || (event.kind == 2 && event.id == 5) { running = false }
+        if event.kind == 6 {
+            stdout("scale ")
+            stdout(int_to_text(event.id))
+            stdout(" ")
+            stdout(int_to_text(event.width))
+            stdout(" ")
+            print(event.height)
+            status(event.id, event.width, event.height)
+        }
+    }
+    gui_check(gui_close())
+    collect()
+    stdout("closed ")
+    print(gui_dpi())
+}

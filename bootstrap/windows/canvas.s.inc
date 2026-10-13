@@ -34,6 +34,28 @@ runtime_gui_canvas_saved:
     GUI IntersectClipRect
     test eax, eax
     jz runtime_gui_canvas_error
+    cmp QWORD PTR [rbx + GUI_SCALED], 0
+    je runtime_gui_canvas_mapping_ready
+    mov rcx, [rbp + 8]
+    mov edx, 8                    # MM_ANISOTROPIC
+    GUI SetMapMode
+    test eax, eax
+    jz runtime_gui_canvas_error
+    mov rcx, [rbp + 8]
+    mov edx, 96
+    mov r8d, 96
+    xor r9d, r9d
+    GUI SetWindowExtEx
+    test eax, eax
+    jz runtime_gui_canvas_error
+    mov rcx, [rbp + 8]
+    mov rdx, [rbx + GUI_DPI]
+    mov r8, rdx
+    xor r9d, r9d
+    GUI SetViewportExtEx
+    test eax, eax
+    jz runtime_gui_canvas_error
+runtime_gui_canvas_mapping_ready:
     mov ecx, 19                    # DC_PEN, borrowed
     GUI GetStockObject
     test rax, rax

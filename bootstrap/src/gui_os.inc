@@ -68,6 +68,7 @@
 .equ LG_gtk_widget_get_allocated_width, LG_BASE + 488
 .equ LG_gtk_widget_get_allocated_height, LG_BASE + 496
 .equ LG_cairo_status, LG_BASE + 504
+.equ LG_gtk_widget_get_scale_factor, LG_BASE + 512
 .macro LG name
     mov r11d, LG_\name
     call runtime_lg_call
@@ -187,6 +188,11 @@ runtime_lg_string_done:
     leave
     ret
 runtime_gui_open:
+    xor r8d, r8d
+    jmp runtime_lg_open_common
+runtime_gui_open_scaled:
+    mov r8d, 1
+runtime_lg_open_common:
     call runtime_lg_enabled
     jne runtime_lg_unsupported
     push rbp
@@ -196,6 +202,7 @@ runtime_gui_open:
     mov [rbp], rax
     mov [rbp + 8], rcx
     mov [rbp + 16], rdx
+    mov [rbp + 32], r8
     cmp rcx, 160
     jl runtime_lg_open_invalid
     cmp rcx, 4096
@@ -237,6 +244,17 @@ runtime_gui_open:
     mov rsi, rax
     LG gtk_container_add
     mov [rbx + 56], r15
+    mov rax, [rbp + 32]
+    mov [rbx + 104], rax
+    mov QWORD PTR [rbx + 96], 0
+    test rax, rax
+    jz runtime_lg_open_signals
+    mov rdi, [rbx]
+    lea rsi, [rip + runtime_lg_scale_name]
+    lea rdx, [rip + runtime_lg_scale_cb]
+    mov rcx, rbx
+    call runtime_lg_connect
+runtime_lg_open_signals:
     mov rdi, [rbx]
     lea rsi, [rip + runtime_lg_delete_name]
     lea rdx, [rip + runtime_lg_delete_cb]
@@ -254,6 +272,10 @@ runtime_gui_open:
     call runtime_lg_connect
     mov rdi, [rbx]
     LG gtk_widget_show_all
+    mov rdi, [rbx]
+    LG gtk_widget_get_scale_factor
+    imul eax, eax, 96
+    mov [rbx + 96], rax
     xor eax, eax
     jmp runtime_lg_open_done
 runtime_lg_open_busy:
@@ -1133,3 +1155,60 @@ runtime_lg_save_button: .asciz "Save"
 
 .include "bootstrap/src/canvas_common.inc"
 .include "bootstrap/src/canvas_linux.inc"
+
+# Query does not pump events or allocate managed data.
+runtime_gui_dpi:
+    call runtime_lg_enabled
+    jne runtime_lg_unsupported
+    push rbx
+    mov rbx, [r15 + 128]
+    test rbx, rbx
+    jz runtime_lg_dpi_bad
+    add rbx, 8
+    mov rdi, [rbx]
+    test rdi, rdi
+    jz runtime_lg_dpi_bad
+    LG gtk_widget_get_scale_factor
+    test eax, eax
+    jle runtime_lg_dpi_error
+    imul rax, rax, 96
+    mov QWORD PTR [r15 + 8], 0
+    pop rbx
+    ret
+runtime_lg_dpi_bad:
+    mov rax, -9
+    jmp runtime_lg_dpi_done
+runtime_lg_dpi_error:
+    mov rax, -5
+runtime_lg_dpi_done:
+    mov [r15 + 8], rax
+    pop rbx
+    ret
+runtime_lg_scale_cb:
+    push rbx
+    mov rbx, rdx
+    cmp QWORD PTR [rbx], 0
+    je runtime_lg_scale_done
+    LG gtk_widget_get_scale_factor
+    test eax, eax
+    jle runtime_lg_scale_error
+    imul rax, rax, 96
+    cmp rax, [rbx + 96]
+    je runtime_lg_scale_done
+    mov rdx, [rbx + 96]
+    mov [rbx + 96], rax
+    test rdx, rdx
+    jz runtime_lg_scale_done             # No initial-creation notification.
+    mov rdi, rbx
+    mov edx, eax
+    mov esi, 6
+    mov rcx, [rbx + 40]
+    mov r8, [rbx + 48]
+    call runtime_lg_enqueue
+    jmp runtime_lg_scale_done
+runtime_lg_scale_error:
+    mov QWORD PTR [rbx + 32], -5
+runtime_lg_scale_done:
+    pop rbx
+    ret
+runtime_lg_scale_name: .asciz "notify::scale-factor"

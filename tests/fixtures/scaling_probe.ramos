@@ -1,0 +1,65 @@
+weave "stdlib/draw.ramos"
+fn scene(round: int64) {
+    gui_label(1, 10, 10, 290, 26, s"round=" + string(int_to_text(round)) + s" dpi=" + string(int_to_text(gui_dpi())))
+    gui_input(2, 10, 40, 270, 30, s"مرحبا 🌍")
+    gui_panel(3, 10, 80, 100, 40, gui_rgb(40,80,220))
+    gui_canvas(4, 120, 80, 100, 40)
+    let c = draw_new()
+    draw_clear(c, gui_rgb(220,60,40))
+    gui_check(draw_present(4,c))
+    gui_button(5, 10, 150, 120, 32, s"Step")
+    gui_button(6, 150, 150, 120, 32, s"Reopen")
+    // Retained geometry must not alias caller-owned packets.
+    let props = gui_properties(7,3,10,80,100,40,0)
+    gui_check(_gui_control(props,""))
+    buffer_set(props,16,255)
+    buffer_set(props,32,255)
+    collect()
+}
+fn main() {
+    print(gui_dpi())
+    print(_gui_open_scaled("bad",-1,240))
+    var round = 0
+    var step = 0
+    gui_check(gui_open_scaled(s"Ramos Scaling test",320,240))
+    print(_gui_open_scaled("busy",320,240))
+    scene(round)
+    var running = true
+    while running {
+        let e = gui_event(-1)
+        if e.kind == 1 { running = false }
+        if e.kind == 6 {
+            if e.id != gui_dpi() || e.width < 1 || e.height < 1 { exit(9) }
+            gui_set(1,s"round=" + string(int_to_text(round)) + s" dpi=" + string(int_to_text(e.id)))
+            stdout("scale ")
+            stdout(int_to_text(e.id))
+            stdout(" ")
+            stdout(int_to_text(e.width))
+            stdout(" ")
+            print(e.height)
+        }
+        if e.kind == 2 && e.id == 5 {
+            for i in 0..16 { let scratch = buffer(65536)
+                buffer_set(scratch,0,i) }
+            gui_set(2,s"step=" + string(int_to_text(step)))
+            collect()
+            stdout("step ")
+            stdout(int_to_text(step))
+            stdout(" ")
+            print(memory_used())
+            step += 1
+        }
+        if e.kind == 2 && e.id == 6 {
+            gui_check(gui_close())
+            print(gui_dpi())
+            round += 1
+            if round % 2 == 0 { gui_check(gui_open_scaled(s"Ramos Scaling test",320,240)) }
+            else { gui_check(gui_open(s"Ramos Scaling test",320,240)) }
+            scene(round)
+        }
+    }
+    gui_check(gui_close())
+    collect()
+    print(gui_dpi())
+    print(memory_used() < 262144)
+}

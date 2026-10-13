@@ -94,6 +94,8 @@ def main():
     report['bootstrap_skips_terminal_tests'] = sum(unittest.TestLoader().loadTestsFromTestCase(cls).countTestCases() for cls in (TUITests, LinuxTerminalTests))
     from test_linux_gui import LinuxGUITests
     report['bootstrap_skips_linux_gui_tests'] = unittest.TestLoader().loadTestsFromTestCase(LinuxGUITests).countTestCases()
+    from test_scaling import ScalingTests, LinuxScalingTests, WindowsScalingTests
+    report['bootstrap_skips_scaling_tests'] = sum(unittest.TestLoader().loadTestsFromTestCase(cls).countTestCases() for cls in (ScalingTests,LinuxScalingTests,WindowsScalingTests))
     from test_gui import GUITests
     report['bootstrap_skips_gui_tests'] = unittest.TestLoader().loadTestsFromTestCase(GUITests).countTestCases()
     from test_syntax import SyntaxTests

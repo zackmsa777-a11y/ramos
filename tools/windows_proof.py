@@ -359,6 +359,17 @@ if os.name == 'nt':
             setattr(WindowsTests, name, getattr(test_canvas.WindowsCanvasTests, name))
 
 
+import test_scaling
+for name in dir(test_scaling.ScalingTests):
+    if name.startswith('test_'):
+        setattr(WindowsTests, name, getattr(test_scaling.ScalingTests, name))
+if os.name == 'nt':
+    WindowsTests.native_path = staticmethod(str)
+    for name in dir(test_scaling.WindowsScalingTests):
+        if name.startswith('test_'):
+            setattr(WindowsTests, name, getattr(test_scaling.WindowsScalingTests, name))
+
+
 def main():
     if not COMPILER.is_file():
         raise SystemExit('Build the native Windows compiler first: make windows')
