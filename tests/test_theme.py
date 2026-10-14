@@ -79,7 +79,11 @@ class LinuxThemeTests(unittest.TestCase):
         wait(lambda:self.desktop.pixel(w,4,124)==0x18181b,'ember background')
         self.desktop.paste(w,80,62,'Changed مرحبا 🌍')
         self.desktop.resize(w,900,620)
-        wait(lambda:self.desktop.pixel(w,4,124)==0x18181b,'theme survives resize')
+        # Cairo's one-pixel outline is antialiased. Check the transition from
+        # surface through border to background rather than an unblended GDI RGB.
+        wait(lambda:(self.desktop.pixel(w,881,152)==0x27272a and
+                     self.desktop.pixel(w,883,152) not in (0x27272a,0x18181b) and
+                     self.desktop.pixel(w,885,152)==0x18181b),'card edge reflows on resize')
         self.desktop.click(w,790,28)
         wait(lambda:self.desktop.pixel(w,4,124)==0xf1f5f9,'paper after resize')
         self.desktop.request_close(w)

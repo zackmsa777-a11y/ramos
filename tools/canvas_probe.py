@@ -86,7 +86,14 @@ def main():
                 return out.value
             assert entry_text()==value.value
             assert user.SetWindowPos(hwnd,None,0,0,930,680,0x16)
-            wait(lambda:pixel(canvas,4,4)==rgb(24,24,27),'theme after resize')
+            def reflowed():
+                parent=W.RECT();child=W.RECT()
+                assert user.GetClientRect(hwnd,C.byref(parent))
+                assert user.GetClientRect(canvas,C.byref(child))
+                return (parent.right>800 and child.right==parent.right and
+                        child.bottom==parent.bottom-120 and
+                        pixel(canvas,parent.right-17,32)==rgb(82,82,91))
+            wait(reflowed,'resized canvas geometry and moved card edge')
             assert user.RedrawWindow(canvas,None,None,0x105)
             assert pixel(canvas,4,4)==rgb(24,24,27)
             assert entry_text()==value.value
