@@ -112,8 +112,10 @@ redirect following, connection refusal/timeouts, response limits and repeated
 requests/collection. TLS fixtures use a temporary trusted CA to prove success,
 then reject hostname mismatch and an untrusted certificate before any HTTP
 request is sent. Linux selects a per-process test trust bundle; native Windows
-installs its unique fixture CA in the CI user's Root store and removes that exact
-certificate afterward. Python/OpenSSL are test tooling only.
+installs its unique fixture CA in the disposable CI machine's Root store and
+removes that exact certificate afterward. Those Windows TLS tests require an
+elevated, isolated test host; application requests themselves do not require
+administrator access. Python/OpenSSL are test tooling only.
 
 The retained seed skips the new library/intrinsic tests. Windows TLS acceptance
 requires native Windows; Wine is not a substitute for that trust-store proof.

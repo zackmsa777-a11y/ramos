@@ -220,9 +220,30 @@ runtime_http_windows_open_call:
     test rax, rax
     jz runtime_http_windows_native_error
     mov [rbp + 64], rax
+    # Apply timeouts to this request explicitly. WinHTTP's separate response
+    # header deadline otherwise retains its 90-second default.
+    mov rcx, rax
+    mov rax, [rbp]
+    mov edx, [rax + 8]
+    mov r8d, edx
+    mov r9d, edx
+    mov r10d, edx
+    WH WinHttpSetTimeouts
+    test eax, eax
+    jz runtime_http_windows_native_error
+    mov rax, [rbp]
+    mov eax, [rax + 8]
+    mov [rbp + 96], eax
+    mov rcx, [rbp + 64]
+    mov edx, 7                      # WINHTTP_OPTION_RECEIVE_RESPONSE_TIMEOUT.
+    lea r8, [rbp + 96]
+    mov r9d, 4
+    WH WinHttpSetOption
+    test eax, eax
+    jz runtime_http_windows_native_error
     # Do not disable certificate chain/name checks. Never follow redirects.
     mov DWORD PTR [rbp + 96], 0
-    mov rcx, rax
+    mov rcx, [rbp + 64]
     mov edx, 88                     # WINHTTP_OPTION_REDIRECT_POLICY.
     lea r8, [rbp + 96]
     mov r9d, 4

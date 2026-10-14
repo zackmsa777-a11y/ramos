@@ -14,6 +14,9 @@ class Fixture:
         self.directory=Path(directory);self.servers=[];self.threads=[];self.requests=[];self.trusted_thumbprint=None
         owner=self
         class Handler(BaseHTTPRequestHandler):
+            def handle(self):
+                try:super().handle()
+                except (BrokenPipeError,ConnectionResetError,ssl.SSLError):pass
             protocol_version='HTTP/1.1'
             def request(self):
                 body=self.rfile.read(int(self.headers.get('Content-Length','0')))
@@ -71,8 +74,8 @@ class Fixture:
         if os.name=='nt':
             openssl('x509','-in','root.pem','-outform','DER','-out','root.cer')
             thumb=hashlib.sha1((self.directory/'root.cer').read_bytes()).hexdigest()
-            subprocess.run(['certutil','-user','-addstore','Root',str(self.directory/'root.cer')],check=True,capture_output=True,timeout=30)
             self.trusted_thumbprint=thumb
+            subprocess.run(['certutil','-f','-addstore','Root',str(self.directory/'root.cer')],check=True,capture_output=True,timeout=30)
     def env(self):
         env=dict(os.environ)
         if self.https and os.name!='nt':env['SSL_CERT_FILE']=str(self.directory/'root.pem')
@@ -81,5 +84,5 @@ class Fixture:
         for server in self.servers:server.shutdown();server.server_close()
         for thread in self.threads:thread.join(timeout=5)
         if self.trusted_thumbprint:
-            subprocess.run(['certutil','-user','-delstore','Root',self.trusted_thumbprint],check=True,capture_output=True,timeout=30)
+            subprocess.run(['certutil','-delstore','Root',self.trusted_thumbprint],check=True,capture_output=True,timeout=30)
             self.trusted_thumbprint=None
