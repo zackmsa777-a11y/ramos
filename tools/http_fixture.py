@@ -29,6 +29,7 @@ class Fixture:
                 if self.path=='/large':data=b'x'*1048569
                 if self.path=='/exact':data=b'x'*1048568
                 if self.path=='/slow':time.sleep(.6);data=b'late'
+                if self.path=='/stall':time.sleep(2.5);data=b'late'
                 if self.path=='/chunked':
                     self.send_response(200);self.send_header('Transfer-Encoding','chunked');self.end_headers()
                     self.wfile.write(b'3\r\nabc\r\n2\r\nde\r\n0\r\n\r\n');return

@@ -63,7 +63,11 @@ let response = http_post(string(arg(1)), headers, "a\\0b مرحبا", 1000)
     def test_http_timeout_and_connection_failure(self):
         build(self,GET.replace('1000','100'));f=fixture(self)
         start=time.monotonic();r=self.run_native(f.url('/slow'))
-        self.assertEqual((r.returncode,r.stdout),(0,b'0\n-110\n0\n'),r.stderr)
+        diagnostic=r.stderr
+        if os.name=='nt' and r.stdout!=b'0\n-110\n0\n':
+            from winhttp_timeout_probe import probe
+            diagnostic=repr([probe(f.url('/slow'),100),probe(f.url('/stall'),100)])
+        self.assertEqual((r.returncode,r.stdout),(0,b'0\n-110\n0\n'),diagnostic)
         self.assertLess(time.monotonic()-start,3)
         # A just-closed fixture port provides a deterministic refused connection.
         port=f.http.server_port;f.http.shutdown();f.http.server_close()
