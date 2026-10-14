@@ -10,6 +10,7 @@ agent. Other API formats, reasoning extensions, streaming and multiple tool
 calls per response need separate implementations.
 
 From a current source checkout on Windows, keep `stdlib/` beside `examples/`:
+use the unchanged 0.26 release compiler with these current library/example files.
 
 ```powershell
 .\ramos.exe build .\examples\api_agent.ramos -o .\api-agent.exe

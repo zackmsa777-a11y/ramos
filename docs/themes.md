@@ -41,6 +41,10 @@ clip the previous layout because the backend does not yet enforce a minimum
 size. The event loop blocks when idle and updates the scene only on a theme
 change or usable resize. The chart is illustrative data, not a benchmark.
 
+![Ember palette in the actual Linux GTK showcase](theme-lab-ember.png)
+
+This capture is from the native Ramos application, not an HTML mockup.
+
 Native labels, inputs, buttons, fonts and title bars retain OS appearance.
 Canvas text, image drawing and native control style setters are not implemented.
 This slice therefore themes the dashboard surfaces, not the entire window.

@@ -1,0 +1,79 @@
+{
+  "status": "verified development source after 0.26.0; not a new release",
+  "code_commit": "a128dc3f6abe96f84c7b4ff7745b020b1d1bfa31",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38614215188",
+  "compiler_version": "0.26.0",
+  "compiler_source_sha256": "77232cad86020619a4cb1d580c59143182dbfc70e032a8c4e494edbe3b07b29c",
+  "source_files": {
+    "stdlib/json.ramos": "836f5f440d5df0a13687e5f501a06c70cb6d863efc313712f9f494e238436d07",
+    "stdlib/theme.ramos": "5927776d1832eec5f2f077ca6f2a6dab3d134fc491e315f0fa323d8f21993179",
+    "examples/api_agent.ramos": "a999333904eff8ae6c0613fb95af9f810d7bee1fffab56e4be0627f965a56b27",
+    "examples/theme_lab.ramos": "aa16d9296338918a1835ebe426b25cd581ba0f18737dd855ad691e8ff712589d"
+  },
+  "linux": {
+    "discovered": 331,
+    "passed": 320,
+    "skipped": 11,
+    "stage2_equals_stage3": true,
+    "no_path_rebuild_matches": true,
+    "compiler_sha256": "96fad1cc210d2fefd214fda923e161bb8166f7929df3c55cc84baca6fcca31b2",
+    "package": {
+      "version": "Ramos 0.26.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "linux-x64",
+      "compiler_sha256": "96fad1cc210d2fefd214fda923e161bb8166f7929df3c55cc84baca6fcca31b2",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    }
+  },
+  "windows": {
+    "version": "0.26.0",
+    "target": "x86_64-windows",
+    "execution_host": "windows",
+    "source_sha256": "77232cad86020619a4cb1d580c59143182dbfc70e032a8c4e494edbe3b07b29c",
+    "executables": {
+      "seed": "f03c4edf9b0c05009e563a9958f38f36fe2fdc06be2c38f0b31a63ae1537013f",
+      "stage2": "f03c4edf9b0c05009e563a9958f38f36fe2fdc06be2c38f0b31a63ae1537013f",
+      "stage3": "f03c4edf9b0c05009e563a9958f38f36fe2fdc06be2c38f0b31a63ae1537013f"
+    },
+    "stage2_equals_stage3": true,
+    "seed_equals_stage2": true,
+    "tests_discovered": 263,
+    "tests_skipped": 2,
+    "tests_passed": 261
+  },
+  "windows_package": {
+    "version": "Ramos 0.26.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+    "target": "windows-x64",
+    "compiler_sha256": "f03c4edf9b0c05009e563a9958f38f36fe2fdc06be2c38f0b31a63ae1537013f",
+    "unicode_install_path": true,
+    "empty_path": true,
+    "run_arguments_exit_status": true,
+    "library_build_and_sort": true,
+    "executable_runs_without_compiler_or_sources": true,
+    "checks": 5,
+    "package_sha256": null,
+    "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+  },
+  "acceptance": [
+    "JSON strict UTF-8/surrogate/number grammar and exact spelling",
+    "Independent JSON parser round trips, limits and repeated collection",
+    "Native HTTPS tool call, validated arguments, tool result and final reply",
+    "Unknown tools, malformed replies, token/UTF-8 checks and bounded conversation/request count",
+    "Native GTK and Win32 palette switching, Unicode input, canvas resize/repaint and clean close",
+    "Windows repeated palette changes with bounded GDI resource count"
+  ],
+  "remaining": [
+    "Whole-window native control colors/fonts and canvas text",
+    "Responsive HTTP request lifecycle for GUI apps",
+    "Real-model/provider integration and broader tools",
+    "A new versioned release bundle; 0.26.0 published assets remain unchanged",
+    "Genuine Windows DPI-transition visual retest and 200% when available"
+  ],
+  "scope": "Controlled local HTTP/TLS and real native GUI acceptance. No paid or live model request, new speed claim or Rust/Python ecosystem parity claim."
+}
