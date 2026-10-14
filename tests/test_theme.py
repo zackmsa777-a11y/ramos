@@ -69,6 +69,9 @@ class LinuxThemeTests(unittest.TestCase):
     launch = linux_gui.LinuxGUITests.launch
 
     def test_theme_lab_switch_resize_input_and_close(self):
+        # Headless CI has no AT-SPI service. Disable its bridge for this pixel
+        # test only; the application keeps normal desktop accessibility defaults.
+        self.env = dict(self.env, NO_AT_BRIDGE='1')
         self.standard_library()
         self.gui_build((support.ROOT/'examples/theme_lab.ramos').read_text(encoding='utf-8').replace('../stdlib/','stdlib/'))
         proc=self.launch();w=self.desktop.window('Ramos Theme Lab',proc)
