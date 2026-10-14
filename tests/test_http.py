@@ -104,7 +104,8 @@ let response = http_post(string(arg(1)), headers, "a\\0b مرحبا", 1000)
             result=self.build('weave "stdlib/http.ramos"\nfn main() { let response = http_get(string(arg(1)), array(string, 0, s""), 1000)\nprint(response.code)\nprint(_gui_open("HTTP GTK", 320, 240))\nprint(_gui_close()) }','--force','--gui')
             self.assertEqual(result.returncode,0,result.stderr)
             f=fixture(self)
-            result=subprocess.run(['xvfb-run','-a',str(self.output),f.url()],capture_output=True,timeout=20)
+            result=subprocess.run(['xvfb-run','-a',str(self.output),f.url()],capture_output=True,timeout=20,
+                                  env=dict(os.environ,NO_AT_BRIDGE='1',GDK_BACKEND='x11'))
             self.assertEqual((result.returncode,result.stdout),(0,b'200\n0\n0\n'),result.stderr)
 
     def test_http_repeated_requests_collect_and_release(self):
