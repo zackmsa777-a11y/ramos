@@ -67,11 +67,14 @@ if `SSL_CERT_FILE` is nonempty, it explicitly selects a PEM trust bundle while
 verification stays enabled. Windows uses the OS trust store. The client does not
 attempt automatic Windows authentication; explicit Authorization headers work.
 
-Linux's timeout bounds the total libcurl transfer. Windows applies the timeout
-separately to DNS resolution, connection, sending and receiving; a request can
-therefore take longer than that value in total. A progressing stream can require
-multiple reads. This is a synchronous API and does not provide a strict portable
-wall-clock deadline or background GUI work.
+The timeout bounds the network transfer. Linux uses libcurl's transfer timer;
+Windows uses private native completion callbacks and an event wait with the
+remaining transfer budget. DNS/connect/send/read stages share that budget.
+On timeout, Windows cancels the request and waits for the final native handle
+closing callback before releasing buffers. Cancellation cleanup and the final
+response copy can extend total call duration; this is not a strict wall-clock
+return guarantee. The public API remains synchronous and does not provide
+background GUI work.
 
 Native contracts: [libcurl hostname checking](https://curl.se/libcurl/c/CURLOPT_SSL_VERIFYHOST.html),
 [libcurl transfer timeout](https://curl.se/libcurl/c/CURLOPT_TIMEOUT_MS.html),

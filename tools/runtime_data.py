@@ -12,7 +12,7 @@ KERNEL = ['GetStdHandle', 'WriteFile', 'ExitProcess', 'VirtualAlloc',
           'CreateFileW', 'CloseHandle', 'GetFileType', 'GetFileInformationByHandle',
           'ReadFile', 'GetFullPathNameW', 'GetTickCount64', 'GetCurrentProcessId',
           'MoveFileExW', 'DeleteFileW', 'GetCommandLineW', 'SetConsoleOutputCP', 'GetConsoleMode', 'SetConsoleMode',
-          'GetConsoleScreenBufferInfo', 'ReadConsoleInputW', 'WaitForSingleObject', 'SetConsoleCtrlHandler', 'SetFilePointerEx', 'LoadLibraryExW', 'GetProcAddress', 'GetModuleHandleW', 'QueryPerformanceCounter', 'QueryPerformanceFrequency']
+          'GetConsoleScreenBufferInfo', 'ReadConsoleInputW', 'WaitForSingleObject', 'SetConsoleCtrlHandler', 'SetFilePointerEx', 'LoadLibraryExW', 'GetProcAddress', 'GetModuleHandleW', 'QueryPerformanceCounter', 'QueryPerformanceFrequency', 'CreateEventW', 'SetEvent']
 BUILTINS = ['buffer_new', 'buffer_len', 'buffer_get', 'buffer_set', 'arg_count',
             'arg', 'read_file', 'write_file', 'io_error', 'stderr', 'process_exit', 'platform',
             'read_line', 'stdin_eof', 'int_to_text', 'text_to_int', 'parse_error', 'collect', 'memory_used', 'string_from_bytes', 'string_to_bytes', 'string_len', 'string_slice',

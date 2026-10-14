@@ -12,6 +12,7 @@
 .equ WH_WinHttpQueryHeaders, 4296
 .equ WH_WinHttpReadData, 4304
 .equ WH_WinHttpCloseHandle, 4312
+.equ WH_WinHttpSetStatusCallback, 4320
 .macro WH name
     mov rax, [r15 + 136]
     mov rax, [rax + 8 + WH_\name]
@@ -24,11 +25,11 @@ runtime_http_windows_initialize:
     push rdi
     call runtime_system_table
     lea rdi, [rax + 8 + 4224]
-    cmp QWORD PTR [rdi + 88], 0
+    cmp QWORD PTR [rdi + 96], 0
     jne runtime_http_windows_initialized
     # Keep exactly one process-owned DLL reference, including partial API
     # initialization. Retrying an unavailable export must not reload the DLL.
-    mov rbx, [rdi + 96]
+    mov rbx, [rdi + 104]
     test rbx, rbx
     jnz runtime_http_windows_have_module
     lea rcx, [rip + runtime_http_dll]
@@ -38,7 +39,7 @@ runtime_http_windows_initialize:
     test rax, rax
     jz runtime_http_windows_missing
     mov rbx, rax
-    mov [rdi + 96], rax
+    mov [rdi + 104], rax
 runtime_http_windows_have_module:
     lea rsi, [rip + runtime_http_windows_names]
 runtime_http_windows_load:
@@ -79,6 +80,8 @@ runtime_http_request:
     mov QWORD PTR [rbp + 48], 0
     mov QWORD PTR [rbp + 56], 0
     mov QWORD PTR [rbp + 64], 0
+    mov QWORD PTR [rbp + 104], 0     # Rooted callback context buffer.
+    mov QWORD PTR [rbp + 120], 0     # Callback registered.
     call runtime_http_validate
     test rax, rax
     js runtime_http_windows_done
@@ -156,7 +159,7 @@ runtime_http_windows_path:
     mov edx, 1                     # Direct; no implicit proxy configuration.
     xor r8d, r8d
     xor r9d, r9d
-    xor r10d, r10d
+    mov r10d, 0x10000000            # WINHTTP_FLAG_ASYNC, private implementation.
     WH WinHttpOpen
     test rax, rax
     jz runtime_http_windows_native_error
@@ -285,6 +288,48 @@ runtime_http_windows_header_skip:
     dec QWORD PTR [rbp + 88]
     jmp runtime_http_windows_header_each
 runtime_http_windows_send:
+    # Callbacks never allocate or call Ramos. Keep their buffer rooted until
+    # HANDLE_CLOSING, the final notification, including after cancellation.
+    mov eax, 48
+    call runtime_buffer_new
+    mov [rbp + 104], rax
+    xor ecx, ecx
+    xor edx, edx                    # Auto-reset event.
+    xor r8d, r8d
+    xor r9d, r9d
+    API CreateEventW
+    test rax, rax
+    jz runtime_http_windows_native_error
+    mov rdx, [rbp + 104]
+    mov [rdx + 8], rax
+    xor ecx, ecx
+    xor edx, edx
+    xor r8d, r8d
+    xor r9d, r9d
+    API CreateEventW
+    test rax, rax
+    jz runtime_http_windows_native_error
+    mov rdx, [rbp + 104]
+    mov [rdx + 48], rax             # Dedicated final-closing event.
+    add rdx, 8
+    mov [rbp + 272], rdx
+    mov rcx, [rbp + 64]
+    mov edx, 45                     # WINHTTP_OPTION_CONTEXT_VALUE.
+    lea r8, [rbp + 272]
+    mov r9d, 8
+    WH WinHttpSetOption
+    test eax, eax
+    jz runtime_http_windows_native_error
+    mov rcx, [rbp + 64]
+    lea rdx, [rip + runtime_http_windows_callback]
+    mov r8d, 0x6a0800              # Send, headers, read, error, final closing.
+    xor r9d, r9d
+    WH WinHttpSetStatusCallback
+    cmp rax, -1
+    je runtime_http_windows_native_error
+    mov QWORD PTR [rbp + 120], 1
+    API GetTickCount64
+    mov [rbp + 112], rax            # Transfer start, before DNS/connect/send.
     mov rcx, [rbp + 64]
     xor edx, edx
     xor r8d, r8d
@@ -299,15 +344,25 @@ runtime_http_windows_send:
     xor r10d, r10d
     xor r11d, r11d
 runtime_http_windows_send_call:
-    xor esi, esi
+    mov rsi, [rbp + 272]
     WH WinHttpSendRequest
     test eax, eax
     jz runtime_http_windows_native_error
+    mov DWORD PTR [rbp + 280], 0x400000
+    call runtime_http_windows_wait
+    test rax, rax
+    js runtime_http_windows_done
+    mov rdx, [rbp + 104]
+    mov QWORD PTR [rdx + 16], 0
     mov rcx, [rbp + 64]
     xor edx, edx
     WH WinHttpReceiveResponse
     test eax, eax
     jz runtime_http_windows_native_error
+    mov DWORD PTR [rbp + 280], 0x20000
+    call runtime_http_windows_wait
+    test rax, rax
+    js runtime_http_windows_done
     mov DWORD PTR [rbp + 244], 4
     mov rcx, [rbp + 64]
     mov edx, 0x20000013
@@ -332,15 +387,22 @@ runtime_http_windows_read_size:
     mov [rbp + 256], r8
     test r8, r8
     jnz runtime_http_windows_read_call
-    lea rdx, [rbp + 112]            # Probe one byte to distinguish EOF/full.
+    lea rdx, [rbp + 288]            # Probe one byte to distinguish EOF/full.
     mov r8d, 1
 runtime_http_windows_read_call:
     mov rcx, [rbp + 64]
-    lea r9, [rbp + 248]
+    mov rax, [rbp + 104]
+    mov QWORD PTR [rax + 16], 0
+    xor r9d, r9d                    # Async read count comes from its callback.
     WH WinHttpReadData
     test eax, eax
     jz runtime_http_windows_native_error
-    mov eax, [rbp + 248]
+    mov DWORD PTR [rbp + 280], 0x80000
+    call runtime_http_windows_wait
+    test rax, rax
+    js runtime_http_windows_done
+    mov rax, [rbp + 104]
+    mov eax, [rax + 32]
     test eax, eax
     jz runtime_http_windows_success
     cmp rax, [rbp + 256]
@@ -353,6 +415,9 @@ runtime_http_windows_success:
     jmp runtime_http_windows_done
 runtime_http_windows_native_error:
     API GetLastError
+    call runtime_http_windows_error_value
+    jmp runtime_http_windows_done
+runtime_http_windows_error_value:
     cmp eax, 12002
     je runtime_http_windows_timeout
     cmp eax, 12175
@@ -362,19 +427,19 @@ runtime_http_windows_native_error:
     cmp eax, 12029
     je runtime_http_windows_connect_error
     mov rax, -5
-    jmp runtime_http_windows_done
+    ret
 runtime_http_windows_timeout:
     mov rax, -110
-    jmp runtime_http_windows_done
+    ret
 runtime_http_windows_tls:
     mov rax, -13
-    jmp runtime_http_windows_done
+    ret
 runtime_http_windows_dns:
     mov rax, -113
-    jmp runtime_http_windows_done
+    ret
 runtime_http_windows_connect_error:
     mov rax, -111
-    jmp runtime_http_windows_done
+    ret
 runtime_http_windows_large:
     mov rax, -27
     jmp runtime_http_windows_done
@@ -386,6 +451,18 @@ runtime_http_windows_done:
     test rcx, rcx
     jz runtime_http_windows_close_connection
     WH WinHttpCloseHandle
+    cmp QWORD PTR [rbp + 120], 0
+    je runtime_http_windows_close_connection
+runtime_http_windows_quiesce:
+    mov rax, [rbp + 104]
+    mov rcx, [rax + 48]
+    mov edx, -1                    # Never release buffers before the final callback.
+    API WaitForSingleObject
+    test eax, eax
+    jz runtime_http_windows_close_connection
+    # A failed quiescence wait cannot safely release callback-owned memory.
+    mov ecx, 1
+    API ExitProcess
 runtime_http_windows_close_connection:
     mov rcx, [rbp + 56]
     test rcx, rcx
@@ -397,6 +474,19 @@ runtime_http_windows_close_session:
     jz runtime_http_windows_return
     WH WinHttpCloseHandle
 runtime_http_windows_return:
+    mov rax, [rbp + 104]
+    test rax, rax
+    jz runtime_http_windows_return_status
+    mov rcx, [rax + 8]
+    test rcx, rcx
+    jz runtime_http_windows_return_status
+    API CloseHandle
+    mov rax, [rbp + 104]
+    mov rcx, [rax + 48]
+    test rcx, rcx
+    jz runtime_http_windows_return_status
+    API CloseHandle
+runtime_http_windows_return_status:
     mov rax, [rbp + 72]
     mov QWORD PTR [r15 + 8], 0
     test rax, rax
@@ -413,11 +503,78 @@ runtime_http_windows_ok:
     pop rbx
     pop rbp
     ret
+# Shared main-frame helper. Time includes all network stages, not per-read
+# timeout resets. The public call remains synchronous.
+runtime_http_windows_wait:
+    API GetTickCount64
+    sub rax, [rbp + 112]
+    mov rdx, [rbp]
+    mov rdx, [rdx + 8]
+    cmp rax, rdx
+    jae runtime_http_windows_wait_timeout
+    sub rdx, rax
+    mov rax, [rbp + 104]
+    mov rcx, [rax + 8]
+    API WaitForSingleObject
+    cmp eax, 258
+    je runtime_http_windows_wait_timeout
+    test eax, eax
+    jnz runtime_http_windows_wait_io
+    mov rax, [rbp + 104]
+    cmp DWORD PTR [rax + 16], 0x200000
+    jne runtime_http_windows_wait_status
+    mov eax, [rax + 24]
+    jmp runtime_http_windows_error_value
+runtime_http_windows_wait_status:
+    mov eax, [rax + 16]
+    cmp eax, [rbp + 280]
+    jne runtime_http_windows_wait_io
+    xor eax, eax
+    ret
+runtime_http_windows_wait_timeout:
+    mov rax, -110
+    ret
+runtime_http_windows_wait_io:
+    mov rax, -5
+    ret
+
+# Native Win64 callback ABI. Do not use the main thread's r15/process state.
+# Context payload: completion event, status, error, read count, reserved, closing event.
+runtime_http_windows_callback:
+    test rdx, rdx
+    jz runtime_http_windows_callback_empty
+    push rbx
+    sub rsp, 32                    # Aligned call + Microsoft shadow space.
+    mov rbx, rdx
+    cmp r8d, 0x800
+    je runtime_http_windows_callback_closing
+runtime_http_windows_callback_status:
+    mov [rbx + 8], r8d
+    cmp r8d, 0x200000
+    jne runtime_http_windows_callback_read
+    mov eax, [r9 + 8]              # WINHTTP_ASYNC_RESULT.dwError.
+    mov [rbx + 16], eax
+runtime_http_windows_callback_read:
+    cmp r8d, 0x80000
+    jne runtime_http_windows_callback_signal
+    mov eax, [rsp + 80]            # Original fifth ABI argument: byte count.
+    mov [rbx + 24], eax
+runtime_http_windows_callback_signal:
+    mov rcx, [rbx]
+    jmp runtime_http_windows_callback_set
+runtime_http_windows_callback_closing:
+    mov rcx, [rbx + 40]             # Last context access, before final wakeup.
+runtime_http_windows_callback_set:
+    call QWORD PTR [rip + iat_SetEvent]
+    add rsp, 32
+    pop rbx
+runtime_http_windows_callback_empty:
+    ret
 runtime_http_windows_names:
 .asciz "WinHttpOpen", "WinHttpConnect", "WinHttpCrackUrl", "WinHttpOpenRequest"
 .asciz "WinHttpSetTimeouts", "WinHttpSetOption", "WinHttpAddRequestHeaders"
 .asciz "WinHttpSendRequest", "WinHttpReceiveResponse", "WinHttpQueryHeaders"
-.asciz "WinHttpReadData", "WinHttpCloseHandle"
+.asciz "WinHttpReadData", "WinHttpCloseHandle", "WinHttpSetStatusCallback"
 .byte 0
 .balign 2
 runtime_http_dll: .short 119,105,110,104,116,116,112,46,100,108,108,0
