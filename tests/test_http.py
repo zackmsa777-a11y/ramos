@@ -52,7 +52,7 @@ let response = http_post(string(arg(1)), headers, "a\\0b مرحبا", 1000)
         self.assertEqual(headers['Content-Type'],'application/json')
 
     def test_https_trusted_name_check_and_untrusted_rejection(self):
-        build(self,GET);f=fixture(self,tls=True);env=f.env()
+        build(self,GET.replace('1000','10000'));f=fixture(self,tls=True);env=f.env()
         r=self.run_native(f.url('/',f.https,'localhost'),env=env)
         self.assertEqual((r.returncode,r.stdout),(0,b'200\n0\n12\nhello\0world\xff'),r.stderr)
         for url in [f.url('/',f.https,'127.0.0.1'),f.url('/',f.untrusted,'localhost')]:
@@ -71,6 +71,10 @@ let response = http_post(string(arg(1)), headers, "a\\0b مرحبا", 1000)
         self.assertLess(time.monotonic()-start,3)
         # A just-closed fixture port provides a deterministic refused connection.
         port=f.http.server_port;f.http.shutdown();f.http.server_close()
+        # Test refusal with its own budget, rather than racing the 100 ms
+        # cancellation test against WinHTTP's connection failure/retry work.
+        result=self.build('weave "stdlib/http.ramos"\nfn main() {\n'+GET.replace('1000','5000')+'\n}', '--force')
+        self.assertEqual(result.returncode,0,result.stderr)
         r=self.run_native(f'http://127.0.0.1:{port}/')
         self.assertEqual((r.returncode,r.stdout),(0,b'0\n-111\n0\n'),r.stderr)
 
