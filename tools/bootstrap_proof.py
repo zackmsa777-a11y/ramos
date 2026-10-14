@@ -112,6 +112,8 @@ def main():
     report['bootstrap_skips_math_input_tests'] = unittest.TestLoader().loadTestsFromTestCase(MathInputTests).countTestCases()
     from test_math_output import MathOutputTests
     report['bootstrap_skips_math_output_tests'] = unittest.TestLoader().loadTestsFromTestCase(MathOutputTests).countTestCases()
+    from test_http import HTTPTests
+    report['bootstrap_skips_http_tests'] = unittest.TestLoader().loadTestsFromTestCase(HTTPTests).countTestCases()
     report['corpus_passed_with'] = ['stage0', 'stage2', 'stage3']
     (ROOT / 'build/bootstrap-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

@@ -1,0 +1,26 @@
+weave "../stdlib/http.ramos"
+
+// Supply an API endpoint and JSON request file. An optional token comes from
+// RAMOS_API_TOKEN, never from printed output or the command line.
+fn main() {
+    if arg_count() != 3 {
+        stderr("Usage: api-post URL request.json\n")
+        exit(2)
+    }
+    let body = read_file(arg(2))
+    if io_error() != 0 { stderr("Cannot read request file\n")
+        exit(1) }
+    let token = env_get("RAMOS_API_TOKEN")
+    var count = 1
+    if buffer_len(token) != 0 { count = 2 }
+    let headers = array(string, count, s"")
+    array_set(headers, 0, s"Content-Type: application/json")
+    if buffer_len(token) != 0 { array_set(headers, 1, s"Authorization: Bearer " + string(token)) }
+    let response = http_post(string(arg(1)), headers, body, 30000)
+    if response.status != 0 { stderr("HTTP transport error: ")
+        stderr(int_to_text(response.status))
+        stderr("\n")
+        exit(1) }
+    stdout(response.body)
+    if response.code < 200 || response.code >= 300 { exit(1) }
+}

@@ -1,0 +1,68 @@
+// Native synchronous HTTP(S). GET/POST only; no shell or helper process.
+// code is the HTTP response code; status is a negative transport/validation error.
+struct HttpResponse { code: int64, status: int64, body: bytes }
+struct HttpPacket { data: bytes, used: int64, status: int64 }
+fn http_byte(packet: HttpPacket, value: int64) {
+    if packet.status != 0 { return }
+    if packet.used == 32768 { packet.status = -7
+        return }
+    buffer_set(packet.data, packet.used, value)
+    packet.used += 1
+}
+fn http_text(packet: HttpPacket, value: string) {
+    let raw = to_bytes(value)
+    for i in 0..buffer_len(raw) {
+        let ch = buffer_get(raw, i)
+        if ch < 32 || ch > 126 { packet.status = -22
+            return }
+        http_byte(packet, ch)
+    }
+    http_byte(packet, 0)
+}
+fn http_number(packet: HttpPacket, value: int64) {
+    var n = value
+    for i in 0..8 {
+        http_byte(packet, n % 256)
+        n = n / 256
+    }
+}
+fn http_request(method: string, url: string, headers: [string], body: bytes, timeout_ms: int64) -> HttpResponse {
+    var mode = 0
+    if method == s"POST" { mode = 1 }
+    else if method != s"GET" { return HttpResponse(0, -22, buffer(0)) }
+    if mode == 0 && buffer_len(body) != 0 { return HttpResponse(0, -22, buffer(0)) }
+    if timeout_ms < 1 || timeout_ms > 120000 { return HttpResponse(0, -22, buffer(0)) }
+    if array_len(headers) > 64 { return HttpResponse(0, -7, buffer(0)) }
+    let raw_url = to_bytes(url)
+    if buffer_len(raw_url) > 8192 { return HttpResponse(0, -7, buffer(0)) }
+    let packet = HttpPacket(buffer(32768), 0, 0)
+    http_number(packet, timeout_ms)
+    http_number(packet, mode)
+    http_number(packet, buffer_len(raw_url))
+    http_number(packet, array_len(headers))
+    http_text(packet, url)
+    for i in 0..array_len(headers) { http_text(packet, headers[i]) }
+    if packet.status != 0 { return HttpResponse(0, packet.status, buffer(0)) }
+    let packed = buffer(packet.used)
+    for i in 0..packet.used { buffer_set(packed, i, buffer_get(packet.data, i)) }
+    // Eight metadata bytes leave at most 1,048,568 response-body bytes.
+    let response = buffer(1048576)
+    let code = _http_request(packed, body, response)
+    let status = io_error()
+    if status != 0 { return HttpResponse(0, status, buffer(0)) }
+    var used = 0
+    var weight = 1
+    for i in 0..4 {
+        used += buffer_get(response, i) * weight
+        weight = weight * 256
+    }
+    let result = buffer(used)
+    for i in 0..used { buffer_set(result, i, buffer_get(response, i + 8)) }
+    return HttpResponse(code, 0, result)
+}
+fn http_get(url: string, headers: [string], timeout_ms: int64) -> HttpResponse {
+    return http_request(s"GET", url, headers, buffer(0), timeout_ms)
+}
+fn http_post(url: string, headers: [string], body: bytes, timeout_ms: int64) -> HttpResponse {
+    return http_request(s"POST", url, headers, body, timeout_ms)
+}

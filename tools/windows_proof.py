@@ -196,7 +196,7 @@ print(io_error())
                 checked(execute(self.output))
 
     def test_version_and_help(self):
-        self.assertIn(b'Ramos 0.25.1', checked(execute(COMPILER, '--version')).stdout)
+        self.assertIn(b'Ramos 0.26.0', checked(execute(COMPILER, '--version')).stdout)
         self.assertIn(b'--target linux|windows', checked(execute(COMPILER, '--help')).stdout)
 
 
@@ -369,6 +369,13 @@ if os.name == 'nt':
         if name.startswith('test_'):
             setattr(WindowsTests, name, getattr(test_scaling.WindowsScalingTests, name))
 
+
+# WinHTTP TLS acceptance needs the genuine Windows trust store, not Wine.
+if os.name == 'nt':
+    import test_http
+    for name in dir(test_http.HTTPTests):
+        if name.startswith('test_'):
+            setattr(WindowsTests,name,getattr(test_http.HTTPTests,name))
 
 def main():
     if not COMPILER.is_file():

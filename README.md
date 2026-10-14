@@ -1,4 +1,4 @@
-# Ramos 0.25.1 preview — self-hosted compiler for Linux and Windows
+# Ramos 0.26.0 preview — self-hosted compiler for Linux and Windows
 
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
@@ -31,6 +31,14 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 ./ramos --version
 ```
 
+Version 0.26 adds **native HTTP(S) API clients**: GET/POST, request headers,
+captured binary response bodies, HTTP status codes and fallible transport errors.
+`weave "http.ramos"` calls libcurl on Linux and system WinHTTP on Windows; it
+never launches a helper executable. HTTPS verifies certificate chains and hostnames.
+Linux HTTP executables require `libcurl.so.4`; non-network CLI output stays static.
+See [HTTP contracts](docs/http.md) and the [JSON/API POST client](examples/api_post.ramos).
+This is a transport library; JSON parsing, sockets, servers and streaming remain future work.
+
 Version 0.25 adds **explicit GUI scaling**: `gui_open_scaled` uses logical
 coordinates, `gui_dpi` reports native DPI, and event kind 6 reports a change.
 Windows opts into per-monitor-v2 awareness and scales control boundaries, fonts
@@ -40,7 +48,7 @@ and the [DPI demo](examples/scaling.ramos). The user-reported native Windows seq
 144 → 168 → 96 passed events/input/shutdown, but captures showed broken canvas
 shapes; visual acceptance and the unavailable 200% preset remain unverified. Bounded resource probes
 exercise 200 MiB of allocation churn; the 16 MiB live heap budget is unchanged.
-Native proofs pass **300 Linux tests and 241 Windows tests**, with matching
+The 0.25.1 baseline proofs pass **300 Linux tests and 241 Windows tests**, with matching
 compiler fixed points. See [verification](docs/gui-scaling-verification.json).
 The 0.25.1 repaint candidate completes child placement before requesting full
 parent/child redraws. A real Windows visual retest is still required.

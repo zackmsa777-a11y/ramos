@@ -84,6 +84,12 @@ runtime_lg_call:
 runtime_lg_enabled:
     mov r11d, 0x400000
     cmp WORD PTR [r11 + 56], 7
+    jne runtime_lg_enabled_done
+    mov r11d, 0x600000 + 632
+    movzx r11d, BYTE PTR [r11]
+    and r11d, 1
+    cmp r11d, 1
+runtime_lg_enabled_done:
     ret
 runtime_lg_table:
     mov rbx, [r15 + 128]

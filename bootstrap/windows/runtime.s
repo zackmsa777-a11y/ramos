@@ -704,6 +704,8 @@ runtime_main_return:
     ud2
 .include "bootstrap/src/system_runtime.inc"
 .include "bootstrap/windows/system.s.inc"
+.include "bootstrap/src/http_common.inc"
+.include "bootstrap/windows/http.s.inc"
 # High-resolution QPC converted by quotient/remainder; no counter*1000 overflow.
 # The clock is independent of console setup and does not allocate.
 .global runtime_monotonic_ms

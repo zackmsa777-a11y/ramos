@@ -4,7 +4,7 @@ runtime_system_table:
     mov rax, [r15 + 136]
     test rax, rax
     jnz runtime_system_table_ready
-    mov eax, 4224
+    mov eax, 4352
     call runtime_buffer_new
     mov [r15 + 136], rax
 runtime_system_table_ready:
