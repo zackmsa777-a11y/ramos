@@ -1,10 +1,12 @@
 """Ramos's bounded API tool loop, against controlled HTTP(S) fixtures only."""
 import json
 import os
+import sys
 import unittest
 import test_ramos as support
 import test_cli_streams as streams
 from test_libraries import BOOTSTRAP
+sys.path.insert(0, str(support.ROOT / 'tools'))
 from http_fixture import Fixture
 
 def answer(text='Tool completed: مرحبا 🌍', finish='stop'):
