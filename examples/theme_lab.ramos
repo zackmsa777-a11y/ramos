@@ -1,0 +1,89 @@
+weave "../stdlib/theme.ramos"
+
+fn lab_theme(index: int64) -> GuiTheme {
+    if index == 0 { return theme_paper() }
+    if index == 1 { return theme_graphite() }
+    return theme_ember()
+}
+fn lab_scene(canvas: Canvas, theme: GuiTheme, width: int64, height: int64) {
+    draw_reset(canvas)
+    draw_clear(canvas, theme.background)
+    let gap = theme.spacing
+    let area = gui_inset(width, height, gap)
+    let top = gui_rect(area.x, area.y, area.width, 72)
+    for i in 0..3 {
+        let card = gui_row(top, i, 3, gap)
+        theme_card(canvas, theme, card)
+        var color = theme.accent
+        if i == 1 { color = theme.success }
+        if i == 2 { color = theme.warning }
+        draw_disk(canvas, card.x + 24, card.y + 28, 7, color)
+        draw_rect(canvas, card.x + 44, card.y + 20, card.width - 60, 5, theme.muted)
+        draw_rect(canvas, card.x + 44, card.y + 34, (card.width - 60) * (i + 2) / 4, 12, color)
+        draw_rect(canvas, card.x + 16, card.y + 57, card.width - 32, 2, theme.border)
+    }
+    let chart = gui_rect(gap, gap * 2 + 72, width - gap * 2, height - gap * 3 - 72)
+    theme_card(canvas, theme, chart)
+    let left = chart.x + 24
+    let right = chart.x + chart.width - 24
+    let top_y = chart.y + 20
+    let bottom = chart.y + chart.height - 20
+    let span = right - left
+    let high = bottom - top_y
+    for i in 0..5 {
+        let y = top_y + high * i / 4
+        draw_line(canvas, left, y, right, y, theme.border)
+    }
+    for i in 0..12 {
+        let x = left + span * i / 12 + 3
+        let bar = span / 12 - 6
+        let rise = high * (20 + (i * 17 + 11) % 61) / 100
+        draw_rect(canvas, x, bottom - rise, bar, rise, theme.accent)
+    }
+    var last_x = left
+    var last_y = bottom - high / 3
+    for i in 0..13 {
+        let x = left + span * i / 12
+        let y = bottom - high * (30 + i * 3 + (i * 7) % 13) / 100
+        if i > 0 { draw_line(canvas, last_x, last_y, x, y, theme.success) }
+        draw_disk(canvas, x, y, 3, theme.success)
+        last_x = x
+        last_y = y
+    }
+    gui_check(draw_present(1, canvas))
+}
+fn main() {
+    gui_check(gui_open(s"Ramos Theme Lab", 760, 520))
+    gui_label(2, 16, 12, 500, 28, s"RAMOS / THEME LAB     Paper")
+    gui_button(3, 572, 12, 172, 32, s"Change theme")
+    gui_input(4, 16, 48, 728, 32, s"Your workspace — مرحبا 🌍")
+    gui_label(5, 16, 84, 728, 24, s"Shared palette / reusable cards / native controls / resize to explore")
+    gui_canvas(1, 0, 120, 760, 400)
+    let canvas = draw_new()
+    var index = 0
+    var width = 760
+    var height = 400
+    lab_scene(canvas, lab_theme(index), width, height)
+    var running = true
+    while running {
+        let event = gui_event(-1)
+        if event.kind == 1 { running = false }
+        if event.kind == 2 && event.id == 3 {
+            index = (index + 1) % 3
+            let theme = lab_theme(index)
+            gui_set(2, s"RAMOS / THEME LAB     " + theme.name)
+            lab_scene(canvas, theme, width, height)
+        }
+        if event.kind == 3 && event.width >= 420 && event.width <= 8192 && event.height >= 360 && event.height <= 8192 {
+            width = event.width
+            height = event.height - 120
+            gui_move(3, width - 188, 12, 172, 32)
+            gui_move(2, 16, 12, width - 220, 28)
+            gui_move(4, 16, 48, width - 32, 32)
+            gui_move(5, 16, 84, width - 32, 24)
+            gui_move(1, 0, 120, width, height)
+            lab_scene(canvas, lab_theme(index), width, height)
+        }
+    }
+    gui_check(gui_close())
+}

@@ -1,5 +1,12 @@
 # Ramos 0.26.0 preview — self-hosted compiler for Linux and Windows
 
+**Development after 0.26.0:** current source adds a Ramos-written
+[JSON parser/encoder](docs/json.md), a [bounded native API tool loop](docs/api-agent.md)
+and [Paper/Graphite/Ember GUI palettes](docs/themes.md) with a live dashboard.
+These new libraries/examples use the unchanged 0.26 compiler; they are not in
+the published 0.26.0 archive. Build from a current checkout. Full native-control
+styling is the next UI milestone; no CSS or browser engine is supplied.
+
 The Ramos compiler is now written in [Ramos](compiler/ramos.ramos). Its lexer,
 parser, type checker, x86-64 instruction emitter and ELF/PE writers compile
 native Linux and Windows executables directly. There is no interpreter or

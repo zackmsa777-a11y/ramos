@@ -1,0 +1,123 @@
+weave "../stdlib/http.ramos"
+weave "../stdlib/json.ramos"
+
+// Minimal non-streaming Chat Completions tool loop. Only text_stats can run.
+// The caller supplies an endpoint, a tool-capable model and a UTF-8 prompt file.
+fn agent_error(message: bytes) { stderr("Ramos agent: ")
+    stderr(message)
+    stderr("\n")
+    exit(1) }
+fn agent_quote(text: string) -> string {
+    let result = json_quote(text)
+    if result.status != 0 { agent_error("JSON string exceeds output limit") }
+    return result.text
+}
+fn agent_append(messages: TextBuilder, text: string) {
+    if text_builder_bytes(messages) > 262144 - buffer_len(to_bytes(text)) {
+        agent_error("conversation exceeds 256 KiB")
+    }
+    if text_builder_append(messages, text) != 0 { agent_error("conversation too large") }
+}
+fn agent_string(doc: JsonDocument, node: int64) -> string {
+    if json_kind(doc, node) != 4 { agent_error("expected string in API response") }
+    return json_text(doc, node)
+}
+fn agent_stats(text: string) -> string {
+    return s"{\"characters\":" + string(int_to_text(len(text))) +
+        s",\"bytes\":" + string(int_to_text(buffer_len(to_bytes(text)))) + s"}"
+}
+fn main() {
+    if arg_count() == 2 && string(arg(1)) == s"--help" {
+        print("Usage: api-agent CHAT_COMPLETIONS_URL MODEL prompt.txt")
+        print("Optional RAMOS_API_TOKEN. At most 8 requests; only text_stats runs.")
+        return
+    }
+    if arg_count() != 4 { stderr("Usage: api-agent CHAT_COMPLETIONS_URL MODEL prompt.txt\n")
+        exit(2) }
+    let prompt = read_file(arg(3))
+    if io_error() != 0 { agent_error("cannot read prompt file") }
+    let checked = json_validate_utf8(prompt)
+    if checked.status != 0 { agent_error("prompt must be valid UTF-8") }
+    if json_validate_utf8(arg(1)).status != 0 || json_validate_utf8(arg(2)).status != 0 {
+        agent_error("URL and model must be valid UTF-8")
+    }
+    let model = agent_quote(string(arg(2)))
+    let token = env_get("RAMOS_API_TOKEN")
+    for i in 0..buffer_len(token) {
+        let ch = buffer_get(token, i)
+        if ch < 33 || ch > 126 { agent_error("token must contain only visible ASCII") }
+    }
+    var header_count = 1
+    if buffer_len(token) != 0 { header_count = 2 }
+    let headers = array(string, header_count, s"Content-Type: application/json")
+    if header_count == 2 { headers[1] = s"Authorization: Bearer " + string(token) }
+    let messages = text_builder()
+    agent_append(messages, s"{\"role\":\"user\",\"content\":" + agent_quote(string(prompt)) + s"}")
+    let tools = s"[{\"type\":\"function\",\"function\":{\"name\":\"text_stats\",\"description\":\"Count Unicode scalars and UTF-8 bytes in text.\",\"strict\":true,\"parameters\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"],\"additionalProperties\":false}}}]"
+    for turn in 0..8 {
+        let request = s"{\"model\":" + model + s",\"messages\":[" + text_builder_finish(messages) +
+            s"],\"tools\":" + tools + s",\"parallel_tool_calls\":false,\"stream\":false}"
+        let response = http_post(string(arg(1)), headers, to_bytes(request), 30000)
+        if response.status != 0 { stderr("Ramos agent: transport status ")
+            stderr(int_to_text(response.status))
+            stderr("\n")
+            exit(1) }
+        if response.code < 200 || response.code >= 300 { stderr("Ramos agent: HTTP status ")
+            stderr(int_to_text(response.code))
+            stderr("\n")
+            exit(1) }
+        let doc = json_parse(response.body)
+        if doc.status != 0 { stderr("Ramos agent: invalid response JSON at byte ")
+            stderr(int_to_text(doc.error_at))
+            stderr("\n")
+            exit(1) }
+        let choices = json_get(doc, doc.root, s"choices")
+        if json_size(doc, choices) != 1 { agent_error("expected one API choice") }
+        let choice = json_at(doc, choices, 0)
+        let message = json_get(doc, choice, s"message")
+        if json_kind(doc, message) != 6 { agent_error("missing assistant message") }
+        if agent_string(doc, json_get(doc, message, s"role")) != s"assistant" {
+            agent_error("expected assistant role")
+        }
+        let calls = json_get(doc, message, s"tool_calls")
+        if calls == -1 || json_kind(doc, calls) == 1 || (json_kind(doc, calls) == 5 && json_size(doc, calls) == 0) {
+            if agent_string(doc, json_get(doc, choice, s"finish_reason")) != s"stop" {
+                agent_error("API stopped without a complete answer")
+            }
+            let content = agent_string(doc, json_get(doc, message, s"content"))
+            stdout(to_bytes(content))
+            stdout("\n")
+            return
+        }
+        if json_kind(doc, calls) != 5 || json_size(doc, calls) != 1 {
+            agent_error("expected exactly one tool call")
+        }
+        if agent_string(doc, json_get(doc, choice, s"finish_reason")) != s"tool_calls" {
+            agent_error("incomplete tool call")
+        }
+        if turn == 7 { agent_error("8-request limit reached") }
+        let call = json_at(doc, calls, 0)
+        let id = agent_string(doc, json_get(doc, call, s"id"))
+        if len(id) == 0 || buffer_len(to_bytes(id)) > 256 { agent_error("invalid tool call ID") }
+        if agent_string(doc, json_get(doc, call, s"type")) != s"function" {
+            agent_error("unsupported tool type")
+        }
+        let function = json_get(doc, call, s"function")
+        if agent_string(doc, json_get(doc, function, s"name")) != s"text_stats" {
+            agent_error("unknown tool")
+        }
+        let arguments = json_parse(to_bytes(agent_string(doc, json_get(doc, function, s"arguments"))))
+        if arguments.status != 0 || json_kind(arguments, arguments.root) != 6 || json_size(arguments, arguments.root) != 1 {
+            agent_error("invalid text_stats arguments")
+        }
+        let text = agent_string(arguments, json_get(arguments, arguments.root, s"text"))
+        let result = agent_stats(text)
+        // Whitelist outgoing assistant fields; provider extensions aren't request fields.
+        agent_append(messages, s",{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":" +
+            agent_quote(id) + s",\"type\":\"function\",\"function\":{\"name\":\"text_stats\",\"arguments\":" +
+            agent_quote(agent_string(doc, json_get(doc, function, s"arguments"))) + s"}}]}")
+        agent_append(messages, s",{\"role\":\"tool\",\"tool_call_id\":" + agent_quote(id) +
+            s",\"content\":" + agent_quote(result) + s"}")
+    }
+    agent_error("8-request limit reached")
+}

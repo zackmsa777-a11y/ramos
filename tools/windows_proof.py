@@ -371,11 +371,30 @@ if os.name == 'nt':
 
 
 # WinHTTP TLS acceptance needs the genuine Windows trust store, not Wine.
+import test_json
+WindowsTests.json_build = test_json.JsonTests.json_build
+WindowsTests.json_run = test_json.JsonTests.json_run
+for name in dir(test_json.JsonTests):
+    if name.startswith('test_'):
+        setattr(WindowsTests,name,getattr(test_json.JsonTests,name))
+
+import test_theme
+for name in dir(test_theme.ThemeTests):
+    if name.startswith('test_'):
+        setattr(WindowsTests,name,getattr(test_theme.ThemeTests,name))
 if os.name == 'nt':
     import test_http
     for name in dir(test_http.HTTPTests):
         if name.startswith('test_'):
             setattr(WindowsTests,name,getattr(test_http.HTTPTests,name))
+    import test_agent
+    WindowsTests.agent_build = test_agent.AgentTests.agent_build
+    WindowsTests.agent_fixture = test_agent.AgentTests.agent_fixture
+    WindowsTests.agent_run = test_agent.AgentTests.agent_run
+    for cls in (test_agent.AgentTests,test_theme.WindowsThemeTests):
+        for name in dir(cls):
+            if name.startswith('test_'):
+                setattr(WindowsTests,name,getattr(cls,name))
 
 def main():
     if not COMPILER.is_file():

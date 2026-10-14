@@ -39,6 +39,26 @@ timings are historical; they are not a performance result for 0.13.
 
 ## Ordered milestones
 
+Current priority after native [HTTP(S) 0.26 preview](http.md):
+
+1. [JSON parsing/encoding](json.md), a [bounded API tool loop](api-agent.md) and
+   [shared visual palettes](themes.md): implemented in the development source,
+   with native acceptance required before packaging a new release.
+2. Consistent whole-window themes: native foregrounds/backgrounds/fonts,
+   canvas text, minimum sizing and readable focus/disabled states. Use the
+   Theme Lab showcase as the acceptance app; keep OS accessibility and Unicode.
+3. A responsive agent GUI with explicit request lifecycle, then file-tool
+   integration with clear application-owned limits. Synchronous HTTP must not
+   block the GUI event loop.
+4. A webview library and browser shell when the native integration is ready;
+   HTML/CSS/JavaScript rendering is separate from finishing the agent.
+
+Visual design is now an explicit user priority alongside simple syntax and
+measured speed. Palettes are the first slice; full CSS support is not promised.
+Keep existing Windows display-transition retesting and other reliability gates
+open. These priorities describe order, not a claim that the language is complete
+or a promised completion date.
+
 | Proposed milestone | Work | Runnable acceptance example |
 | --- | --- | --- |
 | 0.14: easier code (implemented; see [contracts](syntax.md)) | `else if`, exclusive-range `for`, `+=` and `-=`; updated syntax documentation and highlighting | Simplify an existing search/viewer example while preserving its output and behavior on both OSes |

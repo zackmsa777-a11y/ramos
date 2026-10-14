@@ -12,6 +12,7 @@ import time
 def main():
     binary, report = sys.argv[1:3]
     plot = len(sys.argv)>3 and sys.argv[3]=="plot"
+    theme = len(sys.argv)>3 and sys.argv[3]=="theme"
     user=C.WinDLL('user32',use_last_error=True)
     gdi=C.WinDLL('gdi32',use_last_error=True)
     kernel=C.WinDLL('kernel32',use_last_error=True)
@@ -23,6 +24,7 @@ def main():
         ('IsWindow',W.BOOL,[W.HWND]),
         ('GetDlgItem',W.HWND,[W.HWND,C.c_int]),
         ('PostMessageW',W.BOOL,[W.HWND,W.UINT,W.WPARAM,W.LPARAM]),
+        ('SendMessageW',W.LPARAM,[W.HWND,W.UINT,W.WPARAM,W.LPARAM]),
         ('GetDC',W.HDC,[W.HWND]),
         ('GetClientRect',W.BOOL,[W.HWND,C.POINTER(W.RECT)]),
         ('ReleaseDC',C.c_int,[W.HWND,W.HDC]),
@@ -52,7 +54,8 @@ def main():
         def cb(hwnd,unused):
             pid=W.DWORD();user.GetWindowThreadProcessId(hwnd,C.byref(pid))
             caption=C.create_unicode_buffer(256);user.GetWindowTextW(hwnd,caption,256)
-            if pid.value==proc.pid and user.IsWindowVisible(hwnd) and caption.value==('Ramos Plot' if plot else 'Ramos Canvas test'):found.append(hwnd)
+            title='Ramos Theme Lab' if theme else 'Ramos Plot' if plot else 'Ramos Canvas test'
+            if pid.value==proc.pid and user.IsWindowVisible(hwnd) and caption.value==title:found.append(hwnd)
             return True
         user.EnumWindows(cb,0)
         return found[0] if found else None
@@ -68,6 +71,41 @@ def main():
         hwnd=wait(find,'canvas window')
         status=wait(lambda:user.GetDlgItem(hwnd,3),'status label')
         canvas=wait(lambda:user.GetDlgItem(hwnd,1),'canvas control')
+        if theme:
+            def rgb(red,green,blue):return red+green*256+blue*65536
+            wait(lambda:pixel(canvas,4,4)==rgb(241,245,249),'paper canvas')
+            for color in (rgb(15,23,42),rgb(24,24,27)):
+                click(3)
+                wait(lambda:pixel(canvas,4,4)==color,'theme button changes pixels')
+            entry=user.GetDlgItem(hwnd,4)
+            value=C.create_unicode_buffer('Changed مرحبا 🌍')
+            assert user.SendMessageW(entry,0xc,0,C.addressof(value))
+            def entry_text():
+                out=C.create_unicode_buffer(256)
+                user.SendMessageW(entry,0xd,256,C.addressof(out))
+                return out.value
+            assert entry_text()==value.value
+            assert user.SetWindowPos(hwnd,None,0,0,930,680,0x16)
+            wait(lambda:pixel(canvas,4,4)==rgb(24,24,27),'theme after resize')
+            assert user.RedrawWindow(canvas,None,None,0x105)
+            assert pixel(canvas,4,4)==rgb(24,24,27)
+            assert entry_text()==value.value
+            handle=kernel.OpenProcess(0x400,False,proc.pid)
+            assert handle
+            before=user.GetGuiResources(handle,0)
+            for i in range(24):
+                click(3)
+                expected=(rgb(241,245,249),rgb(15,23,42),rgb(24,24,27))[i%3]
+                wait(lambda:pixel(canvas,4,4)==expected,'repeated theme change')
+            after=user.GetGuiResources(handle,0)
+            assert before>0 and after<=before+2,(before,after)
+            assert user.PostMessageW(hwnd,0x10,0,0)
+            out,err=proc.communicate(timeout=10)
+            assert (proc.returncode,out,err)==(0,b'',b''),(proc.returncode,out,err)
+            assert not user.IsWindow(hwnd)
+            result.update(closed=True,theme_switch=True,unicode_input=True,resize=True,
+                          gdi_before=before,gdi_after=after)
+            return
         if plot:
             def blue(x,y):
                 color=pixel(canvas,x,y)

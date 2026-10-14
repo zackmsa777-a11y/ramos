@@ -1,0 +1,29 @@
+weave "draw.ramos"
+
+// Semantic color roles. Canvas/panel colors are portable; native control fonts
+// and colors still follow the OS. This is a palette library, not a CSS engine.
+struct GuiTheme {
+    name: string, background: int64, surface: int64, border: int64,
+    foreground: int64, muted: int64, accent: int64, success: int64,
+    warning: int64, spacing: int64, control_height: int64
+}
+fn theme_paper() -> GuiTheme {
+    return GuiTheme(s"Paper", gui_rgb(241,245,249), gui_rgb(255,255,255),
+        gui_rgb(203,213,225), gui_rgb(15,23,42), gui_rgb(100,116,139),
+        gui_rgb(37,99,235), gui_rgb(5,150,105), gui_rgb(180,83,9), 16, 32)
+}
+fn theme_graphite() -> GuiTheme {
+    return GuiTheme(s"Graphite", gui_rgb(15,23,42), gui_rgb(30,41,59),
+        gui_rgb(71,85,105), gui_rgb(248,250,252), gui_rgb(148,163,184),
+        gui_rgb(129,140,248), gui_rgb(52,211,153), gui_rgb(251,191,36), 16, 32)
+}
+fn theme_ember() -> GuiTheme {
+    return GuiTheme(s"Ember", gui_rgb(24,24,27), gui_rgb(39,39,42),
+        gui_rgb(82,82,91), gui_rgb(250,250,250), gui_rgb(161,161,170),
+        gui_rgb(251,146,60), gui_rgb(74,222,128), gui_rgb(250,204,21), 16, 32)
+}
+fn theme_card(canvas: Canvas, theme: GuiTheme, bounds: GuiRect) {
+    let checked = gui_rect(bounds.x, bounds.y, bounds.width, bounds.height)
+    draw_rect(canvas, checked.x, checked.y, checked.width, checked.height, theme.surface)
+    draw_box(canvas, checked.x, checked.y, checked.width, checked.height, theme.border)
+}

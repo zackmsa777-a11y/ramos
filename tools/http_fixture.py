@@ -12,6 +12,7 @@ import time
 class Fixture:
     def __init__(self,directory,tls=False):
         self.directory=Path(directory);self.servers=[];self.threads=[];self.requests=[];self.trusted_thumbprint=None
+        self.responses=[]
         owner=self
         class Handler(BaseHTTPRequestHandler):
             def handle(self):
@@ -22,6 +23,9 @@ class Fixture:
                 body=self.rfile.read(int(self.headers.get('Content-Length','0')))
                 owner.requests.append((self.command,self.path,dict(self.headers),body))
                 status=200;data=b'hello\0world\xff'
+                if self.path=='/chat' and owner.responses:
+                    index=min(len(owner.requests)-1,len(owner.responses)-1)
+                    status,data=owner.responses[index]
                 if self.path.startswith('/echo'):data=body
                 if self.path=='/auth':status=401;data=b'{"error":"unauthorized"}'
                 if self.path=='/empty':status=204;data=b''

@@ -1,0 +1,374 @@
+weave "text.ramos"
+
+// Strict JSON, with an indexed tree and exact number spelling. Node -1 means
+// absent. Kinds: 1 null, 2 bool, 3 number, 4 string, 5 array, 6 object.
+// Treat document fields as private; failed documents cannot be queried.
+struct JsonDocument {
+    source: bytes, at: int64, status: int64, error_at: int64, count: int64,
+    root: int64, kinds: [int64], starts: [int64], ends: [int64],
+    first: [int64], next: [int64], keys: [string], values: [string]
+}
+struct JsonText { text: string, status: int64 }
+struct JsonCheck { status: int64, error_at: int64 }
+struct JsonBytes { data: bytes, count: int64 }
+struct JsonWriter { builder: TextBuilder, status: int64 }
+fn json_fail(doc: JsonDocument, status: int64) {
+    if doc.status == 0 { doc.status = status
+        doc.error_at = doc.at }
+}
+fn json_peek(doc: JsonDocument) -> int64 {
+    if doc.at >= buffer_len(doc.source) { return -1 }
+    return buffer_get(doc.source, doc.at)
+}
+fn json_space(doc: JsonDocument) {
+    var ch = json_peek(doc)
+    while ch == 32 || ch == 9 || ch == 10 || ch == 13 {
+        doc.at += 1
+        ch = json_peek(doc)
+    }
+}
+// Validate before converting any untrusted bytes to a Ramos string.
+fn json_utf8(doc: JsonDocument) {
+    let raw = doc.source
+    var i = 0
+    while i < buffer_len(raw) {
+        let ch = buffer_get(raw, i)
+        var size = 1
+        var low = 128
+        var high = 191
+        if ch >= 128 {
+            if ch >= 194 && ch <= 223 { size = 2 }
+            else if ch >= 224 && ch <= 239 {
+                size = 3
+                if ch == 224 { low = 160 }
+                if ch == 237 { high = 159 }
+            } else if ch >= 240 && ch <= 244 {
+                size = 4
+                if ch == 240 { low = 144 }
+                if ch == 244 { high = 143 }
+            } else { doc.at = i
+                json_fail(doc, -22)
+                return }
+            if size > buffer_len(raw) - i { doc.at = i
+                json_fail(doc, -22)
+                return }
+            for j in 1..size {
+                let part = buffer_get(raw, i + j)
+                var min = 128
+                var max = 191
+                if j == 1 { min = low
+                    max = high }
+                if part < min || part > max { doc.at = i + j
+                    json_fail(doc, -22)
+                    return }
+            }
+        }
+        i += size
+    }
+}
+fn json_validate_utf8(raw: bytes) -> JsonCheck {
+    let doc = JsonDocument(raw, 0, 0, -1, 0, -1,
+        array_empty(int64), array_empty(int64), array_empty(int64),
+        array_empty(int64), array_empty(int64), array_empty(string), array_empty(string))
+    json_utf8(doc)
+    return JsonCheck(doc.status, doc.error_at)
+}
+fn json_byte(out: JsonBytes, ch: int64) {
+    if out.count == buffer_len(out.data) {
+        let grown = buffer(buffer_len(out.data) * 2)
+        bytes_put(grown, 0, out.data)
+        out.data = grown
+    }
+    buffer_set(out.data, out.count, ch)
+    out.count += 1
+}
+fn json_scalar(out: JsonBytes, value: int64) {
+    if value < 128 { json_byte(out, value) }
+    else if value < 2048 { json_byte(out, 192 + value / 64)
+        json_byte(out, 128 + value % 64) }
+    else if value < 65536 { json_byte(out, 224 + value / 4096)
+        json_byte(out, 128 + value / 64 % 64)
+        json_byte(out, 128 + value % 64) }
+    else { json_byte(out, 240 + value / 262144)
+        json_byte(out, 128 + value / 4096 % 64)
+        json_byte(out, 128 + value / 64 % 64)
+        json_byte(out, 128 + value % 64) }
+}
+fn json_hex(doc: JsonDocument) -> int64 {
+    var value = 0
+    for i in 0..4 {
+        let ch = json_peek(doc)
+        var digit = -1
+        if ch >= 48 && ch <= 57 { digit = ch - 48 }
+        else if ch >= 65 && ch <= 70 { digit = ch - 55 }
+        else if ch >= 97 && ch <= 102 { digit = ch - 87 }
+        if digit < 0 { json_fail(doc, -22)
+            return 0 }
+        doc.at += 1
+        value = value * 16 + digit
+    }
+    return value
+}
+fn json_string_read(doc: JsonDocument) -> string {
+    let out = JsonBytes(buffer(64), 0)
+    doc.at += 1
+    while doc.status == 0 {
+        let ch = json_peek(doc)
+        if ch == 34 { doc.at += 1
+            return string(bytes_slice(out.data, 0, out.count)) }
+        if ch < 32 { json_fail(doc, -22)
+            return s"" }
+        doc.at += 1
+        if ch != 92 { json_byte(out, ch) }
+        else {
+            let escape = json_peek(doc)
+            if escape < 0 { json_fail(doc, -22)
+                return s"" }
+            doc.at += 1
+            if escape == 34 || escape == 92 || escape == 47 { json_byte(out, escape) }
+            else if escape == 98 { json_byte(out, 8) }
+            else if escape == 102 { json_byte(out, 12) }
+            else if escape == 110 { json_byte(out, 10) }
+            else if escape == 114 { json_byte(out, 13) }
+            else if escape == 116 { json_byte(out, 9) }
+            else if escape == 117 {
+                var value = json_hex(doc)
+                if doc.status != 0 { return s"" }
+                if value >= 55296 && value <= 56319 {
+                    if json_peek(doc) != 92 { json_fail(doc, -22)
+                        return s"" }
+                    doc.at += 1
+                    if json_peek(doc) != 117 { json_fail(doc, -22)
+                        return s"" }
+                    doc.at += 1
+                    let low = json_hex(doc)
+                    if doc.status != 0 { return s"" }
+                    if low < 56320 || low > 57343 { json_fail(doc, -22)
+                        return s"" }
+                    value = 65536 + (value - 55296) * 1024 + low - 56320
+                } else if value >= 56320 && value <= 57343 { json_fail(doc, -22)
+                    return s"" }
+                json_scalar(out, value)
+            } else { json_fail(doc, -22) }
+        }
+    }
+    return s""
+}
+fn json_digit(ch: int64) -> bool { return ch >= 48 && ch <= 57 }
+fn json_number_read(doc: JsonDocument) {
+    if json_peek(doc) == 45 { doc.at += 1 }
+    let ch = json_peek(doc)
+    if ch == 48 { doc.at += 1 }
+    else if ch >= 49 && ch <= 57 {
+        while json_digit(json_peek(doc)) { doc.at += 1 }
+    } else { json_fail(doc, -22)
+        return }
+    if json_peek(doc) == 46 {
+        doc.at += 1
+        if !json_digit(json_peek(doc)) { json_fail(doc, -22)
+            return }
+        while json_digit(json_peek(doc)) { doc.at += 1 }
+    }
+    if json_peek(doc) == 101 || json_peek(doc) == 69 {
+        doc.at += 1
+        if json_peek(doc) == 43 || json_peek(doc) == 45 { doc.at += 1 }
+        if !json_digit(json_peek(doc)) { json_fail(doc, -22)
+            return }
+        while json_digit(json_peek(doc)) { doc.at += 1 }
+    }
+}
+fn json_literal(doc: JsonDocument, expected: bytes) {
+    for i in 0..buffer_len(expected) {
+        if json_peek(doc) != buffer_get(expected, i) { json_fail(doc, -22)
+            return }
+        doc.at += 1
+    }
+}
+fn json_value_read(doc: JsonDocument, depth: int64) -> int64 {
+    json_space(doc)
+    if depth > 64 || doc.count == 4096 { json_fail(doc, -27)
+        return -1 }
+    let node = doc.count
+    doc.count += 1
+    doc.starts[node] = doc.at
+    let ch = json_peek(doc)
+    if ch == 34 { doc.kinds[node] = 4
+        doc.values[node] = json_string_read(doc) }
+    else if ch == 110 { doc.kinds[node] = 1
+        json_literal(doc, "null") }
+    else if ch == 116 || ch == 102 { doc.kinds[node] = 2
+        if ch == 116 { json_literal(doc, "true") }
+        else { json_literal(doc, "false") } }
+    else if ch == 45 || json_digit(ch) { doc.kinds[node] = 3
+        json_number_read(doc) }
+    else if ch == 91 || ch == 123 {
+        var close = 93
+        doc.kinds[node] = 5
+        if ch == 123 { close = 125
+            doc.kinds[node] = 6 }
+        doc.at += 1
+        json_space(doc)
+        if json_peek(doc) == close { doc.at += 1 }
+        else {
+            var previous = -1
+            var done = false
+            while !done && doc.status == 0 {
+                var key = s""
+                if ch == 123 {
+                    if json_peek(doc) != 34 { json_fail(doc, -22)
+                        return -1 }
+                    key = json_string_read(doc)
+                    json_space(doc)
+                    if doc.status != 0 { return -1 }
+                    if json_peek(doc) != 58 { json_fail(doc, -22)
+                        return -1 }
+                    doc.at += 1
+                }
+                let child = json_value_read(doc, depth + 1)
+                if doc.status != 0 { return -1 }
+                doc.keys[child] = key
+                if previous < 0 { doc.first[node] = child }
+                else { doc.next[previous] = child }
+                previous = child
+                json_space(doc)
+                if json_peek(doc) == close { doc.at += 1
+                    done = true }
+                else if json_peek(doc) == 44 { doc.at += 1
+                    json_space(doc) }
+                else { json_fail(doc, -22) }
+            }
+        }
+    } else { json_fail(doc, -22) }
+    doc.ends[node] = doc.at
+    return node
+}
+fn json_parse(raw: bytes) -> JsonDocument {
+    let doc = JsonDocument(buffer(0), 0, 0, -1, 0, -1,
+        array(int64, 4096, 0), array(int64, 4096, 0), array(int64, 4096, 0),
+        array(int64, 4096, -1), array(int64, 4096, -1),
+        array(string, 4096, s""), array(string, 4096, s""))
+    if buffer_len(raw) > 1048576 { json_fail(doc, -27)
+        return doc }
+    // Own an immutable snapshot: mutation of caller bytes cannot alter raw nodes.
+    doc.source = bytes_copy(raw)
+    json_utf8(doc)
+    if doc.status != 0 { return doc }
+    doc.at = 0
+    let root = json_value_read(doc, 0)
+    if doc.status != 0 { return doc }
+    json_space(doc)
+    if doc.at != buffer_len(doc.source) { json_fail(doc, -22)
+        return doc }
+    doc.root = root
+    return doc
+}
+fn json_kind(doc: JsonDocument, node: int64) -> int64 {
+    if doc.status != 0 || node < 0 || node >= doc.count { return 0 }
+    return doc.kinds[node]
+}
+// Duplicate object names are accepted; lookup deliberately returns the last.
+fn json_get(doc: JsonDocument, node: int64, key: string) -> int64 {
+    if json_kind(doc, node) != 6 { return -1 }
+    var child = doc.first[node]
+    var found = -1
+    while child >= 0 {
+        if doc.keys[child] == key { found = child }
+        child = doc.next[child]
+    }
+    return found
+}
+fn json_at(doc: JsonDocument, node: int64, index: int64) -> int64 {
+    if json_kind(doc, node) != 5 || index < 0 { return -1 }
+    var child = doc.first[node]
+    var i = 0
+    while child >= 0 && i < index { child = doc.next[child]
+        i += 1 }
+    return child
+}
+fn json_size(doc: JsonDocument, node: int64) -> int64 {
+    let kind = json_kind(doc, node)
+    if kind != 5 && kind != 6 { return 0 }
+    var child = doc.first[node]
+    var count = 0
+    while child >= 0 { count += 1
+        child = doc.next[child] }
+    return count
+}
+fn json_text(doc: JsonDocument, node: int64) -> string {
+    if json_kind(doc, node) != 4 { return s"" }
+    return doc.values[node]
+}
+fn json_raw(doc: JsonDocument, node: int64) -> string {
+    if json_kind(doc, node) == 0 { return s"" }
+    return string(bytes_slice(doc.source, doc.starts[node], doc.ends[node]))
+}
+// Escape JSON strings, including NUL, with a fallible 1 MiB output cap.
+fn json_quote(value: string) -> JsonText {
+    let raw = to_bytes(value)
+    var size = 2
+    for i in 0..buffer_len(raw) {
+        let ch = buffer_get(raw, i)
+        var added = 1
+        if ch == 34 || ch == 92 { added = 2 }
+        else if ch < 32 { added = 6 }
+        if size > 1048576 - added { return JsonText(s"", -27) }
+        size += added
+    }
+    let out = buffer(size)
+    let hex = "0123456789abcdef"
+    buffer_set(out, 0, 34)
+    var at = 1
+    for i in 0..buffer_len(raw) {
+        let ch = buffer_get(raw, i)
+        if ch == 34 || ch == 92 { buffer_set(out, at, 92)
+            buffer_set(out, at + 1, ch)
+            at += 2 }
+        else if ch < 32 { bytes_put(out, at, "\\u00")
+            buffer_set(out, at + 4, buffer_get(hex, ch / 16))
+            buffer_set(out, at + 5, buffer_get(hex, ch % 16))
+            at += 6 }
+        else { buffer_set(out, at, ch)
+            at += 1 }
+    }
+    buffer_set(out, at, 34)
+    return JsonText(string(out), 0)
+}
+fn json_write(out: JsonWriter, text: string) {
+    if out.status == 0 { out.status = text_builder_append(out.builder, text) }
+}
+fn json_write_quote(out: JsonWriter, text: string) {
+    if out.status != 0 { return }
+    let quoted = json_quote(text)
+    if quoted.status != 0 { out.status = quoted.status
+        return }
+    json_write(out, quoted.text)
+}
+fn json_write_node(out: JsonWriter, doc: JsonDocument, node: int64) {
+    if out.status != 0 { return }
+    let kind = json_kind(doc, node)
+    if kind == 4 { json_write_quote(out, json_text(doc, node)) }
+    else if kind == 5 || kind == 6 {
+        if kind == 5 { json_write(out, s"[") }
+        else { json_write(out, s"{") }
+        var child = doc.first[node]
+        var first = true
+        while child >= 0 && out.status == 0 {
+            if !first { json_write(out, s",") }
+            if kind == 6 { json_write_quote(out, doc.keys[child])
+                json_write(out, s":") }
+            json_write_node(out, doc, child)
+            first = false
+            child = doc.next[child]
+        }
+        if kind == 5 { json_write(out, s"]") }
+        else { json_write(out, s"}") }
+    } else { json_write(out, json_raw(doc, node)) }
+}
+// Compact serialization of a parsed tree; exact numbers and duplicate keys stay.
+fn json_encode(doc: JsonDocument) -> JsonText {
+    if doc.status != 0 { return JsonText(s"", doc.status) }
+    let out = JsonWriter(text_builder(), 0)
+    json_write_node(out, doc, doc.root)
+    if out.status != 0 { return JsonText(s"", out.status) }
+    return JsonText(text_builder_finish(out.builder), 0)
+}
