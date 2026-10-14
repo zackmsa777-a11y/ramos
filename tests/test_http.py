@@ -77,6 +77,22 @@ let response = http_post(string(arg(1)), headers, "a\\0b مرحبا", 1000)
         self.assertEqual(result.returncode,0,result.stderr)
         r=self.run_native(f'http://127.0.0.1:{port}/')
         self.assertEqual((r.returncode,r.stdout),(0,b'0\n-111\n0\n'),r.stderr)
+        # Cancellation must leave no callback able to write into recycled
+        # managed buffers, and the same process must remain usable afterward.
+        code='''weave "stdlib/http.ramos"
+fn main() {
+let first = http_get(string(arg(1)), array(string, 0, s""), 100)
+print(first.status)
+for i in 0..24 { let garbage = buffer(1048576) }
+collect()
+let second = http_get(string(arg(2)), array(string, 0, s""), 5000)
+print(second.code)
+print(second.status)
+}'''
+        result=self.build(code,'--force');self.assertEqual(result.returncode,0,result.stderr)
+        another=fixture(self)
+        r=self.run_native(another.url('/slow'),another.url('/'))
+        self.assertEqual((r.returncode,r.stdout),(0,b'-110\n200\n0\n'),r.stderr)
 
     def test_http_response_limit_and_exact_capacity(self):
         build(self,GET.replace('1000','5000'));f=fixture(self)
