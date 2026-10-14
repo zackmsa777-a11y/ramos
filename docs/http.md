@@ -1,6 +1,6 @@
 # Native HTTP(S) clients — 0.26 preview
 
-`weave "http.ramos"` provides synchronous GET/POST requests that capture response
+`weave "stdlib/http.ramos"` provides synchronous GET/POST requests that capture response
 bytes. Ramos calls **libcurl on Linux** and the **system WinHTTP library on
 Windows**, directly from the native executable. It does not spawn curl, Python,
 a shell, or a helper executable. TLS is supplied by those native libraries;

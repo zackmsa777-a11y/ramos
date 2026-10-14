@@ -26,6 +26,11 @@ runtime_http_windows_initialize:
     lea rdi, [rax + 8 + 4224]
     cmp QWORD PTR [rdi + 88], 0
     jne runtime_http_windows_initialized
+    # Keep exactly one process-owned DLL reference, including partial API
+    # initialization. Retrying an unavailable export must not reload the DLL.
+    mov rbx, [rdi + 96]
+    test rbx, rbx
+    jnz runtime_http_windows_have_module
     lea rcx, [rip + runtime_http_dll]
     xor edx, edx
     mov r8d, 0x800                  # System32 only.
@@ -33,6 +38,8 @@ runtime_http_windows_initialize:
     test rax, rax
     jz runtime_http_windows_missing
     mov rbx, rax
+    mov [rdi + 96], rax
+runtime_http_windows_have_module:
     lea rsi, [rip + runtime_http_windows_names]
 runtime_http_windows_load:
     mov rcx, rbx

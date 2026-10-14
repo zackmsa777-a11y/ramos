@@ -33,7 +33,7 @@ make selfhost                # compare stages, run tests, record SHA-256 proof
 
 Version 0.26 adds **native HTTP(S) API clients**: GET/POST, request headers,
 captured binary response bodies, HTTP status codes and fallible transport errors.
-`weave "http.ramos"` calls libcurl on Linux and system WinHTTP on Windows; it
+`weave "stdlib/http.ramos"` calls libcurl on Linux and system WinHTTP on Windows; it
 never launches a helper executable. HTTPS verifies certificate chains and hostnames.
 Linux HTTP executables require `libcurl.so.4`; non-network CLI output stays static.
 See [HTTP contracts](docs/http.md) and the [JSON/API POST client](examples/api_post.ramos).
