@@ -1,0 +1,110 @@
+{
+  "version": "0.26.0",
+  "release_status": "preview: native HTTP(S) passed; opt-in GUI visual retest remains pending",
+  "code_commit": "c783e795c93cd13c441d409025f22d5e552ef7b1",
+  "ci": "https://github.com/zackmsa777-a11y/ramos/actions/runs/38599339381",
+  "compiler_source_sha256": "77232cad86020619a4cb1d580c59143182dbfc70e032a8c4e494edbe3b07b29c",
+  "native_linux": {
+    "discovered": 319,
+    "passed": 309,
+    "skipped": 10,
+    "fixed_point": true,
+    "empty_path_rebuild": true,
+    "compiler_sha256": "96fad1cc210d2fefd214fda923e161bb8166f7929df3c55cc84baca6fcca31b2",
+    "http": {
+      "target": "linux",
+      "backend": "libcurl",
+      "fixture": "controlled loopback HTTPS with a temporary trusted test CA",
+      "ramos_post_example": true,
+      "unicode_json_response_bytes": true,
+      "authorization_header": true,
+      "external_helper_process": false,
+      "scope": "Native API client acceptance. No paid or live LLM provider was contacted."
+    }
+  },
+  "native_windows": {
+    "discovered": 252,
+    "passed": 250,
+    "skipped": 2,
+    "fixed_point": true,
+    "compiler_sha256": "f03c4edf9b0c05009e563a9958f38f36fe2fdc06be2c38f0b31a63ae1537013f",
+    "http": {
+      "target": "windows",
+      "backend": "WinHTTP",
+      "fixture": "controlled loopback HTTPS with a temporary trusted test CA",
+      "ramos_post_example": true,
+      "unicode_json_response_bytes": true,
+      "authorization_header": true,
+      "external_helper_process": false,
+      "scope": "Native API client acceptance. No paid or live LLM provider was contacted."
+    }
+  },
+  "http_acceptance": {
+    "get_post_headers_query_binary_unicode": true,
+    "trusted_tls": true,
+    "untrusted_certificate_rejected": true,
+    "hostname_mismatch_rejected": true,
+    "invalid_tls_rejected_before_http_request": true,
+    "http_401_body_preserved": true,
+    "redirect_not_followed": true,
+    "chunked_response_decoded": true,
+    "empty_response": true,
+    "100_ms_stalled_transfer_cancelled": true,
+    "connection_refusal_distinct_from_timeout": true,
+    "response_capacity_exact_and_excess": true,
+    "repeated_requests": 40,
+    "managed_retention_checked_below_bytes": 262144,
+    "private_packet_bounds": true,
+    "linux_http_only_gtk_unsupported": true,
+    "linux_http_and_gtk_imports_combined": true,
+    "cancellation_then_gc_heap_reuse_and_same_process_request": true,
+    "cancellation_heap_churn_bytes": 25165824
+  },
+  "limits": {
+    "url_ascii_bytes": 8192,
+    "headers": 64,
+    "request_metadata_bytes": 32768,
+    "request_body_bytes": 1048576,
+    "response_body_bytes": 1048568,
+    "timeout_ms": [
+      1,
+      120000
+    ],
+    "managed_live_heap_bytes": 16777216
+  },
+  "clean_installation": {
+    "linux": {
+      "version": "Ramos 0.26.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "linux-x64",
+      "compiler_sha256": "96fad1cc210d2fefd214fda923e161bb8166f7929df3c55cc84baca6fcca31b2",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    },
+    "windows": {
+      "version": "Ramos 0.26.0 \u2014 compiler written in Ramos; Linux and Windows x64",
+      "target": "windows-x64",
+      "compiler_sha256": "f03c4edf9b0c05009e563a9958f38f36fe2fdc06be2c38f0b31a63ae1537013f",
+      "unicode_install_path": true,
+      "empty_path": true,
+      "run_arguments_exit_status": true,
+      "library_build_and_sort": true,
+      "executable_runs_without_compiler_or_sources": true,
+      "checks": 5,
+      "package_sha256": null,
+      "scope": "Native CLI packaging; desktop and terminal interactions have separate native tests."
+    }
+  },
+  "remaining": [
+    "JSON parsing/encoding and a complete LLM tool loop",
+    "Response headers, proxy support, raw sockets, servers and user-facing async/streaming APIs",
+    "Independent real Windows GUI repaint retest and unavailable 200% DPI preset",
+    "Broader measured workloads and practical 1.0 compatibility review"
+  ],
+  "scope": "Controlled native loopback HTTP/TLS fixtures and compiler/application tests. No paid or live LLM provider request, new speed score or Rust/Python ecosystem parity claim."
+}

@@ -37,6 +37,10 @@ captured binary response bodies, HTTP status codes and fallible transport errors
 never launches a helper executable. HTTPS verifies certificate chains and hostnames.
 Linux HTTP executables require `libcurl.so.4`; non-network CLI output stays static.
 See [HTTP contracts](docs/http.md) and the [JSON/API POST client](examples/api_post.ramos).
+Native verification passes **309 Linux tests and 250 Windows tests**, with matching
+compiler fixed points, trusted TLS, rejected certificate/name mismatches and
+100 ms cancellation followed by heap reuse and another request. See
+[HTTP verification](docs/http-verification.json).
 This is a transport library; JSON parsing, sockets, servers and streaming remain future work.
 
 Version 0.25 adds **explicit GUI scaling**: `gui_open_scaled` uses logical

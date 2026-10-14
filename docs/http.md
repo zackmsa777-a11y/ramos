@@ -109,6 +109,12 @@ No live provider or paid LLM call is part of the automated tests.
 
 ## Verification scope
 
+The native [recorded proof](http-verification.json) passes 309 Linux tests and
+250 Windows tests with matching compiler fixed points. A cancellation test then
+recycles 24 MiB of managed buffers and succeeds on another request in the same
+process. These are bounded tests, not a long-duration server or soak claim.
+
+
 Controlled loopback fixtures exercise GET/POST, binary and Unicode bodies,
 request headers/query strings, chunked responses, empty/401/302 results, no
 redirect following, connection refusal/timeouts, response limits and repeated
